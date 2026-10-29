@@ -16,9 +16,6 @@ venv/
 
 # Uploads (user files, si code)
 uploads/
-static/logo.png
-static/icon-192.png
-static/icon-512.png
 
 # OS
 .DS_Store

@@ -3023,6 +3023,49 @@ def verify_student_code(admission_no, code):
     conn.close()
     print(f"[VERIFY] SUCCESS for {admission_no}")
     return True, "Account verified successfully! You can now log in."
+def resend_verification_code(admission_no):
+    """Generate new code and return it. Returns (ok, info, message)."""
+    from datetime import datetime, timedelta
+    import random
+
+    admission_no = (admission_no or "").strip().upper()
+    conn = get_connection()
+    student = conn.execute(
+        "SELECT id, is_verified, full_name, email FROM students "
+        "WHERE LOWER(reg_number) = LOWER(?)",
+        (admission_no,)
+    ).fetchone()
+
+    if not student:
+        conn.close()
+        return False, None, "Account not found."
+
+    if student["is_verified"]:
+        conn.close()
+        return False, None, "Account is already verified."
+
+    if not student["email"]:
+        conn.close()
+        return False, None, "No email on file. Cannot resend."
+
+    code = f"{random.randint(100000, 999999)}"
+    expires_at = (datetime.utcnow() + timedelta(minutes=15)).strftime(
+        "%Y-%m-%d %H:%M:%S")
+
+    conn.execute(
+        "UPDATE students SET verification_code = ?, "
+        "verification_expires_at = ? WHERE id = ?",
+        (code, expires_at, student["id"]))
+    conn.commit()
+    conn.close()
+
+    info = {
+        "student_id": student["id"],
+        "code": code,
+        "email": student["email"],
+        "full_name": student["full_name"],
+    }
+    return True, info, "New code sent."
 if __name__ == "__main__":
     init_database()
     print(f"Database: {DB_PATH}")
