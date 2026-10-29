@@ -1117,7 +1117,6 @@ def academy_lesson(request: Request, lesson_id: int):
         "now": datetime.now(),
     })
 
-
 @app.post("/academy/lessons/{lesson_id}/complete")
 def academy_lesson_complete(request: Request, lesson_id: int):
     if "user_id" not in request.session:
