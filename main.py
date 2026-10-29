@@ -158,6 +158,11 @@ def signup_post(request: Request, full_name: str = Form(...),
     if not ok:
         return render("signup.html", {"request": request, "error": msg})
 
+    # CR hahitaji verification — login moja kwa moja
+    if role == "CR":
+        return RedirectResponse("/login?success=CR+account+created.+You+can+log+in+now.", 303)
+
+    # STUDENT anahitaji email verification
     email_ok, email_err = send_verification_email(
         info["email"], info["full_name"], info["code"])
 

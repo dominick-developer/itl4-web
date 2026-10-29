@@ -1256,13 +1256,25 @@ def signup_student(admission_no, password, full_name, phone,
     expires_at = (datetime.utcnow() + timedelta(minutes=15)).strftime(
         "%Y-%m-%d %H:%M:%S")
 
+    if role == "CR":
+        student_status = "approved"
+        verified = 1
+        verify_code = None
+        verify_expires = None
+    else:
+        student_status = "pending"
+        verified = 0
+        verify_code = code
+        verify_expires = expires_at
+
     cur.execute(
         "INSERT INTO students (full_name, reg_number, gender, phone, "
         "email, membership_status, is_active, is_verified, "
         "verification_code, verification_expires_at) "
-        "VALUES (?, ?, ?, ?, ?, 'pending', 1, 0, ?, ?)",
+        "VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, ?)",
         (full_name.strip(), admission_no, gender or None,
-         phone.strip(), email, code, expires_at))
+         phone.strip(), email, student_status, verified,
+         verify_code, verify_expires))
     student_id = cur.lastrowid
 
     salt = os.urandom(16).hex()

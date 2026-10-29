@@ -71,7 +71,8 @@ def login(username: str, password: str):
     role = row["role"]
 
     # Verification check for STUDENT and CR
-    if role in ("STUDENT", "CR"):
+    # Verification check for STUDENT only (CR/LECTURER bypass)
+    if role == "STUDENT":
         is_verified = row["is_verified"] if row["is_verified"] is not None else 1
         if not is_verified:
             conn.close()
@@ -80,7 +81,6 @@ def login(username: str, password: str):
                 "username": username,
                 "message": "Please verify your email first.",
             }
-
     # Membership status for STUDENT only
     if role == "STUDENT":
         status = row["membership_status"]
