@@ -620,10 +620,11 @@
             <nav class="sb-nav">
                 <a href="/dashboard" class="sb-item {% if request.url.path == '/dashboard' %}active{% endif %}">
                     <span class="sb-icon">🏠</span> Dashboard
-                </a>
+                {% if role in ('CR', 'LECTURER') %}
                 <a href="/students" class="sb-item {% if request.url.path.startswith('/students') %}active{% endif %}">
                     <span class="sb-icon">👥</span> Students
                 </a>
+                {% endif %}
                 <a href="/attendance" class="sb-item {% if request.url.path == '/attendance' %}active{% endif %}">
                     <span class="sb-icon">✓</span> Attendance
                 </a>

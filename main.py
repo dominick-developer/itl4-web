@@ -112,8 +112,8 @@ def login_get(request: Request):
 
 @app.post("/login", response_class=HTMLResponse)
 def login_post(request: Request, username: str = Form(...),
-               password: str = Form(...), role: str = Form(...)):
-    ok, result = auth.login(username, password, role)
+               password: str = Form(...)):
+    ok, result = auth.login(username, password)
     if ok:
         request.session.update({
             "user_id": result["id"],
@@ -123,12 +123,10 @@ def login_post(request: Request, username: str = Form(...),
         })
         return RedirectResponse("/dashboard", 303)
 
-    # If verification needed, redirect to /verify
     if isinstance(result, dict) and result.get("verify_needed"):
         return RedirectResponse(f"/verify?username={result['username']}", 303)
 
     return render("login.html", {"request": request, "error": result, "success": None})
-
 @app.get("/signup", response_class=HTMLResponse)
 def signup_get(request: Request):
     if "user_id" in request.session:
@@ -143,8 +141,8 @@ def signup_post(request: Request, full_name: str = Form(...),
                 email: str = Form(...),
                 gender: str = Form(""),
                 password: str = Form(...),
-                confirm_password: str = Form(...)):
-    # Validate password match
+                confirm_password: str = Form(...),
+                role: str = Form("STUDENT")):
     if password != confirm_password:
         return render("signup.html", {
             "request": request,
@@ -152,23 +150,18 @@ def signup_post(request: Request, full_name: str = Form(...),
         })
 
     ok, info, msg = db.signup_student(
-        admission_no=admission_no,
-        password=password,
-        full_name=full_name,
-        phone=phone,
-        email=email,
-        gender=gender,
+        admission_no=admission_no, password=password,
+        full_name=full_name, phone=phone, email=email,
+        gender=gender, role=role,
     )
 
     if not ok:
         return render("signup.html", {"request": request, "error": msg})
 
-    # Send verification email
     email_ok, email_err = send_verification_email(
         info["email"], info["full_name"], info["code"])
 
     if not email_ok:
-        # Still redirect but warn on verify page
         return RedirectResponse(
             f"/verify?username={info['admission_no']}&warning=1", 303)
 

@@ -14,7 +14,6 @@ def _hash_password(password: str, salt: str) -> str:
 
 def create_account(username, password, role,
                    student_id=None, teacher_id=None, is_admin=0):
-    """Register a new user with a role."""
     if role not in ("CR", "LECTURER", "STUDENT"):
         return False, "Invalid role."
     if role in ("CR", "STUDENT") and not student_id:
@@ -40,11 +39,12 @@ def create_account(username, password, role,
         conn.close()
 
 
-def login(username: str, password: str, role: str):
+def login(username: str, password: str):
     """
-    Verify login by role.
-    Returns (True, user_dict) on success, (False, message) or (False, dict) on failure.
-    If verification is needed, returns (False, {"verify_needed": True, "username": ...}).
+    Verify login (no role needed — system detects from username).
+    Returns (True, user_dict) on success.
+    Returns (False, message_string) on failure.
+    Returns (False, {"verify_needed": True, "username": ...}) if verify needed.
     """
     conn = get_connection()
     row = conn.execute(
@@ -56,20 +56,22 @@ def login(username: str, password: str, role: str):
         "FROM users u "
         "LEFT JOIN students s ON u.student_id = s.id "
         "LEFT JOIN teachers t ON u.teacher_id = t.id "
-        "WHERE u.username = ? AND u.role = ?",
-        (username, role)
+        "WHERE u.username = ?",
+        (username,)
     ).fetchone()
 
     if not row:
         conn.close()
-        return False, "No user with this username in the selected role."
+        return False, "No user with this username."
 
     if _hash_password(password, row["salt"]) != row["password_hash"]:
         conn.close()
         return False, "Incorrect password."
 
-    # Check verification for students
-    if role == "STUDENT":
+    role = row["role"]
+
+    # Verification check for STUDENT and CR
+    if role in ("STUDENT", "CR"):
         is_verified = row["is_verified"] if row["is_verified"] is not None else 1
         if not is_verified:
             conn.close()
@@ -79,28 +81,21 @@ def login(username: str, password: str, role: str):
                 "message": "Please verify your email first.",
             }
 
+    # Membership status for STUDENT only
+    if role == "STUDENT":
         status = row["membership_status"]
         if status == "pending":
             conn.close()
-            return False, (
-                "Your account is pending approval. "
-                "Please wait for the CR to approve your account.")
+            return False, "Your account is pending approval. Please wait."
         elif status == "rejected":
             conn.close()
-            return False, (
-                "Your account was rejected. "
-                "Please contact the CR for more information.")
+            return False, "Your account was rejected."
         elif status == "suspended":
             conn.close()
-            return False, (
-                "Your account is suspended. "
-                "Please contact the CR.")
+            return False, "Your account is suspended."
 
     conn.close()
-
-    result = {}
-    for key in row.keys():
-        result[key] = row[key]
+    result = {key: row[key] for key in row.keys()}
     return True, result
 
 
@@ -114,16 +109,13 @@ def change_password(user_id, current_password, new_password):
 
     if not row:
         return False, "Account not found."
-
     if _hash_password(current_password, row["salt"]) != row["password_hash"]:
         return False, "Current password is incorrect."
-
     if len(new_password) < 4:
         return False, "New password must be at least 4 characters."
 
     new_salt = os.urandom(16).hex()
     new_hash = _hash_password(new_password, new_salt)
-
     conn = get_connection()
     conn.execute(
         "UPDATE users SET password_hash = ?, salt = ? WHERE id = ?",

@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 import resend
 
 resend.api_key = os.getenv("RESEND_API_KEY", "")
-SENDER = os.getenv("SENDER_EMAIL", "onboarding@resend.dev")
+SENDER = os.getenv("SENDER_EMAIL", "critlevelfour@smartbizsenseapp.com")
 
 
 def generate_code():

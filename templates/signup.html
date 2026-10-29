@@ -25,14 +25,23 @@
             <div
                 style="background:#eff6ff;color:var(--info);padding:12px;border-radius:8px;margin-bottom:20px;font-size:13px;line-height:1.6;">
                 <strong>ℹ️ Jinsi inavyofanya kazi:</strong><br>
-                1. Jaza taarifa zako<br>
-                2. Tumia <strong>admission number</strong> kama username<br>
-                3. <strong>Chagua password yako mwenyewe</strong><br>
-                4. Utapokea <strong>code ya tarakimu 6</strong> kwenye email<br>
-                5. Weka code kuthibitisha akaunti
+                1. Chagua role yako<br>
+                2. Jaza taarifa zako<br>
+                3. Tumia <strong>admission number</strong> kama username<br>
+                4. <strong>Chagua password yako mwenyewe</strong><br>
+                5. Utapokea <strong>code ya tarakimu 6</strong> kwenye email<br>
+                6. Weka code kuthibitisha akaunti
             </div>
 
             <form method="post" action="/signup">
+                <div class="form-group">
+                    <label>Your Role *</label>
+                    <select name="role" required>
+                        <option value="STUDENT">🎓 Student</option>
+                        <option value="CR">👑 Class Representative (CR)</option>
+                    </select>
+                </div>
+
                 <div class="form-group">
                     <label>Full Name *</label>
                     <input type="text" name="full_name" required autofocus placeholder="e.g. John Mwakitalu">

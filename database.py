@@ -1213,69 +1213,80 @@ def delete_notification(notification_id):
 # STUDENT SIGNUP
 # ============================================================
 def signup_student(admission_no, password, full_name, phone,
-                   email="", gender=""):
+                   email="", gender="", role="STUDENT"):
+    """Create a pending account. Returns (ok, info_dict, message)."""
+    from datetime import datetime, timedelta
+    import random
+
     admission_no = (admission_no or "").strip().upper()
+    email = (email or "").strip().lower()
+
     if not admission_no:
         return False, None, "Admission number is required."
-    if not password or len(password) < 4:
-        return False, None, "Password must be at least 4 characters."
-    if not full_name.strip():
+    if not password or len(password) < 6:
+        return False, None, "Password must be at least 6 characters."
+    if not full_name or not full_name.strip():
         return False, None, "Full name is required."
-    if not phone.strip():
+    if not phone or not phone.strip():
         return False, None, "Phone number is required."
+    if not email:
+        return False, None, "Email is required for verification."
+    if role not in ("STUDENT", "CR"):
+        return False, None, "Invalid role."
 
     conn = get_connection()
-    existing = conn.execute(
+    if conn.execute(
         "SELECT id FROM students WHERE LOWER(reg_number) = LOWER(?)",
-        (admission_no,)).fetchone()
-    if existing:
+        (admission_no,)).fetchone():
         conn.close()
-        return False, None, (
-            "This admission number is already registered. "
-            "Please login or contact the CR.")
-    existing_user = conn.execute(
+        return False, None, "Admission number already registered."
+    if conn.execute(
         "SELECT id FROM users WHERE LOWER(username) = LOWER(?)",
-        (admission_no,)).fetchone()
-    if existing_user:
+        (admission_no,)).fetchone():
         conn.close()
-        return False, None, (
-            "This admission number is already in use as a username.")
+        return False, None, "Username already in use."
+    if conn.execute(
+        "SELECT id FROM students WHERE LOWER(email) = LOWER(?)",
+        (email,)).fetchone():
+        conn.close()
+        return False, None, "Email already registered."
 
     cur = conn.cursor()
+    code = f"{random.randint(100000, 999999)}"
+    expires_at = (datetime.utcnow() + timedelta(minutes=15)).strftime(
+        "%Y-%m-%d %H:%M:%S")
+
     cur.execute(
         "INSERT INTO students (full_name, reg_number, gender, phone, "
-        "email, membership_status, is_active) VALUES (?, ?, ?, ?, ?, "
-        "'pending', 1)",
-        (full_name.strip(), admission_no, gender, phone.strip(),
-         email.strip()))
+        "email, membership_status, is_active, is_verified, "
+        "verification_code, verification_expires_at) "
+        "VALUES (?, ?, ?, ?, ?, 'pending', 1, 0, ?, ?)",
+        (full_name.strip(), admission_no, gender or None,
+         phone.strip(), email, code, expires_at))
     student_id = cur.lastrowid
 
     salt = os.urandom(16).hex()
     pwd_hash = hashlib.sha256((salt + password).encode()).hexdigest()
+    is_admin = 1 if role == "CR" else 0
     cur.execute(
         "INSERT INTO users (role, student_id, username, password_hash, "
-        "salt, is_admin) VALUES (?, ?, ?, ?, ?, 0)",
-        ("STUDENT", student_id, admission_no, pwd_hash, salt))
+        "salt, is_admin) VALUES (?, ?, ?, ?, ?, ?)",
+        (role, student_id, admission_no, pwd_hash, salt, is_admin))
     user_id = cur.lastrowid
-    conn.commit()
 
-    crs = conn.execute(
-        "SELECT u.id FROM users u WHERE u.role = 'CR'").fetchall()
-    for cr in crs:
-        conn.execute(
-            "INSERT INTO notifications (user_id, type, category, title, "
-            "message, source_type, source_id) VALUES (?, 'info', "
-            "'account', 'New Student Signup', ?, 'student', ?)",
-            (cr["id"],
-             f"{full_name} ({admission_no}) has signed up. "
-             f"Pending approval.", student_id))
     conn.commit()
     conn.close()
-    return True, user_id, (
-        "Account created! Your request has been sent to the CR. "
-        "You will be notified once approved.")
 
-
+    info = {
+        "user_id": user_id,
+        "student_id": student_id,
+        "code": code,
+        "email": email,
+        "full_name": full_name.strip(),
+        "admission_no": admission_no,
+        "role": role,
+    }
+    return True, info, "Account created! Check your email for the verification code."
 def approve_student_account(student_id):
     conn = get_connection()
     conn.execute(

@@ -47,7 +47,9 @@
     {% else %}
     <div class="card empty">
         <p style="font-size:18px;margin-bottom:8px;">No students yet</p>
-        <a href="/students/add" class="btn btn-primary">+ Add First Student</a>
+        {% if role == 'CR' %}
+        <a href="/students/add" class="btn btn-primary">➕ Add Student</a>
+        {% endif %}
     </div>
     {% endif %}
 </div>
