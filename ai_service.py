@@ -1,6 +1,6 @@
 # ai_service.py — Anthropic Claude integration for IT Expert Academy
 import os
-import json
+import re
 from datetime import datetime
 
 try:
@@ -10,12 +10,14 @@ except ImportError:
 
 
 # Model configuration
-MODEL = os.getenv("ANTHROPIC_MODEL", "claude-3-5-haiku-20241022")
+MODEL = os.getenv("ANTHROPIC_MODEL", "claude-haiku-4-5-20251001")
 
 # Pricing per 1M tokens (approximate, USD)
 PRICING = {
+    "claude-haiku-4-5-20251001": {"input": 0.80, "output": 4.00},
+    "claude-haiku-4-5": {"input": 0.80, "output": 4.00},
+    "claude-haiku-5-5": {"input": 0.10, "output": 0.50},
     "claude-3-5-haiku-20241022": {"input": 0.80, "output": 4.00},
-    "claude-3-5-sonnet-20241022": {"input": 3.00, "output": 15.00},
 }
 
 
@@ -97,8 +99,6 @@ def build_system_prompt(mode, language, lesson_context):
         )
         if lesson_context.get("lesson_content"):
             content = lesson_context["lesson_content"]
-            # Strip HTML tags for cleaner context
-            import re
             content = re.sub(r"<[^>]+>", " ", content)
             content = re.sub(r"\s+", " ", content).strip()
             lc += f"Lesson content excerpt: {content[:1500]}\n"
@@ -107,17 +107,37 @@ def build_system_prompt(mode, language, lesson_context):
     return "\n\n".join(parts)
 
 
+def _extract_text(response):
+    """Safely extract text from response.content, skipping ThinkingBlock."""
+    if not response or not getattr(response, "content", None):
+        return ""
+    for block in response.content:
+        block_type = getattr(block, "type", None)
+        if block_type == "text" or hasattr(block, "text"):
+            txt = getattr(block, "text", "")
+            if txt and txt.strip():
+                return txt
+    # Fallback: if no TextBlock found, try first block's .text (older models)
+    try:
+        return response.content[0].text or ""
+    except Exception:
+        return ""
+
+
 def chat(mode, language, lesson_context, history, user_message):
     """
     Send a message to Claude and get a response.
-    
+
     Returns:
         dict: {"ok": True, "text": str, "tokens_input": int, "tokens_output": int, "cost_usd": float}
         or {"ok": False, "error": str}
     """
     client = get_client()
     if client is None:
-        return {"ok": False, "error": "AI service haijasanidiwa. Wasiliana na msimamizi (ANTHROPIC_API_KEY haipo)."}
+        return {
+            "ok": False,
+            "error": "AI service haijasanidiwa. Wasiliana na msimamizi (ANTHROPIC_API_KEY haipo).",
+        }
 
     if not user_message or len(user_message.strip()) < 2:
         return {"ok": False, "error": "Ujumbe ni mfupi sana."}
@@ -140,7 +160,7 @@ def chat(mode, language, lesson_context, history, user_message):
         })
     messages.append({"role": "user", "content": user_message.strip()})
 
-    # Ensure messages start with user (Anthropic requirement)
+    # Ensure messages start with user
     while messages and messages[0]["role"] != "user":
         messages.pop(0)
 
@@ -163,23 +183,16 @@ def chat(mode, language, lesson_context, history, user_message):
             system=system_prompt,
             messages=messages,
         )
-        # Extract text from the first TextBlock (skipping ThinkingBlock)
-text = ""
-if response.content:
-    for block in response.content:
-        block_type = getattr(block, "type", None)
-        # Accept TextBlock or any block that has a 'text' attribute
-        if block_type == "text" or hasattr(block, "text"):
-            text = getattr(block, "text", "")
-            if text.strip():
-                break
-    # Fallback: if no text block found but a thinking block exists, you could
-    # optionally use block.thinking, but usually the final answer is in TextBlock.
+
+        text = _extract_text(response)
         tokens_in = response.usage.input_tokens
         tokens_out = response.usage.output_tokens
 
         pricing = PRICING.get(MODEL, {"input": 1.0, "output": 5.0})
         cost = (tokens_in * pricing["input"] / 1_000_000) + (tokens_out * pricing["output"] / 1_000_000)
+
+        if not text:
+            return {"ok": False, "error": "AI ilirudisha jibu tupu. Jaribu tena."}
 
         return {
             "ok": True,
@@ -191,7 +204,9 @@ if response.content:
     except Exception as e:
         err = str(e)
         if "rate_limit" in err.lower() or "429" in err:
-            return {"ok": False, "error": "Kiwango cha maombi kimezidi. Tafadhali subiri sekunde 30 kisha ujaribu tena."}
+            return {"ok": False, "error": "Kiwango cha maombi kimezidi. Subiri sekunde 30 kisha ujaribu tena."}
         if "authentication" in err.lower() or "401" in err:
             return {"ok": False, "error": "Hitilafu ya uthibitisho wa AI service. Wasiliana na msimamizi."}
+        if "not_found" in err.lower() or "404" in err:
+            return {"ok": False, "error": f"Model haipatikani ({MODEL}). Angalia ANTHROPIC_MODEL env var."}
         return {"ok": False, "error": f"Hitilafu ya AI: {err[:200]}"}
