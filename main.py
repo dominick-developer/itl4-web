@@ -94,6 +94,15 @@ def ctx(request, extra=None):
     if extra:
         d.update(extra)
     return d
+@app.get("/academy", response_class=HTMLResponse)
+def academy_page(request: Request):
+    return render("academy.html", {
+        "request": request,
+        "role": request.session.get("role"),
+        "full_name": request.session.get("full_name"),
+        "logged_in": "user_id" in request.session,
+        "now": datetime.now(),
+    })
 # ============================================================
 # AUTH
 # ============================================================

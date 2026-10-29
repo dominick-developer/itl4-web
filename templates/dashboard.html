@@ -1,6 +1,150 @@
 {% extends "base.html" %}
 {% block page_title %}Dashboard{% endblock %}
 {% block body %}
+<!-- IT EXPERT ACADEMY BANNER -->
+<div class="academy-dash-card">
+    <div class="academy-icon-wrap-sm">
+        <span class="academy-icon-animated" style="font-size:32px;">🎓</span>
+    </div>
+    <div style="flex:1;min-width:200px;position:relative;z-index:1;">
+        <h3 style="color:white;font-size:18px;font-weight:800;margin:0 0 4px;">Join IT Expert Academy</h3>
+        <p style="color:#cbd5e1;font-size:14px;margin:0;">Level up your computer and coding skills with guided lessons,
+            practical projects, and AI-powered learning.</p>
+    </div>
+    <a href="/academy" class="academy-dash-cta">Explore Academy →</a>
+</div>
+
+<style>
+    @keyframes academyFloatFade {
+        0% {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        25% {
+            transform: translateY(-7px);
+            opacity: 1;
+        }
+
+        45% {
+            transform: translateY(-10px);
+            opacity: 0;
+        }
+
+        50% {
+            transform: translateY(0);
+            opacity: 0;
+        }
+
+        75% {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        100% {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+
+    .academy-icon-animated {
+        display: inline-block;
+        line-height: 1;
+        animation: academyFloatFade 3.5s ease-in-out infinite;
+        will-change: transform, opacity;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .academy-icon-animated {
+            animation: none;
+        }
+    }
+
+    .academy-dash-card {
+        background: linear-gradient(135deg, #0B1F33 0%, #1e40af 100%);
+        border-radius: 16px;
+        padding: 20px;
+        margin-bottom: 22px;
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        flex-wrap: wrap;
+        transition: transform .15s, box-shadow .15s;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .academy-dash-card::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -20%;
+        width: 300px;
+        height: 300px;
+        background: radial-gradient(circle, rgba(244, 119, 33, .15), transparent 70%);
+        border-radius: 50%;
+        pointer-events: none;
+    }
+
+    .academy-dash-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 32px rgba(0, 0, 0, .15);
+    }
+
+    .academy-icon-wrap-sm {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #F47721 0%, #0E8F78 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 8px 24px rgba(244, 119, 33, .35);
+        flex-shrink: 0;
+        position: relative;
+    }
+
+    .academy-icon-wrap-sm::before {
+        content: '';
+        position: absolute;
+        inset: -6px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, rgba(244, 119, 33, .25), rgba(14, 143, 120, .25));
+        filter: blur(10px);
+        z-index: -1;
+    }
+
+    .academy-dash-cta {
+        background: #F47721;
+        color: white !important;
+        padding: 10px 22px;
+        border-radius: 8px;
+        font-weight: 700;
+        font-size: 14px;
+        text-decoration: none;
+        transition: background .15s;
+        margin-left: auto;
+        position: relative;
+        z-index: 1;
+    }
+
+    .academy-dash-cta:hover {
+        background: #e6670f;
+    }
+
+    @media (max-width:640px) {
+        .academy-dash-cta {
+            margin-left: 0;
+            width: 100%;
+            text-align: center;
+        }
+
+        .academy-dash-card {
+            padding: 16px;
+            gap: 14px;
+        }
+    }
+</style>
 <div class="container">
 
     <!-- ============================ WELCOME ============================ -->

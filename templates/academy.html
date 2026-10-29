@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IT Expert Academy — Learn Real Tech Skills</title>
+    <link rel="icon" href="/static/icon-192.png">
+    <style>
+        :root {
+            --navy: #0B1F33;
+            --orange: #F47721;
+            --teal: #0E8F78;
+            --yellow: #F2C94C;
+            --bg: #F5F7FA;
+            --border: #E2E8F0;
+            --text: #0F172A;
+            --muted: #64748B;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            font-size: 17px;
+            line-height: 1.6;
+        }
+
+        a {
+            text-decoration: none;
+            color: inherit;
+        }
+
+        /* NAV */
+        .ac-nav {
+            background: var(--navy);
+            padding: 14px 24px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .ac-nav img {
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            object-fit: cover;
+        }
+
+        .ac-nav-title {
+            color: white;
+            font-weight: 800;
+            font-size: 16px;
+        }
+
+        .ac-nav-sub {
+            color: #94a3b8;
+            font-size: 12px;
+        }
+
+        .ac-nav-links {
+            margin-left: auto;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .ac-nav-links a {
+            color: #cbd5e1;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .ac-nav-links a:hover {
+            background: rgba(255, 255, 255, .08);
+            color: white;
+        }
+
+        .ac-nav-cta {
+            background: var(--orange);
+            color: white !important;
+            font-weight: 700 !important;
+        }
+
+        /* HERO */
+        .ac-hero {
+            background: linear-gradient(135deg, #0B1F33 0%, #1e40af 100%);
+            color: white;
+            padding: 80px 24px 90px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .ac-hero::before {
+            content: '';
+            position: absolute;
+            top: -20%;
+            right: -10%;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(244, 119, 33, .18), transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .ac-hero::after {
+            content: '';
+            position: absolute;
+            bottom: -30%;
+            left: -15%;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(14, 143, 120, .15), transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .ac-hero-inner {
+            max-width: 820px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        .ac-hero-icon {
+            width: 110px;
+            height: 110px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #F47721 0%, #0E8F78 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 28px;
+            box-shadow: 0 20px 50px rgba(244, 119, 33, .4), 0 8px 24px rgba(14, 143, 120, .3);
+            position: relative;
+        }
+
+        .ac-hero-icon::before {
+            content: '';
+            position: absolute;
+            inset: -10px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(244, 119, 33, .25), rgba(14, 143, 120, .25));
+            filter: blur(16px);
+            z-index: -1;
+        }
+
+        .ac-hero-badge {
+            display: inline-block;
+            background: rgba(244, 119, 33, .2);
+            color: var(--orange);
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            letter-spacing: .5px;
+        }
+
+        .ac-hero h1 {
+            font-size: 46px;
+            font-weight: 900;
+            margin-bottom: 16px;
+            line-height: 1.15;
+        }
+
+        .ac-hero p {
+            font-size: 18px;
+            color: #cbd5e1;
+            margin-bottom: 32px;
+            max-width: 660px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .ac-btns {
+            display: flex;
+            gap: 14px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .ac-btn {
+            padding: 14px 30px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 700;
+            transition: all .15s;
+            display: inline-block;
+            cursor: pointer;
+            border: none;
+            font-family: inherit;
+        }
+
+        .ac-btn-primary {
+            background: var(--orange);
+            color: white;
+        }
+
+        .ac-btn-primary:hover {
+            background: #e6670f;
+            transform: translateY(-1px);
+        }
+
+        .ac-btn-outline {
+            background: transparent;
+            color: white;
+            border: 2px solid rgba(255, 255, 255, .35);
+        }
+
+        .ac-btn-outline:hover {
+            background: rgba(255, 255, 255, .1);
+            border-color: white;
+        }
+
+        .ac-btn-disabled {
+            background: rgba(255, 255, 255, .1);
+            color: #94a3b8;
+            cursor: not-allowed;
+            border: 2px solid rgba(255, 255, 255, .15);
+        }
+
+        /* SECTIONS */
+        .ac-section {
+            padding: 70px 24px;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .ac-section-title {
+            font-size: 36px;
+            font-weight: 800;
+            color: var(--navy);
+            text-align: center;
+            margin-bottom: 14px;
+        }
+
+        .ac-section-sub {
+            color: var(--muted);
+            text-align: center;
+            font-size: 17px;
+            margin-bottom: 46px;
+            max-width: 640px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* PATHS */
+        .ac-paths {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+        }
+
+        .ac-path {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 30px;
+            transition: all .2s;
+        }
+
+        .ac-path:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, .08);
+            border-color: transparent;
+        }
+
+        .ac-path-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            margin-bottom: 16px;
+        }
+
+        .ac-path h3 {
+            font-size: 19px;
+            font-weight: 800;
+            color: var(--navy);
+            margin-bottom: 8px;
+        }
+
+        .ac-path p {
+            color: var(--muted);
+            font-size: 15px;
+            line-height: 1.6;
+        }
+
+        /* AI TUTOR */
+        .ac-ai {
+            background: linear-gradient(135deg, #0B1F33 0%, #1e40af 100%);
+            border-radius: 20px;
+            padding: 50px 40px;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 30px;
+            flex-wrap: wrap;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .ac-ai::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -10%;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(14, 143, 120, .25), transparent 70%);
+            border-radius: 50%;
+        }
+
+        .ac-ai-icon {
+            width: 90px;
+            height: 90px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, #0E8F78 0%, #F47721 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 44px;
+            flex-shrink: 0;
+            box-shadow: 0 12px 32px rgba(14, 143, 120, .4);
+        }
+
+        .ac-ai-content {
+            flex: 1;
+            min-width: 260px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .ac-ai h3 {
+            font-size: 24px;
+            font-weight: 800;
+            margin-bottom: 10px;
+        }
+
+        .ac-ai p {
+            color: #cbd5e1;
+            font-size: 16px;
+        }
+
+        /* COMING SOON */
+        .ac-soon {
+            background: white;
+            border: 2px dashed var(--orange);
+            border-radius: 16px;
+            padding: 36px;
+            text-align: center;
+            margin-top: 40px;
+        }
+
+        .ac-soon-icon {
+            font-size: 40px;
+            margin-bottom: 12px;
+        }
+
+        .ac-soon h3 {
+            color: var(--navy);
+            font-size: 22px;
+            font-weight: 800;
+            margin-bottom: 8px;
+        }
+
+        .ac-soon p {
+            color: var(--muted);
+            font-size: 15px;
+            max-width: 540px;
+            margin: 0 auto;
+        }
+
+        /* FOOTER */
+        .ac-footer {
+            background: var(--navy);
+            color: #94a3b8;
+            text-align: center;
+            padding: 30px 20px;
+            font-size: 13px;
+            line-height: 1.8;
+            margin-top: 40px;
+        }
+
+        .ac-footer strong {
+            color: white;
+        }
+
+        /* ANIMATION */
+        @keyframes academyFloatFade {
+            0% {
+                transform: translateY(0);
+                opacity: 1;
+            }
+
+            25% {
+                transform: translateY(-7px);
+                opacity: 1;
+            }
+
+            45% {
+                transform: translateY(-10px);
+                opacity: 0;
+            }
+
+            50% {
+                transform: translateY(0);
+                opacity: 0;
+            }
+
+            75% {
+                transform: translateY(0);
+                opacity: 1;
+            }
+
+            100% {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .academy-icon-animated {
+            display: inline-block;
+            font-size: 52px;
+            line-height: 1;
+            animation: academyFloatFade 3.5s ease-in-out infinite;
+            will-change: transform, opacity;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .academy-icon-animated {
+                animation: none;
+            }
+        }
+
+        /* RESPONSIVE */
+        @media (max-width:640px) {
+            .ac-hero {
+                padding: 50px 20px 60px;
+            }
+
+            .ac-hero h1 {
+                font-size: 30px;
+            }
+
+            .ac-hero p {
+                font-size: 16px;
+            }
+
+            .ac-section {
+                padding: 50px 20px;
+            }
+
+            .ac-section-title {
+                font-size: 26px;
+            }
+
+            .ac-ai {
+                padding: 36px 24px;
+                gap: 20px;
+            }
+
+            .ac-ai-icon {
+                width: 70px;
+                height: 70px;
+                font-size: 34px;
+            }
+
+            .ac-ai h3 {
+                font-size: 20px;
+            }
+
+            .ac-hero-icon {
+                width: 88px;
+                height: 88px;
+            }
+
+            .academy-icon-animated {
+                font-size: 42px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- NAV -->
+    <div class="ac-nav">
+        <img src="/static/logo.png" alt="IT Level 4 Connect">
+        <div>
+            <div class="ac-nav-title">IT Expert Academy</div>
+            <div class="ac-nav-sub">By IT Level 4 Connect</div>
+        </div>
+        <div class="ac-nav-links">
+            {% if logged_in %}
+            <a href="/dashboard">← Dashboard</a>
+            {% else %}
+            <a href="/login">Login</a>
+            <a href="/signup" class="ac-nav-cta">Sign Up</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- HERO -->
+    <div class="ac-hero">
+        <div class="ac-hero-inner">
+            <div class="ac-hero-icon">
+                <span class="academy-icon-animated">🎓</span>
+            </div>
+            <div class="ac-hero-badge">✨ PREMIUM LEARNING PATH</div>
+            <h1>Turn Your Curiosity into Real Tech Skills.</h1>
+            <p>Learn computer skills, programming, web development, and AI-assisted software building step by step —
+                with an AI tutor helping you understand concepts, solve problems, and build real projects.</p>
+            <div class="ac-btns">
+                <span class="ac-btn ac-btn-disabled">🚧 Learning Paths — Coming Soon</span>
+                {% if not logged_in %}
+                <a href="/signup" class="ac-btn ac-btn-outline">Join IT Level 4 Connect</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- LEARNING PATHS -->
+    <div class="ac-section">
+        <h2 class="ac-section-title">What You'll Learn</h2>
+        <p class="ac-section-sub">Four structured paths designed to take you from beginner to confident builder.</p>
+        <div class="ac-paths">
+            <div class="ac-path">
+                <div class="ac-path-icon" style="background:#eff6ff;color:#2563EB;">💻</div>
+                <h3>Computer Skills</h3>
+                <p>Master essential computer operations, file management, productivity tools, and digital literacy for
+                    everyday use.</p>
+            </div>
+            <div class="ac-path">
+                <div class="ac-path-icon" style="background:#f5f3ff;color:#7C3AED;">⌨️</div>
+                <h3>Programming</h3>
+                <p>Learn Python and Java fundamentals — variables, functions, loops, and problem-solving through real
+                    code.</p>
+            </div>
+            <div class="ac-path">
+                <div class="ac-path-icon" style="background:#fef2f2;color:#DC2626;">🌐</div>
+                <h3>Web Development</h3>
+                <p>Build modern websites with HTML, CSS, and JavaScript — from static pages to interactive applications.
+                </p>
+            </div>
+            <div class="ac-path">
+                <div class="ac-path-icon" style="background:#f0fdfa;color:#0E8F78;">🤖</div>
+                <h3>AI-Assisted Development</h3>
+                <p>Learn to use AI tools to design, build, and debug software faster and smarter, without losing
+                    understanding.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI TUTOR -->
+    <div class="ac-section">
+        <div class="ac-ai">
+            <div class="ac-ai-icon">🤖</div>
+            <div class="ac-ai-content">
+                <h3>Your Personal AI Tutor</h3>
+                <p>Get instant explanations, solve problems step by step, and build real projects with an AI companion
+                    that adapts to your pace and helps you truly understand — not just copy answers.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- COMING SOON -->
+    <div class="ac-section" style="padding-top:0;">
+        <div class="ac-soon">
+            <div class="ac-soon-icon">🚀</div>
+            <h3>We're Building Something Special</h3>
+            <p>IT Expert Academy is currently in development. Full lessons, projects, and the AI tutor will be available
+                in the next phase. Stay tuned!</p>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="ac-footer">
+        <strong>IT Expert Academy</strong> · Powered by IT Level 4 Connect<br>
+        Designed by TANZATECH SOLUTIONS · Sponsored by IT Class Level 4 & SMART TANZANIA TECHNOLOGY GROUP LIMITED<br>
+        © {{ now.year }} · All rights reserved
+    </div>
+
+</body>
+
+</html>
