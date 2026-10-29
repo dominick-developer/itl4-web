@@ -661,3 +661,158 @@ def get_attempt_details(attempt_id):
         items.append(d)
 
     return {"attempt": dict(attempt), "responses": items}
+
+
+# ============================================================
+# AI TUTOR (Phase 4)
+# ============================================================
+def init_ai_tables():
+    """Create AI tutor tables (safe to run repeatedly)."""
+    conn = get_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS tutor_conversations (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        course_id INTEGER,
+        lesson_id INTEGER,
+        title TEXT DEFAULT 'New Chat',
+        language TEXT DEFAULT 'sw',
+        teaching_mode TEXT DEFAULT 'explain',
+        created_at TEXT DEFAULT (datetime('now','localtime')),
+        updated_at TEXT DEFAULT (datetime('now','localtime'))
+    )""")
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS tutor_messages (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        conversation_id INTEGER NOT NULL,
+        sender_type TEXT NOT NULL,
+        content TEXT NOT NULL,
+        model_name TEXT,
+        tokens_input INTEGER DEFAULT 0,
+        tokens_output INTEGER DEFAULT 0,
+        created_at TEXT DEFAULT (datetime('now','localtime')),
+        FOREIGN KEY (conversation_id) REFERENCES tutor_conversations(id) ON DELETE CASCADE
+    )""")
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS ai_usage_records (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        conversation_id INTEGER,
+        tokens_input INTEGER DEFAULT 0,
+        tokens_output INTEGER DEFAULT 0,
+        cost_usd REAL DEFAULT 0,
+        recorded_at TEXT DEFAULT (datetime('now','localtime'))
+    )""")
+
+    conn.commit()
+    conn.close()
+
+
+def create_conversation(user_id, lesson_id=None, course_id=None,
+                        language="sw", teaching_mode="explain", title="New Chat"):
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "INSERT INTO tutor_conversations (user_id, lesson_id, course_id, "
+        "language, teaching_mode, title) VALUES (?, ?, ?, ?, ?, ?)",
+        (user_id, lesson_id, course_id, language, teaching_mode, title))
+    conv_id = cur.lastrowid
+    conn.commit()
+    conn.close()
+    return conv_id
+
+
+def get_conversation(conv_id, user_id=None):
+    conn = get_connection()
+    if user_id is not None:
+        row = conn.execute(
+            "SELECT * FROM tutor_conversations WHERE id = ? AND user_id = ?",
+            (conv_id, user_id)).fetchone()
+    else:
+        row = conn.execute(
+            "SELECT * FROM tutor_conversations WHERE id = ?", (conv_id,)).fetchone()
+    conn.close()
+    return row
+
+
+def get_user_conversations(user_id, limit=30):
+    conn = get_connection()
+    rows = conn.execute(
+        "SELECT c.*, "
+        "(SELECT COUNT(*) FROM tutor_messages WHERE conversation_id = c.id) AS msg_count "
+        "FROM tutor_conversations c WHERE c.user_id = ? "
+        "ORDER BY c.updated_at DESC LIMIT ?",
+        (user_id, limit)).fetchall()
+    conn.close()
+    return rows
+
+
+def get_messages(conv_id, limit=100):
+    conn = get_connection()
+    rows = conn.execute(
+        "SELECT * FROM tutor_messages WHERE conversation_id = ? "
+        "ORDER BY id ASC LIMIT ?", (conv_id, limit)).fetchall()
+    conn.close()
+    return rows
+
+
+def add_message(conv_id, sender_type, content, model_name=None,
+                tokens_input=0, tokens_output=0):
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "INSERT INTO tutor_messages (conversation_id, sender_type, content, "
+        "model_name, tokens_input, tokens_output) VALUES (?, ?, ?, ?, ?, ?)",
+        (conv_id, sender_type, content, model_name, tokens_input, tokens_output))
+    msg_id = cur.lastrowid
+    cur.execute(
+        "UPDATE tutor_conversations SET updated_at = datetime('now','localtime') "
+        "WHERE id = ?", (conv_id,))
+    conn.commit()
+    conn.close()
+    return msg_id
+
+
+def update_conversation_settings(conv_id, language=None, teaching_mode=None):
+    conn = get_connection()
+    if language:
+        conn.execute("UPDATE tutor_conversations SET language = ? WHERE id = ?",
+                     (language, conv_id))
+    if teaching_mode:
+        conn.execute("UPDATE tutor_conversations SET teaching_mode = ? WHERE id = ?",
+                     (teaching_mode, conv_id))
+    conn.commit()
+    conn.close()
+
+
+def delete_conversation(conv_id, user_id):
+    conn = get_connection()
+    conn.execute(
+        "DELETE FROM tutor_conversations WHERE id = ? AND user_id = ?",
+        (conv_id, user_id))
+    conn.commit()
+    conn.close()
+
+
+def record_ai_usage(user_id, conv_id, tokens_input, tokens_output, cost_usd):
+    conn = get_connection()
+    conn.execute(
+        "INSERT INTO ai_usage_records (user_id, conversation_id, tokens_input, "
+        "tokens_output, cost_usd) VALUES (?, ?, ?, ?, ?)",
+        (user_id, conv_id, tokens_input, tokens_output, cost_usd))
+    conn.commit()
+    conn.close()
+
+
+def get_today_ai_usage(user_id):
+    conn = get_connection()
+    row = conn.execute(
+        "SELECT COALESCE(COUNT(*), 0) AS count "
+        "FROM ai_usage_records WHERE user_id = ? AND DATE(recorded_at) = DATE('now','localtime')",
+        (user_id,)).fetchone()
+    conn.close()
+    return row["count"] if row else 0

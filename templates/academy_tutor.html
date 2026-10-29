@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}{{ conversation.title }} — AI Tutor{% endblock %}
+{% block page_title %}🎓 AI Tutor{% endblock %}
+
+{% block body %}
+<div class="container" style="max-width:900px;">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+        <a href="/academy/tutor" class="btn btn-outline" style="padding:8px 14px;font-size:13px;">← All Chats</a>
+        <span style="font-size:13px;color:var(--muted);">
+            💬 {{ remaining }}/{{ daily_limit }} messages left today
+        </span>
+    </div>
+
+    {% if lesson_context %}
+    <div
+        style="background:#fff7ed;border:1px solid #F47721;border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:13px;">
+        <strong>📖 Context:</strong> {{ lesson_context.lesson_title }} · {{ lesson_context.course_title }}
+    </div>
+    {% endif %}
+
+    <div id="chatWindow"
+        style="background:white;border:1px solid var(--border);border-radius:14px;padding:20px;min-height:300px;max-height:60vh;overflow-y:auto;margin-bottom:16px;">
+        {% if not messages %}
+        <div style="text-align:center;padding:40px 20px;color:var(--muted);">
+            <div style="font-size:44px;margin-bottom:12px;">🤖</div>
+            <p style="font-weight:600;color:var(--navy);margin-bottom:8px;">Karibu! Ask me anything about your lessons.
+            </p>
+            <p style="font-size:14px;">Choose a mode below and type your question.</p>
+        </div>
+        {% endif %}
+
+        {% for m in messages %}
+        <div
+            style="margin-bottom:14px;display:flex;{% if m.sender_type == 'user' %}justify-content:flex-end;{% endif %}">
+            <div
+                style="max-width:80%;padding:10px 14px;border-radius:12px;{% if m.sender_type == 'user' %}background:#0B1F33;color:white;{% else %}background:#f1f5f9;color:var(--navy);{% endif %}font-size:14px;line-height:1.5;white-space:pre-wrap;">
+                {{ m.content }}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if ai_available and remaining > 0 %}
+    <form method="post" action="/academy/tutor/c/{{ conversation.id }}/send" id="chatForm"
+        style="background:white;border:1px solid var(--border);border-radius:14px;padding:14px;">
+        <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;font-size:12px;">
+            <select name="mode"
+                style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:12px;width:auto;">
+                <option value="explain" {% if conversation.teaching_mode=='explain' %}selected{% endif %}>💡 Explain
+                </option>
+                <option value="guide" {% if conversation.teaching_mode=='guide' %}selected{% endif %}>🧭 Guide Me
+                </option>
+                <option value="hint" {% if conversation.teaching_mode=='hint' %}selected{% endif %}>💭 Give Hint
+                </option>
+                <option value="debug" {% if conversation.teaching_mode=='debug' %}selected{% endif %}>🐛 Debug Code
+                </option>
+                <option value="review" {% if conversation.teaching_mode=='review' %}selected{% endif %}>🔍 Review
+                </option>
+                <option value="practice" {% if conversation.teaching_mode=='practice' %}selected{% endif %}>📝 Practice
+                </option>
+            </select>
+            <select name="language"
+                style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:12px;width:auto;">
+                <option value="sw" {% if conversation.language=='sw' %}selected{% endif %}>🇹🇿 Kiswahili</option>
+                <option value="en" {% if conversation.language=='en' %}selected{% endif %}>🇬🇧 English</option>
+            </select>
+        </div>
+        <textarea name="message" required rows="3" placeholder="Andika swali lako hapa..."
+            style="width:100%;padding:12px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:14px;resize:vertical;"></textarea>
+        <button type="submit" class="btn btn-primary" style="width:100%;margin-top:10px;padding:12px;">Send →</button>
+    </form>
+    {% elif remaining <= 0 %} <div
+        style="background:#fef3c7;color:#92400e;padding:16px;border-radius:10px;text-align:center;">
+        🚫 You've reached today's limit ({{ daily_limit }} messages). Come back tomorrow!
+</div>
+{% else %}
+<div style="background:#fef3c7;color:#92400e;padding:16px;border-radius:10px;">
+    ⚠️ AI Tutor haijasanidiwa.
+</div>
+{% endif %}
+</div>
+
+<script>
+    // Auto-scroll to bottom
+    (function () {
+        var w = document.getElementById('chatWindow');
+        if (w) w.scrollTop = w.scrollHeight;
+        var form = document.getElementById('chatForm');
+        if (form) {
+            var ta = form.querySelector('textarea');
+            if (ta) ta.focus();
+        }
+    })();
+</script>
+{% endblock %}

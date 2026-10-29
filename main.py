@@ -13,6 +13,7 @@ import base64
 import database as db
 import auth
 import academy_db as academy
+import ai_service
 from email_service import send_verification_email
 
 BASE_DIR = Path(__file__).parent
@@ -37,6 +38,7 @@ def startup():
     db.init_database()
     print("âœ… Database ready")
     academy.init_academy()
+    academy.init_ai_tables()
     print("âœ… Academy ready")
 
     # 2. Hakikisha CR 'cr' yupo na ana password 123456
@@ -1208,3 +1210,155 @@ def academy_quiz_result(request: Request, attempt_id: int):
         "responses": details["responses"],
         "now": datetime.now(),
     })
+
+
+# ============================================================
+# AI TUTOR (Phase 4)
+# ============================================================
+@app.get("/academy/tutor", response_class=HTMLResponse)
+def academy_tutor_home(request: Request, lesson_id: int = 0):
+    if "user_id" not in request.session:
+        return RedirectResponse("/login", 303)
+    user_id = request.session["user_id"]
+
+    # If lesson_id provided, create a new conversation linked to that lesson
+    if lesson_id:
+        lesson = academy.get_lesson(lesson_id)
+        if lesson:
+            if not academy.is_enrolled(user_id, lesson["course_id"]):
+                return RedirectResponse(f"/academy/courses/{lesson['course_id']}", 303)
+            conv_id = academy.create_conversation(
+                user_id,
+                lesson_id=lesson_id,
+                course_id=lesson["course_id"],
+                title=f"Help with: {lesson['title'][:40]}")
+            return RedirectResponse(f"/academy/tutor/c/{conv_id}", 303)
+
+    # Otherwise, show conversation list + new chat
+    conversations = academy.get_user_conversations(user_id)
+    return render("academy_tutor_list.html", {
+        "request": request,
+        "conversations": conversations,
+        "ai_available": ai_service.is_available(),
+        "now": datetime.now(),
+    })
+
+
+@app.post("/academy/tutor/start")
+def academy_tutor_start(request: Request):
+    if "user_id" not in request.session:
+        return RedirectResponse("/login", 303)
+    conv_id = academy.create_conversation(request.session["user_id"])
+    return RedirectResponse(f"/academy/tutor/c/{conv_id}", 303)
+
+
+@app.get("/academy/tutor/c/{conv_id}", response_class=HTMLResponse)
+def academy_tutor_conversation(request: Request, conv_id: int):
+    if "user_id" not in request.session:
+        return RedirectResponse("/login", 303)
+    user_id = request.session["user_id"]
+
+    conv = academy.get_conversation(conv_id, user_id)
+    if not conv:
+        raise HTTPException(404)
+
+    # Fetch lesson context if linked
+    lesson_context = None
+    if conv["lesson_id"]:
+        lesson = academy.get_lesson(conv["lesson_id"])
+        if lesson:
+            lesson_context = {
+                "lesson_title": lesson["title"],
+                "course_title": lesson["course_title"],
+                "lesson_content": lesson["content"] or "",
+            }
+
+    messages = academy.get_messages(conv_id)
+    today_usage = academy.get_today_ai_usage(user_id)
+    daily_limit = 20
+
+    return render("academy_tutor.html", {
+        "request": request,
+        "conversation": conv,
+        "messages": messages,
+        "lesson_context": lesson_context,
+        "ai_available": ai_service.is_available(),
+        "today_usage": today_usage,
+        "daily_limit": daily_limit,
+        "remaining": max(0, daily_limit - today_usage),
+        "now": datetime.now(),
+    })
+
+
+@app.post("/academy/tutor/c/{conv_id}/send")
+async def academy_tutor_send(request: Request, conv_id: int):
+    if "user_id" not in request.session:
+        return RedirectResponse("/login", 303)
+    user_id = request.session["user_id"]
+
+    conv = academy.get_conversation(conv_id, user_id)
+    if not conv:
+        raise HTTPException(404)
+
+    form = await request.form()
+    user_msg = (form.get("message") or "").strip()
+    language = form.get("language") or conv["language"]
+    mode = form.get("mode") or conv["teaching_mode"]
+
+    if not user_msg:
+        return RedirectResponse(f"/academy/tutor/c/{conv_id}", 303)
+
+    # Daily limit
+    today_usage = academy.get_today_ai_usage(user_id)
+    if today_usage >= 20:
+        raise HTTPException(429, detail="Daily AI message limit reached (20/day). Try again tomorrow.")
+
+    # Save user message
+    academy.add_message(conv_id, "user", user_msg)
+
+    # Update settings if changed
+    if language != conv["language"] or mode != conv["teaching_mode"]:
+        academy.update_conversation_settings(conv_id, language=language, teaching_mode=mode)
+
+    # Build lesson context
+    lesson_context = None
+    if conv["lesson_id"]:
+        lesson = academy.get_lesson(conv["lesson_id"])
+        if lesson:
+            lesson_context = {
+                "lesson_title": lesson["title"],
+                "course_title": lesson["course_title"],
+                "lesson_content": lesson["content"] or "",
+            }
+
+    # Get history (excluding this latest user msg — it's passed separately)
+    history_rows = academy.get_messages(conv_id)[:-1]
+    history = [{"sender_type": r["sender_type"], "content": r["content"]} for r in history_rows]
+
+    # Call AI
+    result = ai_service.chat(mode, language, lesson_context, history, user_msg)
+
+    if result.get("ok"):
+        academy.add_message(
+            conv_id, "assistant", result["text"],
+            model_name=ai_service.MODEL,
+            tokens_input=result["tokens_input"],
+            tokens_output=result["tokens_output"])
+        academy.record_ai_usage(
+            user_id, conv_id,
+            result["tokens_input"], result["tokens_output"],
+            result["cost_usd"])
+    else:
+        academy.add_message(
+            conv_id, "assistant",
+            f"⚠️ {result.get('error', 'AI haipatikani kwa sasa.')}")
+
+    return RedirectResponse(f"/academy/tutor/c/{conv_id}", 303)
+
+
+@app.post("/academy/tutor/c/{conv_id}/delete")
+def academy_tutor_delete(request: Request, conv_id: int):
+    if "user_id" not in request.session:
+        return RedirectResponse("/login", 303)
+    academy.delete_conversation(conv_id, request.session["user_id"])
+    return RedirectResponse("/academy/tutor", 303)
