@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="container">
+    <div class="toolbar">
+        <h1 style="color:var(--navy);">👥 Students ({{ students|length }})</h1>
+        <a href="/students/add" class="btn btn-primary">+ Add Student</a>
+    </div>
+    <form method="get" style="margin-bottom:16px;display:flex;gap:8px;">
+        <input type="text" name="q" value="{{ query }}" placeholder="🔍 Search by name or reg number..."
+            style="flex:1;">
+        <button type="submit" class="btn btn-secondary">Search</button>
+    </form>
+    {% if students %}
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Reg No</th>
+                <th>Phone</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for s in students %}
+            <tr>
+                <td><strong>{{ s.full_name }}</strong></td>
+                <td>{{ s.reg_number or '—' }}</td>
+                <td>{{ s.phone or '—' }}</td>
+                <td><span class="badge badge-{{ s.membership_status }}">{{ s.membership_status }}</span></td>
+                <td>
+                    <a href="/students/{{ s.id }}/edit" class="btn btn-secondary btn-sm">Edit</a>
+                    {% if s.membership_status == 'pending' %}
+                    <form method="post" action="/students/{{ s.id }}/approve" style="display:inline;">
+                        <button class="btn btn-success btn-sm">✓ Approve</button>
+                    </form>
+                    {% endif %}
+                    <form method="post" action="/students/{{ s.id }}/delete" style="display:inline;"
+                        onsubmit="return confirm('Delete {{ s.full_name }}?')">
+                        <button class="btn btn-danger btn-sm">🗑</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="card empty">
+        <p style="font-size:18px;margin-bottom:8px;">No students yet</p>
+        <a href="/students/add" class="btn btn-primary">+ Add First Student</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

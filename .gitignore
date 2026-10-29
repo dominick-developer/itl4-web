@@ -1,0 +1,28 @@
+# Secrets
+.env
+replacements.txt
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Uploads (user files, si code)
+uploads/
+static/logo.png
+static/icon-192.png
+static/icon-512.png
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

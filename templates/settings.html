@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block page_title %}Settings{% endblock %}
+{% block body %}
+<div class="container" style="max-width:700px;">
+
+    {% if request.query_params.get('success') %}
+    <div
+        style="background:#dcfce7;color:var(--success);padding:12px;border-radius:8px;margin-bottom:16px;font-size:14px;">
+        ✓ {{ request.query_params.get('success') }}
+    </div>
+    {% endif %}
+    {% if request.query_params.get('error') %}
+    <div
+        style="background:#fee2e2;color:var(--danger);padding:12px;border-radius:8px;margin-bottom:16px;font-size:14px;">
+        ⚠️ {{ request.query_params.get('error') }}
+    </div>
+    {% endif %}
+
+    <!-- ACCOUNT INFO -->
+    <div class="card">
+        <h2 style="color:var(--navy);margin-bottom:16px;">⚙ Account</h2>
+        <div style="display:flex;align-items:center;gap:14px;padding:14px;background:#f8fafc;border-radius:10px;">
+            <div
+                style="width:56px;height:56px;background:var(--orange);border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:20px;">
+                {{ full_name[:2].upper() if full_name else 'U' }}
+            </div>
+            <div>
+                <div style="font-weight:700;color:var(--navy);font-size:16px;">{{ full_name }}</div>
+                <div style="color:var(--muted);font-size:13px;">{{ role }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- LOGO UPLOAD (CR/Lecturer only) -->
+    {% if role in ('CR', 'LECTURER') %}
+    <div class="card">
+        <h2 style="color:var(--navy);margin-bottom:8px;">🖼 Logo ya Kikundi</h2>
+        <p style="color:var(--muted);font-size:13px;margin-bottom:16px;">
+            Pakia logo ya kikundi (PNG tu, max 2MB). Logo itaonekana kwenye landing page, login, na sidebar.
+        </p>
+
+        {% if logo_data_uri %}
+        <div style="background:#f8fafc;padding:16px;border-radius:10px;text-align:center;margin-bottom:16px;">
+            <img src="{{ logo_data_uri }}" alt="Current Logo"
+                style="max-width:120px;max-height:120px;border-radius:12px;">
+            <p style="color:var(--muted);font-size:12px;margin-top:8px;">Logo ya sasa</p>
+        </div>
+        {% endif %}
+
+        <form method="post" action="/settings/upload_logo" enctype="multipart/form-data">
+            <div class="form-group">
+                <label>Pakia Logo Mpya (PNG)</label>
+                <input type="file" name="logo" accept=".png,image/png" required
+                    style="padding:10px;background:white;border:1px solid var(--border);border-radius:8px;width:100%;">
+            </div>
+            <div style="display:flex;gap:8px;">
+                <button type="submit" class="btn btn-primary">📤 Upload Logo</button>
+                {% if logo_data_uri %}
+                <button type="submit" formaction="/settings/remove_logo" class="btn btn-danger"
+                    onclick="return confirm('Remove logo?')">🗑 Remove Logo</button>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+    {% endif %}
+
+    <!-- CHANGE PASSWORD -->
+    <div class="card">
+        <h2 style="color:var(--navy);margin-bottom:8px;">🔑 Change Password</h2>
+        <p style="color:var(--muted);font-size:13px;margin-bottom:16px;">
+            {% if role == 'STUDENT' %}
+            Your default password is <strong>0000</strong>. Choose a strong password you can remember.
+            {% else %}
+            Choose a strong password you can remember.
+            {% endif %}
+        </p>
+        <form method="post" action="/settings/change_password">
+            <div class="form-group">
+                <label>Current Password</label>
+                <input type="password" name="current_password" required placeholder="Enter your current password">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>New Password</label>
+                    <input type="password" name="new_password" required minlength="4"
+                        placeholder="At least 4 characters">
+                </div>
+                <div class="form-group">
+                    <label>Confirm New Password</label>
+                    <input type="password" name="confirm_password" required minlength="4"
+                        placeholder="Repeat new password">
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary">💾 Change Password</button>
+        </form>
+    </div>
+
+    <!-- LOGOUT -->
+    <div class="card" style="border-color:#fecaca;">
+        <h2 style="color:var(--danger);margin-bottom:8px;">🚪 Logout</h2>
+        <p style="color:var(--muted);font-size:13px;margin-bottom:16px;">End your session on this device.</p>
+        <a href="/logout" class="btn btn-danger">Logout</a>
+    </div>
+
+</div>
+{% endblock %}

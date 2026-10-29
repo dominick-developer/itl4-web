@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block page_title %}Create Module{% endblock %}
+{% block body %}
+<div class="container" style="max-width:700px;">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+        <a href="/modules" style="color:var(--muted);font-size:20px;">←</a>
+        <h1 style="color:var(--navy);font-size:22px;">Create New Module</h1>
+    </div>
+
+    <form method="post" action="/modules/create" class="card">
+        <div class="form-group">
+            <label>Module Name *</label>
+            <input type="text" name="name" required placeholder="e.g. Programming in Java">
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label>Module Code</label>
+                <input type="text" name="code" placeholder="e.g. ITL4-JAVA">
+            </div>
+            <div class="form-group">
+                <label>Academic Year</label>
+                <input type="text" name="academic_year" value="2024/2025">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Description</label>
+            <textarea name="description" rows="3" placeholder="Brief description of this module..."></textarea>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label>Semester</label>
+                <select name="semester">
+                    <option>Semester 1</option>
+                    <option>Semester 2</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Assign Lecturer</label>
+                <select name="teacher_id">
+                    <option value="">— Assign later —</option>
+                    {% for t in teachers %}
+                    <option value="{{ t.id }}">{{ t.full_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div style="display:flex;gap:8px;margin-top:8px;">
+            <button type="submit" class="btn btn-primary">Create Module</button>
+            <a href="/modules" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

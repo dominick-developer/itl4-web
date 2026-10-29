@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="container">
+    <h1 style="color:var(--navy);margin-bottom:20px;">🎯 Exams ({{ exams|length }})</h1>
+
+    {% if role == 'CR' and modules %}
+    <details class="card" style="margin-bottom:16px;">
+        <summary style="cursor:pointer;font-weight:700;color:var(--orange);">+ Schedule Exam</summary>
+        <form method="post" action="/exams/create" style="margin-top:16px;">
+            <div class="form-group"><label>Exam Name *</label><input name="name" required></div>
+            <div class="form-row">
+                <div class="form-group"><label>Module</label>
+                    <select name="module_id">{% for m in modules %}<option value="{{ m.id }}">{{ m.name }}</option>{%
+                        endfor %}</select>
+                </div>
+                <div class="form-group"><label>Type</label>
+                    <select name="type">
+                        <option>CAT</option>
+                        <option>Midterm</option>
+                        <option>Practical</option>
+                        <option>Final</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>Date</label><input type="date" name="date" required></div>
+                <div class="form-group"><label>Start Time</label><input type="time" name="start_time" required></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>End Time</label><input type="time" name="end_time"></div>
+                <div class="form-group"><label>Venue</label><input name="venue"></div>
+            </div>
+            <div class="form-group"><label>Instructions</label><textarea name="instructions" rows="2"></textarea></div>
+            <button class="btn btn-primary">Schedule</button>
+        </form>
+    </details>
+    {% endif %}
+
+    {% for e in exams %}
+    <div class="card" style="border-left:4px solid var(--danger);">
+        <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+            <h3 style="color:var(--navy);">{{ e.name }}</h3>
+            <span class="badge badge-{{ e.status }}">{{ e.status }}</span>
+        </div>
+        <p style="color:var(--muted);font-size:13px;">{{ e.module_name }} · {{ e.type }} · 📅 {{ e.date }} · 🕐 {{
+            e.start_time or '—' }} · 📍 {{ e.venue or 'TBA' }}</p>
+        {% if e.instructions %}<p style="color:var(--muted);margin-top:8px;">{{ e.instructions }}</p>{% endif %}
+
+        {% if role == 'CR' %}
+        <div style="margin-top:12px;display:flex;gap:8px;">
+            {% if e.status == 'draft' %}<form method="post" action="/exams/{{ e.id }}/publish"><button
+                    class="btn btn-success btn-sm">📤 Publish</button></form>{% endif %}
+            {% if e.status == 'published' %}<form method="post" action="/exams/{{ e.id }}/cancel"><button
+                    class="btn btn-secondary btn-sm">Cancel</button></form>{% endif %}
+            <form method="post" action="/exams/{{ e.id }}/delete" onsubmit="return confirm('Delete?')"><button
+                    class="btn btn-danger btn-sm">🗑</button></form>
+        </div>
+        {% endif %}
+    </div>
+    {% else %}
+    <div class="card empty">
+        <p>No exams scheduled.</p>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

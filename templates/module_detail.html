@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="container">
+    <a href="/modules" style="display:inline-block;margin-bottom:16px;">← Back to Modules</a>
+    <div class="card">
+        <h1 style="color:var(--navy);">{{ offering.module_name }}</h1>
+        <p style="color:var(--muted);">{{ offering.module_code }} · 👨‍🏫 {{ offering.teacher_name or '—' }}</p>
+        {% if role in ('CR', 'LECTURER') and not offering.is_published %}
+        <form method="post" action="/modules/{{ offering.id }}/publish" style="margin-top:12px;">
+            <button class="btn btn-success">📤 Publish Module</button>
+        </form>
+        {% endif %}
+    </div>
+    <div class="card">
+        <h2 style="color:var(--navy);margin-bottom:12px;">Topics ({{ topics|length }})</h2>
+        {% for t in topics %}
+        <div style="background:#f8fafc;padding:12px;border-radius:8px;margin-bottom:8px;">
+            <strong style="color:var(--navy);">#{{ loop.index }} {{ t.title }}</strong>
+            <span class="badge badge-{{ t.status }}" style="margin-left:8px;">{{ t.status }}</span>
+            {% if t.description %}<p style="color:var(--muted);font-size:13px;margin-top:4px;">{{ t.description }}</p>{%
+            endif %}
+        </div>
+        {% else %}
+        <p class="empty">No topics yet.</p>
+        {% endfor %}
+    </div>
+    {% if role in ('CR', 'LECTURER') %}
+    <div class="card">
+        <h3 style="color:var(--navy);margin-bottom:12px;">+ Add Topic</h3>
+        <form method="post" action="/modules/{{ offering.id }}/add_topic">
+            <div class="form-group"><label>Title</label><input name="title" required></div>
+            <div class="form-group"><label>Description</label><textarea name="description" rows="2"></textarea></div>
+            <div class="form-group"><label>Duration (hours)</label><input name="duration" type="number" value="4"></div>
+            <button class="btn btn-primary">Add Topic</button>
+        </form>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="container">
+    <a href="/meetings" style="display:inline-block;margin-bottom:16px;">← Back</a>
+    <div class="card" style="background:linear-gradient(135deg,var(--navy),#1e40af);color:white;">
+        <h1>{{ meeting.title }}</h1>
+        <p style="color:#cbd5e1;margin-top:8px;">📅 {{ meeting.date }} · 🕐 {{ meeting.start_time or '—' }} · 📍 {{
+            meeting.venue or '—' }}</p>
+        <p style="color:#93c5fd;margin-top:6px;">👤 {{ meeting.chairperson_name or '—' }} · ✍ {{ meeting.secretary_name
+            or '—' }}</p>
+        {% if meeting.purpose %}<p style="margin-top:10px;color:#cbd5e1;">{{ meeting.purpose }}</p>{% endif %}
+    </div>
+
+    {% if role in ('CR', 'LECTURER') and meeting.status == 'draft' %}
+    <form method="post" action="/meetings/{{ meeting.id }}/publish" style="margin-bottom:16px;">
+        <button class="btn btn-success">📤 Publish Meeting</button>
+    </form>
+    {% endif %}
+
+    <h3 style="color:var(--navy);margin-bottom:12px;">📝 Agenda ({{ agenda|length }})</h3>
+    {% for a in agenda %}
+    <div class="card" style="padding:14px;">
+        <strong style="color:var(--navy);">#{{ loop.index }} {{ a.title }}</strong>
+        {% if a.description %}<p style="color:var(--muted);margin-top:4px;">{{ a.description }}</p>{% endif %}
+        {% if a.discussion %}<p style="color:var(--muted);margin-top:4px;"><em>Discussion:</em> {{ a.discussion }}</p>{%
+        endif %}
+        {% if a.decisions %}<p style="color:var(--success);margin-top:4px;"><strong>Decisions:</strong> {{ a.decisions
+            }}</p>{% endif %}
+    </div>
+    {% else %}
+    <p class="empty">No agenda yet.</p>
+    {% endfor %}
+
+    {% if role in ('CR', 'LECTURER') %}
+    <details class="card" style="margin-top:16px;">
+        <summary style="cursor:pointer;font-weight:700;color:var(--orange);">+ Add Agenda Item</summary>
+        <form method="post" action="/meetings/{{ meeting.id }}/add_agenda" style="margin-top:16px;">
+            <div class="form-group"><label>Title *</label><input name="title" required></div>
+            <div class="form-group"><label>Description</label><textarea name="description" rows="2"></textarea></div>
+            <div class="form-group"><label>Discussion</label><textarea name="discussion" rows="2"></textarea></div>
+            <div class="form-group"><label>Decisions</label><textarea name="decisions" rows="2"></textarea></div>
+            <button class="btn btn-primary">Add</button>
+        </form>
+    </details>
+
+    <details class="card" style="margin-top:16px;">
+        <summary style="cursor:pointer;font-weight:700;color:var(--orange);">👥 Manage Attendance ({{ attendance|length
+            }} present)</summary>
+        <form method="post" action="/meetings/{{ meeting.id }}/save_attendance" style="margin-top:16px;">
+            {% for s in all_students %}
+            <label style="display:flex;padding:6px;background:#f8fafc;border-radius:6px;margin-bottom:4px;">
+                <input type="checkbox" name="att_{{ s.id }}" value="{{ s.id }}" {% if s.id in
+                    attendance|map(attribute='student_id' )|list %}checked{% endif %}
+                    style="width:auto;margin-right:10px;">
+                {{ s.full_name }}
+            </label>
+            {% endfor %}
+            <button class="btn btn-primary" style="margin-top:12px;">Save Attendance</button>
+        </form>
+    </details>
+    {% endif %}
+</div>
+{% endblock %}

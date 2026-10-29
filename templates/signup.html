@@ -1,0 +1,93 @@
+{% extends "auth_base.html" %}
+{% block title %}Sign Up — IT Level 4 Connect{% endblock %}
+
+{% block body %}
+<div
+    style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(135deg,#0B1F33,#1e40af);">
+    <div style="width:100%;max-width:480px;">
+
+        <div style="text-align:center;margin-bottom:24px;color:white;">
+            <img src="/static/logo.png" alt="IT Level 4 Connect"
+                style="width:80px;height:80px;border-radius:18px;margin:0 auto 14px;display:block;object-fit:cover;box-shadow:0 8px 24px rgba(0,0,0,.3);">
+            <h1 style="font-size:24px;margin-bottom:6px;">Create Account</h1>
+            <p style="color:#cbd5e1;font-size:14px;">Join IT Level 4 Connect</p>
+        </div>
+
+        <div class="card">
+
+            {% if error %}
+            <div
+                style="background:#fee2e2;color:var(--danger);padding:12px;border-radius:8px;margin-bottom:16px;font-size:14px;white-space:pre-line;">
+                ⚠️ {{ error }}
+            </div>
+            {% endif %}
+
+            <div
+                style="background:#eff6ff;color:var(--info);padding:12px;border-radius:8px;margin-bottom:20px;font-size:13px;line-height:1.6;">
+                <strong>ℹ️ Jinsi inavyofanya kazi:</strong><br>
+                1. Jaza taarifa zako<br>
+                2. Tumia <strong>admission number</strong> kama username<br>
+                3. <strong>Chagua password yako mwenyewe</strong><br>
+                4. Utapokea <strong>code ya tarakimu 6</strong> kwenye email<br>
+                5. Weka code kuthibitisha akaunti
+            </div>
+
+            <form method="post" action="/signup">
+                <div class="form-group">
+                    <label>Full Name *</label>
+                    <input type="text" name="full_name" required autofocus placeholder="e.g. John Mwakitalu">
+                </div>
+
+                <div class="form-group">
+                    <label>Admission Number *</label>
+                    <input type="text" name="admission_no" required placeholder="e.g. ITL4/STU/008"
+                        style="text-transform:uppercase;">
+                    <div style="color:var(--muted);font-size:12px;margin-top:4px;">This will be your username</div>
+                </div>
+
+                <div class="form-group">
+                    <label>Phone Number *</label>
+                    <input type="text" name="phone" required placeholder="e.g. 0712345678">
+                </div>
+
+                <div class="form-group">
+                    <label>Email *</label>
+                    <input type="email" name="email" required placeholder="e.g. john@example.com">
+                    <div style="color:var(--muted);font-size:12px;margin-top:4px;">Code ya uthibitisho itatumwa hapa
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Gender (optional)</label>
+                    <select name="gender">
+                        <option value="">— Select —</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Password *</label>
+                    <input type="password" name="password" required placeholder="Angalau herufi 6" minlength="6">
+                </div>
+
+                <div class="form-group">
+                    <label>Confirm Password *</label>
+                    <input type="password" name="confirm_password" required placeholder="Rudia password" minlength="6">
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width:100%;padding:14px;">
+                    Create My Account →
+                </button>
+            </form>
+
+            <div
+                style="text-align:center;color:var(--muted);font-size:13px;margin-top:20px;padding-top:20px;border-top:1px solid var(--border);">
+                Already have an account?
+                <a href="/login" style="font-weight:700;">Log in</a>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

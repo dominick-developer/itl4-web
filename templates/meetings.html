@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="container">
+    <h1 style="color:var(--navy);margin-bottom:20px;">🗓 Meetings ({{ meetings|length }})</h1>
+    
+    {% if role in ('CR', 'LECTURER') %}
+    <details class="card" style="margin-bottom:16px;">
+        <summary style="cursor:pointer;font-weight:700;color:var(--orange);">+ Create Meeting</summary>
+        <form method="post" action="/meetings/create" style="margin-top:16px;">
+            <div class="form-group"><label>Title *</label><input name="title" required></div>
+            <div class="form-row">
+                <div class="form-group"><label>Type</label><select name="type"><option>Regular</option><option>Emergency</option><option>Special</option></select></div>
+                <div class="form-group"><label>Date</label><input type="date" name="date" required></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>Start</label><input type="time" name="start_time"></div>
+                <div class="form-group"><label>End</label><input type="time" name="end_time"></div>
+            </div>
+            <div class="form-group"><label>Venue</label><input name="venue"></div>
+            <div class="form-row">
+                <div class="form-group"><label>Chairperson</label>
+                    <select name="chairperson_id"><option value="">—</option>{% for s in students %}<option value="{{ s.id }}">{{ s.full_name }}</option>{% endfor %}</select>
+                </div>
+                <div class="form-group"><label>Secretary</label>
+                    <select name="secretary_id"><option value="">—</option>{% for s in students %}<option value="{{ s.id }}">{{ s.full_name }}</option>{% endfor %}</select>
+                </div>
+            </div>
+            <div class="form-group"><label>Opening Activity</label><input name="opening_activity"></div>
+            <div class="form-group"><label>Purpose</label><textarea name="purpose" rows="2"></textarea></div>
+            <button class="btn btn-primary">Create Meeting</button>
+        </form>
+    </details>
+    {% endif %}
+    
+    {% for m in meetings %}
+    <div class="card" style="border-left:4px solid {{ 'var(--success)' if m.status == 'published' else 'var(--warning)' }};">
+        <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+            <a href="/meetings/{{ m.id }}" style="color:var(--navy);font-weight:700;font-size:16px;">{{ m.title }}</a>
+            <span class="badge badge-{{ m.status }}">{{ m.status }}</span>
+        </div>
+        <p style="color:var(--muted);font-size:13px;">📅 {{ m.date }} · 🕐 {{ m.start_time or '—' }} · 📍 {{ m.venue or '—' }} · 👥 {{ m.attendee_count }} · 📝 {{ m.agenda_count }} agenda</p>
+        <p style="color:var(--muted);font-size:12px;margin-top:4px;">👤 {{ m.chairperson_name or '—' }} · ✍ {{ m.secretary_name or '—' }}</p>
+    </div>
+    {% else %}
+    <div class="card empty"><p>No meetings yet.</p></div>
+    {% endfor %}
+</div>
+{% endblock %}{% extends "base.html" %}
+{% block body %}
+<div class="container">
+    <h1 style="color:var(--navy);margin-bottom:20px;">🗓 Meetings ({{ meetings|length }})</h1>
+    
+    {% if role in ('CR', 'LECTURER') %}
+    <details class="card" style="margin-bottom:16px;">
+        <summary style="cursor:pointer;font-weight:700;color:var(--orange);">+ Create Meeting</summary>
+        <form method="post" action="/meetings/create" style="margin-top:16px;">
+            <div class="form-group"><label>Title *</label><input name="title" required></div>
+            <div class="form-row">
+                <div class="form-group"><label>Type</label><select name="type"><option>Regular</option><option>Emergency</option><option>Special</option></select></div>
+                <div class="form-group"><label>Date</label><input type="date" name="date" required></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>Start</label><input type="time" name="start_time"></div>
+                <div class="form-group"><label>End</label><input type="time" name="end_time"></div>
+            </div>
+            <div class="form-group"><label>Venue</label><input name="venue"></div>
+            <div class="form-row">
+                <div class="form-group"><label>Chairperson</label>
+                    <select name="chairperson_id"><option value="">—</option>{% for s in students %}<option value="{{ s.id }}">{{ s.full_name }}</option>{% endfor %}</select>
+                </div>
+                <div class="form-group"><label>Secretary</label>
+                    <select name="secretary_id"><option value="">—</option>{% for s in students %}<option value="{{ s.id }}">{{ s.full_name }}</option>{% endfor %}</select>
+                </div>
+            </div>
+            <div class="form-group"><label>Opening Activity</label><input name="opening_activity"></div>
+            <div class="form-group"><label>Purpose</label><textarea name="purpose" rows="2"></textarea></div>
+            <button class="btn btn-primary">Create Meeting</button>
+        </form>
+    </details>
+    {% endif %}
+    
+    {% for m in meetings %}
+    <div class="card" style="border-left:4px solid {{ 'var(--success)' if m.status == 'published' else 'var(--warning)' }};">
+        <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+            <a href="/meetings/{{ m.id }}" style="color:var(--navy);font-weight:700;font-size:16px;">{{ m.title }}</a>
+            <span class="badge badge-{{ m.status }}">{{ m.status }}</span>
+        </div>
+        <p style="color:var(--muted);font-size:13px;">📅 {{ m.date }} · 🕐 {{ m.start_time or '—' }} · 📍 {{ m.venue or '—' }} · 👥 {{ m.attendee_count }} · 📝 {{ m.agenda_count }} agenda</p>
+        <p style="color:var(--muted);font-size:12px;margin-top:4px;">👤 {{ m.chairperson_name or '—' }} · ✍ {{ m.secretary_name or '—' }}</p>
+    </div>
+    {% else %}
+    <div class="card empty"><p>No meetings yet.</p></div>
+    {% endfor %}
+</div>
+{% endblock %}

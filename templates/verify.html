@@ -1,0 +1,71 @@
+{% extends "auth_base.html" %}
+{% block title %}Verify Email — IT Level 4 Connect{% endblock %}
+
+{% block body %}
+<div
+    style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(135deg,#0B1F33,#1e40af);">
+    <div style="width:100%;max-width:460px;">
+
+        <div style="text-align:center;margin-bottom:24px;color:white;">
+            <img src="/static/logo.png" alt="IT Level 4 Connect"
+                style="width:80px;height:80px;border-radius:18px;margin:0 auto 14px;display:block;object-fit:cover;box-shadow:0 8px 24px rgba(0,0,0,.3);">
+            <h1 style="font-size:24px;margin-bottom:6px;">Verify Email</h1>
+            <p style="color:#cbd5e1;font-size:14px;">Weka code ya tarakimu 6 uliyotumiwa email</p>
+        </div>
+
+        <div class="card">
+
+            {% if error %}
+            <div
+                style="background:#fee2e2;color:var(--danger);padding:12px;border-radius:8px;margin-bottom:16px;font-size:14px;white-space:pre-line;">
+                ⚠️ {{ error }}
+            </div>
+            {% endif %}
+
+            {% if success %}
+            <div
+                style="background:#dcfce7;color:var(--success);padding:12px;border-radius:8px;margin-bottom:16px;font-size:14px;">
+                ✓ {{ success }}
+            </div>
+            {% endif %}
+
+            <form method="post" action="/verify">
+                <input type="hidden" name="username" value="{{ username }}">
+
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" value="{{ username }}" readonly style="background:#f1f5f9;cursor:not-allowed;">
+                </div>
+
+                <div class="form-group">
+                    <label>Verification Code *</label>
+                    <input type="text" name="code" required autofocus maxlength="6" minlength="6" inputmode="numeric"
+                        pattern="[0-9]{6}" placeholder="123456"
+                        style="font-size:28px;letter-spacing:12px;text-align:center;font-weight:700;font-family:monospace;">
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width:100%;padding:14px;">
+                    Verify Account →
+                </button>
+            </form>
+
+            <div style="text-align:center;margin-top:20px;padding-top:20px;border-top:1px solid var(--border);">
+                <form method="post" action="/verify/resend" style="display:inline;">
+                    <input type="hidden" name="username" value="{{ username }}">
+                    <button type="submit"
+                        style="background:none;border:none;color:var(--orange);font-weight:700;font-size:14px;cursor:pointer;font-family:inherit;padding:4px 8px;">
+                        ↻ Resend Code
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <p style="text-align:center;color:#cbd5e1;font-size:13px;margin-top:20px;">
+            Code itaisha muda baada ya dakika 15
+        </p>
+        <p style="text-align:center;margin-top:12px;">
+            <a href="/login" style="color:#cbd5e1;font-size:13px;">← Back to Login</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

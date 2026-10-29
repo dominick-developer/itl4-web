@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}IT Level 4 Connect{% endblock %}</title>
+
+    <!-- PWA -->
+    <link rel="manifest" href="/static/manifest.json">
+    <meta name="theme-color" content="#0B1F33">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="ITL4">
+    <link rel="apple-touch-icon" href="/static/icon-192.png">
+    <link rel="icon" href="/static/icon-192.png">
+
+    <style>
+        :root {
+            --navy: #0B1F33;
+            --navy-light: #1e40af;
+            --orange: #F47721;
+            --teal: #0E8F78;
+            --success: #16A34A;
+            --warning: #F59E0B;
+            --danger: #DC2626;
+            --info: #2563EB;
+            --purple: #7C3AED;
+            --bg: #F5F7FA;
+            --border: #E2E8F0;
+            --text: #0F172A;
+            --muted: #64748B;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            font-size: 17px;
+            line-height: 1.6;
+        }
+
+        /* LAYOUT */
+        .app {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 270px;
+            background: var(--navy);
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            overflow-y: auto;
+            z-index: 100;
+            transition: transform .25s ease;
+        }
+
+        .main {
+            margin-left: 270px;
+            flex: 1;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* SIDEBAR BRAND */
+        .sb-brand {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 24px 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, .08);
+        }
+
+        .sb-logo {
+            width: 46px;
+            height: 46px;
+            background: var(--orange);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 800;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .sb-name {
+            color: white;
+            font-weight: 700;
+            font-size: 17px;
+        }
+
+        .sb-role {
+            color: #94a3b8;
+            font-size: 13px;
+        }
+
+        /* SIDEBAR NAV */
+        .sb-nav {
+            flex: 1;
+            padding: 12px 10px;
+            overflow-y: auto;
+        }
+
+        .sb-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 13px 16px;
+            border-radius: 8px;
+            color: #cbd5e1;
+            text-decoration: none;
+            font-size: 15px;
+            font-weight: 500;
+            margin-bottom: 4px;
+            transition: all .15s;
+        }
+
+        .sb-item:hover {
+            background: rgba(255, 255, 255, .08);
+            color: white;
+        }
+
+        .sb-item.active {
+            background: var(--orange);
+            color: white;
+            font-weight: 700;
+        }
+
+        .sb-icon {
+            font-size: 19px;
+            width: 24px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        /* SIDEBAR USER */
+        .sb-user {
+            margin-top: auto;
+            padding: 14px 10px;
+            border-top: 1px solid rgba(255, 255, 255, .08);
+        }
+
+        .sb-user-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: rgba(255, 255, 255, .06);
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+
+        .sb-avatar {
+            width: 40px;
+            height: 40px;
+            background: var(--orange);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 15px;
+            flex-shrink: 0;
+        }
+
+        .sb-user-name {
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+            line-height: 1.2;
+        }
+
+        .sb-user-role {
+            color: #94a3b8;
+            font-size: 12px;
+        }
+
+        .sb-logout {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            background: rgba(220, 38, 38, .15);
+            color: #fca5a5;
+            border: 1px solid rgba(220, 38, 38, .3);
+            padding: 12px 14px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all .15s;
+            text-decoration: none;
+        }
+
+        .sb-logout:hover {
+            background: rgba(220, 38, 38, .3);
+            color: white;
+        }
+
+        /* TOPBAR */
+        .topbar {
+            background: white;
+            padding: 14px 24px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .menu-btn {
+            display: none;
+            background: transparent;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--navy);
+            padding: 6px;
+            border-radius: 6px;
+        }
+
+        .menu-btn:hover {
+            background: #f1f5f9;
+        }
+
+        .topbar-title {
+            font-weight: 800;
+            color: var(--navy);
+            font-size: 19px;
+            flex: 1;
+        }
+
+        .topbar-search {
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 16px;
+            font-size: 15px;
+            width: 280px;
+            font-family: inherit;
+        }
+
+        .topbar-search:focus {
+            outline: none;
+            border-color: var(--orange);
+            box-shadow: 0 0 0 3px rgba(244, 119, 33, .1);
+        }
+
+        .topbar-icon {
+            background: transparent;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 8px 12px;
+            border-radius: 8px;
+            position: relative;
+            color: var(--muted);
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .topbar-icon:hover {
+            background: #f1f5f9;
+        }
+
+        /* CONTENT */
+        .container {
+            padding: 24px;
+            flex: 1;
+            max-width: 1400px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        /* BUTTONS */
+        .btn {
+            padding: 12px 22px;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all .15s;
+            display: inline-block;
+            text-decoration: none;
+            font-family: inherit;
+        }
+
+        .btn-primary {
+            background: var(--orange);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #e6670f;
+        }
+
+        .btn-secondary {
+            background: white;
+            color: var(--navy);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: #f8fafc;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #b91c1c;
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #15803d;
+        }
+
+        .btn-sm {
+            padding: 8px 14px;
+            font-size: 14px;
+        }
+
+        /* FORMS */
+        input,
+        select,
+        textarea {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 16px;
+            font-family: inherit;
+            background: white;
+            color: var(--text);
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: var(--orange);
+            box-shadow: 0 0 0 3px rgba(244, 119, 33, .1);
+        }
+
+        label {
+            display: block;
+            font-weight: 700;
+            margin-bottom: 6px;
+            color: var(--navy);
+            font-size: 15px;
+        }
+
+        /* CARDS */
+        .card {
+            background: white;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            padding: 24px;
+            margin-bottom: 18px;
+        }
+
+        /* BADGES */
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 700;
+            text-align: center;
+        }
+
+        .badge-approved,
+        .badge-present {
+            background: #dcfce7;
+            color: var(--success);
+        }
+
+        .badge-pending,
+        .badge-late {
+            background: #fef3c7;
+            color: var(--warning);
+        }
+
+        .badge-rejected,
+        .badge-absent {
+            background: #fee2e2;
+            color: var(--danger);
+        }
+
+        .badge-suspended,
+        .badge-excused,
+        .badge-draft {
+            background: #e5e7eb;
+            color: #6b7280;
+        }
+
+        .badge-published {
+            background: #dbeafe;
+            color: var(--info);
+        }
+
+        /* TABLE */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        th {
+            background: var(--navy);
+            color: white;
+            padding: 14px;
+            text-align: left;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        td {
+            padding: 12px 14px;
+            border-top: 1px solid var(--border);
+            font-size: 15px;
+        }
+
+        tr:nth-child(even) {
+            background: #f8fafc;
+        }
+
+        tr:hover {
+            background: #eff6ff;
+        }
+
+        /* STATS */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 14px;
+            margin-bottom: 22px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid var(--border);
+            border-left: 5px solid var(--info);
+        }
+
+        .stat-value {
+            font-size: 34px;
+            font-weight: 800;
+            color: var(--navy);
+            line-height: 1;
+            margin-bottom: 6px;
+        }
+
+        .stat-label {
+            color: var(--muted);
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        /* MISC */
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 18px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .grid-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+            gap: 18px;
+        }
+
+        .grid-item {
+            background: white;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            padding: 18px;
+            transition: all .15s;
+        }
+
+        .grid-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, .08);
+        }
+
+        .grid-item .title {
+            font-weight: 700;
+            color: var(--navy);
+            margin-bottom: 6px;
+            font-size: 16px;
+        }
+
+        .grid-item .meta {
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 44px;
+            color: var(--muted);
+            font-size: 16px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+
+        /* FOOTER */
+        .footer {
+            background: var(--navy);
+            color: #94a3b8;
+            text-align: center;
+            padding: 14px 20px;
+            font-size: 12px;
+        }
+
+        /* MOBILE */
+        @media(max-width:900px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .main {
+                margin-left: 0;
+            }
+
+            .menu-btn {
+                display: inline-block;
+            }
+
+            .topbar-search {
+                display: none;
+            }
+
+            .topbar {
+                padding: 12px 14px;
+            }
+
+            .container {
+                padding: 14px;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .overlay {
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, .5);
+                z-index: 99;
+            }
+
+            .overlay.show {
+                display: block;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app">
+
+        <aside class="sidebar" id="sidebar">
+            <div class="sb-brand">
+<img src="/static/logo.png" alt="IT Level 4 Connect"
+    style="width:46px;height:46px;border-radius:12px;object-fit:cover;flex-shrink:0;">
+                <div>
+                    <div class="sb-name">IT Level 4</div>
+                    <div class="sb-role">{{ role }}</div>
+                </div>
+            </div>
+
+            <nav class="sb-nav">
+                <a href="/dashboard" class="sb-item {% if request.url.path == '/dashboard' %}active{% endif %}">
+                    <span class="sb-icon">🏠</span> Dashboard
+                </a>
+                <a href="/students" class="sb-item {% if request.url.path.startswith('/students') %}active{% endif %}">
+                    <span class="sb-icon">👥</span> Students
+                </a>
+                <a href="/attendance" class="sb-item {% if request.url.path == '/attendance' %}active{% endif %}">
+                    <span class="sb-icon">✓</span> Attendance
+                </a>
+                <a href="/modules" class="sb-item {% if request.url.path.startswith('/modules') %}active{% endif %}">
+                    <span class="sb-icon">📚</span> Modules
+                </a>
+                <a href="/timetable" class="sb-item {% if request.url.path == '/timetable' %}active{% endif %}">
+                    <span class="sb-icon">📋</span> Timetable
+                </a>
+                <a href="/assignments"
+                    class="sb-item {% if request.url.path.startswith('/assignments') %}active{% endif %}">
+                    <span class="sb-icon">📝</span> Assignments
+                </a>
+                <a href="/exams" class="sb-item {% if request.url.path == '/exams' %}active{% endif %}">
+                    <span class="sb-icon">🎯</span> Exams
+                </a>
+                <a href="/groups" class="sb-item {% if request.url.path.startswith('/groups') %}active{% endif %}">
+                    <span class="sb-icon">👨‍👩‍👧</span> Groups
+                </a>
+                <a href="/meetings" class="sb-item {% if request.url.path.startswith('/meetings') %}active{% endif %}">
+                    <span class="sb-icon">🗓</span> Meetings
+                </a>
+                <a href="/reports" class="sb-item {% if request.url.path == '/reports' %}active{% endif %}">
+                    <span class="sb-icon">📊</span> Reports
+                </a>
+                <a href="/letters" class="sb-item {% if request.url.path == '/letters' %}active{% endif %}">
+                    <span class="sb-icon">📨</span> Letters
+                </a>
+                <a href="/announcements" class="sb-item {% if request.url.path == '/announcements' %}active{% endif %}">
+                    <span class="sb-icon">📢</span> Announcements
+                </a>
+                <a href="/daily_message" class="sb-item {% if request.url.path == '/daily_message' %}active{% endif %}">
+                    <span class="sb-icon">💭</span> Daily Message
+                </a>
+                <a href="/notifications" class="sb-item {% if request.url.path == '/notifications' %}active{% endif %}">
+                    <span class="sb-icon">🔔</span> Notifications
+                </a>
+                <a href="/settings" class="sb-item {% if request.url.path == '/settings' %}active{% endif %}">
+                    <span class="sb-icon">⚙</span> Settings
+                </a>
+            </nav>
+
+            <div class="sb-user">
+                <div class="sb-user-card">
+                    <div class="sb-avatar">{{ full_name[:2].upper() if full_name else 'U' }}</div>
+                    <div>
+                        <div class="sb-user-name">{{ full_name }}</div>
+                        <div class="sb-user-role">{{ role }}</div>
+                    </div>
+                </div>
+                <a href="/logout" class="sb-logout">🚪 Logout</a>
+            </div>
+        </aside>
+
+        <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+        <main class="main">
+            <div class="topbar">
+                <button class="menu-btn" onclick="toggleSidebar()">☰</button>
+                <div class="topbar-title">{% block page_title %}Dashboard{% endblock %}</div>
+                <input type="text" class="topbar-search" placeholder="🔍 Search...">
+                <a href="/notifications" class="topbar-icon">🔔</a>
+                <a href="/settings" class="topbar-icon">⚙</a>
+            </div>
+
+            {% block body %}{% endblock %}
+
+            <div class="footer">
+                Designed by TANZATECH SOLUTIONS · Sponsored by IT Class Level 4 & SMART TANZANIA TECHNOLOGY GROUP
+                LIMITED
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+            document.getElementById('overlay').classList.toggle('show');
+        }
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/static/sw.js').catch(() => { });
+        }
+    </script>
+</body>
+
+</html>

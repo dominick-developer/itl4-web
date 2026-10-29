@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="container">
+    <h1 style="color:var(--navy);margin-bottom:20px;">📢 Announcements ({{ announcements|length }})</h1>
+
+    {% if role in ('CR', 'LECTURER') %}
+    <details class="card" style="margin-bottom:16px;">
+        <summary style="cursor:pointer;font-weight:700;color:var(--orange);">+ Publish New Announcement</summary>
+        <form method="post" action="/announcements/create" style="margin-top:16px;">
+            <div class="form-group"><label>Title *</label><input name="title" required></div>
+            <div class="form-group"><label>Message</label><textarea name="description" rows="3"></textarea></div>
+            <div class="form-group"><label><input type="checkbox" name="important" value="1" style="width:auto;"> Mark
+                    as Important ⚠</label></div>
+            <button class="btn btn-primary">Publish</button>
+        </form>
+    </details>
+    {% endif %}
+
+    {% for a in announcements %}
+    <div class="card"
+        style="border-left:4px solid {{ 'var(--danger)' if a.important else 'var(--info)' }};background:{{ '#fef2f2' if a.important else 'white' }};">
+        {% if a.important %}<div class="badge badge-rejected" style="margin-bottom:8px;">⚠ IMPORTANT</div>{% endif %}
+        <h3 style="color:var(--navy);margin-bottom:6px;">{{ a.title }}</h3>
+        <p style="color:var(--muted);margin-bottom:8px;">{{ a.description or '' }}</p>
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#94a3b8;">
+            <span>✍ {{ a.author_name or 'System' }} · 📅 {{ (a.created_at or '')[:10] }}</span>
+            {% if role == 'CR' or (role == 'LECTURER' and a.author_id == user_id) %}
+            <form method="post" action="/announcements/{{ a.id }}/delete" onsubmit="return confirm('Delete?')">
+                <button class="btn btn-danger btn-sm">🗑 Delete</button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+    {% else %}
+    <div class="card empty">
+        <p>No announcements yet.</p>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

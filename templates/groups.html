@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="container">
+    <h1 style="color:var(--navy);margin-bottom:20px;">👨‍👩‍👧 Groups ({{ groups|length }})</h1>
+
+    {% if role == 'CR' %}
+    <details class="card" style="margin-bottom:16px;">
+        <summary style="cursor:pointer;font-weight:700;color:var(--orange);">+ Create Group</summary>
+        <form method="post" action="/groups/create" style="margin-top:16px;">
+            <div class="form-group"><label>Group Name *</label><input name="name" required></div>
+            <div class="form-group"><label>Description</label><textarea name="description" rows="2"></textarea></div>
+            <button class="btn btn-primary">Create</button>
+        </form>
+    </details>
+    {% endif %}
+
+    {% if groups %}
+    <div class="grid-cards">
+        {% for g in groups %}
+        <a href="/groups/{{ g.id }}" class="grid-item" style="text-decoration:none;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+                <span style="font-size:24px;">👥</span>
+                {% if role == 'CR' %}
+                <form method="post" action="/groups/{{ g.id }}/delete"
+                    onsubmit="event.preventDefault();event.stopPropagation();if(confirm('Delete?'))this.submit();">
+                    <button class="btn btn-danger btn-sm">🗑</button>
+                </form>
+                {% endif %}
+            </div>
+            <div class="title">{{ g.name }}</div>
+            <div class="meta">{{ g.description or 'No description' }}</div>
+            <div class="meta" style="margin-top:8px;color:var(--teal);font-weight:700;">👤 {{ g.member_count }} members
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="card empty">
+        <p>No groups yet.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

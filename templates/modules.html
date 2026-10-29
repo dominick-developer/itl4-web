@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block page_title %}Modules{% endblock %}
+{% block body %}
+<div class="container">
+    <div class="toolbar">
+        <div>
+            <h1 style="color:var(--navy);font-size:22px;">📚 Modules ({{ offerings|length }})</h1>
+            <p style="color:var(--muted);font-size:13px;margin-top:4px;">
+                {% if role == 'CR' %}Create and manage class modules
+                {% elif role == 'LECTURER' %}Your assigned teaching modules
+                {% else %}Your class modules and materials{% endif %}
+            </p>
+        </div>
+        {% if role == 'CR' %}
+        <a href="/modules/create" class="btn btn-primary">+ Create Module</a>
+        {% endif %}
+    </div>
+
+    {% if offerings %}
+    <div class="grid-cards">
+        {% for o in offerings %}
+        <div class="grid-item" style="position:relative;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                <div
+                    style="width:44px;height:44px;background:#f5f3ff;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;">
+                    📚</div>
+                {% if o.is_published %}
+                <span class="badge badge-published">✓ Published</span>
+                {% else %}
+                <span class="badge badge-draft">⚠ Draft</span>
+                {% endif %}
+            </div>
+            <div class="title" style="font-size:16px;">{{ o.module_name }}</div>
+            <div class="meta" style="margin-top:4px;">
+                {{ o.module_code or '—' }} · 👨‍🏫 {{ o.teacher_name or 'No teacher' }}
+            </div>
+            <div class="meta" style="margin-top:8px;color:var(--purple);font-weight:600;">
+                📝 {{ o.topics_done }}/{{ o.topic_count }} topics
+            </div>
+            <div style="display:flex;gap:6px;margin-top:12px;">
+                <a href="/modules/{{ o.id }}" class="btn btn-primary btn-sm" style="flex:1;text-align:center;">Open
+                    →</a>
+                {% if role == 'CR' %}
+                <form method="post" action="/modules/{{ o.id }}/delete"
+                    onsubmit="return confirm('Delete this module and all its topics?')" style="display:inline;">
+                    <button class="btn btn-danger btn-sm">🗑</button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="card empty">
+        <div style="font-size:48px;margin-bottom:12px;">📚</div>
+        <h3 style="color:var(--navy);margin-bottom:8px;">No modules yet</h3>
+        {% if role == 'CR' %}
+        <p style="margin-bottom:16px;">Create your first module to get started.</p>
+        <a href="/modules/create" class="btn btn-primary">+ Create First Module</a>
+        {% elif role == 'LECTURER' %}
+        <p>No modules assigned to you yet. Contact the CR.</p>
+        {% else %}
+        <p>No published modules yet.</p>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

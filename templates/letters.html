@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="container">
+    <h1 style="color:var(--navy);margin-bottom:20px;">📨 Letters ({{ letters|length }})</h1>
+
+    {% if role in ('CR', 'LECTURER') %}
+    <details class="card" style="margin-bottom:16px;">
+        <summary style="cursor:pointer;font-weight:700;color:var(--orange);">+ Create Letter</summary>
+        <form method="post" action="/letters/create" style="margin-top:16px;">
+            <div class="form-row">
+                <div class="form-group"><label>Reference No</label><input name="reference_no"></div>
+                <div class="form-group"><label>Date</label><input type="date" name="date"
+                        value="{{ now.strftime('%Y-%m-%d') }}" required></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>Type</label>
+                    <select name="type">
+                        <option>Official Letter</option>
+                        <option>Application</option>
+                        <option>Request</option>
+                        <option>Invitation</option>
+                    </select>
+                </div>
+                <div class="form-group"><label>Your Position</label><input name="sender_position"
+                        placeholder="e.g. Class Representative"></div>
+            </div>
+            <div class="form-group"><label>Recipient *</label><input name="recipient" required
+                    placeholder="e.g. The Principal"></div>
+            <div class="form-group"><label>Address</label><textarea name="address" rows="2"></textarea></div>
+            <div class="form-group"><label>Subject *</label><input name="subject" required></div>
+            <div class="form-group"><label>Body</label><textarea name="body" rows="5"></textarea></div>
+            <div class="form-group"><label>Closing</label><input name="closing" value="Yours faithfully,"></div>
+            <button class="btn btn-primary">Create Letter</button>
+        </form>
+    </details>
+    {% endif %}
+
+    {% for l in letters %}
+    <div class="card"
+        style="border-left:4px solid {{ 'var(--success)' if l.status == 'published' else 'var(--warning)' }};">
+        <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+            <strong style="color:var(--navy);">{{ l.subject }}</strong>
+            <span class="badge badge-{{ l.status }}">{{ l.status }}</span>
+        </div>
+        <p style="color:var(--muted);font-size:13px;">📄 {{ l.reference_no or '—' }} · 📅 {{ l.date }} · To: {{
+            l.recipient }}</p>
+        <p style="color:var(--muted);font-size:12px;">✍ {{ l.sender_name or '—' }}</p>
+        {% if role in ('CR', 'LECTURER') %}
+        <div style="margin-top:12px;display:flex;gap:8px;">
+            {% if l.status != 'published' %}<form method="post" action="/letters/{{ l.id }}/publish"><button
+                    class="btn btn-success btn-sm">📤 Publish</button></form>{% endif %}
+            <form method="post" action="/letters/{{ l.id }}/delete" onsubmit="return confirm('Delete?')"><button
+                    class="btn btn-danger btn-sm">🗑</button></form>
+        </div>
+        {% endif %}
+    </div>
+    {% else %}
+    <div class="card empty">
+        <p>No letters yet.</p>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

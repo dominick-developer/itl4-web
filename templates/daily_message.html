@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="container">
+    <h1 style="color:var(--navy);margin-bottom:20px;">💭 Ujumbe wa Siku</h1>
+
+    {% if active %}
+    <div class="card" style="background:linear-gradient(135deg,#ecfdf5,#f0fdfa);border-left:5px solid var(--teal);">
+        <div style="color:var(--teal);font-weight:700;margin-bottom:10px;">📌 ACTIVE MESSAGE</div>
+        <p style="font-size:20px;color:var(--navy);font-style:italic;line-height:1.6;">"{{ active.message_text }}"</p>
+        <p style="color:var(--muted);margin-top:10px;">— {{ active.author_name }} · {{ active.publish_date }}</p>
+        {% if role == 'CR' %}
+        <form method="post" action="/daily_message/{{ active.id }}/archive" style="margin-top:12px;">
+            <button class="btn btn-secondary btn-sm">Archive</button>
+        </form>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% if role == 'CR' %}
+    <details class="card">
+        <summary style="cursor:pointer;font-weight:700;color:var(--orange);">+ Publish New Message</summary>
+        <form method="post" action="/daily_message/create" style="margin-top:16px;">
+            <div class="form-group"><label>Message *</label><textarea name="message_text" rows="3" required
+                    placeholder="Motivational message..."></textarea></div>
+            <div class="form-row">
+                <div class="form-group"><label>Publish Date</label><input type="date" name="publish_date"
+                        value="{{ now.strftime('%Y-%m-%d') }}" required></div>
+                <div class="form-group"><label>Expires</label><input type="date" name="expires_date"></div>
+            </div>
+            <button class="btn btn-primary">Publish</button>
+        </form>
+    </details>
+    {% endif %}
+
+    <h3 style="color:var(--navy);margin:20px 0 12px;">📚 History</h3>
+    {% for m in history %}
+    <div class="card" style="padding:14px;">
+        <p style="color:var(--navy);font-style:italic;">"{{ m.message_text }}"</p>
+        <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:12px;color:#94a3b8;">
+            <span>— {{ m.author_name or '—' }} · {{ m.publish_date }}</span>
+            {% if role == 'CR' %}
+            <form method="post" action="/daily_message/{{ m.id }}/delete" onsubmit="return confirm('Delete?')">
+                <button class="btn btn-danger btn-sm">🗑</button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+    {% else %}
+    <p class="empty">No history.</p>
+    {% endfor %}
+</div>
+{% endblock %}

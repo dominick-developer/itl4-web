@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="container">
+    <h1 style="color:var(--navy);margin-bottom:20px;">📊 Reports ({{ reports|length }})</h1>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-value">{{ stats.students }}</div>
+            <div class="stat-label">Students</div>
+        </div>
+        <div class="stat-card" style="border-left-color:var(--success);">
+            <div class="stat-value" style="color:var(--success);">{{ stats.approved }}</div>
+            <div class="stat-label">Approved</div>
+        </div>
+        <div class="stat-card" style="border-left-color:var(--warning);">
+            <div class="stat-value" style="color:var(--warning);">{{ stats.meetings }}</div>
+            <div class="stat-label">Meetings</div>
+        </div>
+        <div class="stat-card" style="border-left-color:var(--purple);">
+            <div class="stat-value" style="color:var(--purple);">{{ stats.assignments }}</div>
+            <div class="stat-label">Assignments</div>
+        </div>
+    </div>
+
+    {% if role in ('CR', 'LECTURER') %}
+    <details class="card" style="margin-bottom:16px;">
+        <summary style="cursor:pointer;font-weight:700;color:var(--orange);">+ Create Report</summary>
+        <form method="post" action="/reports/create" style="margin-top:16px;">
+            <div class="form-row">
+                <div class="form-group"><label>Type</label>
+                    <select name="type">
+                        <option>Monthly Report</option>
+                        <option>Meeting Report</option>
+                        <option>Term Report</option>
+                    </select>
+                </div>
+                <div class="form-group"><label>Related Meeting</label>
+                    <select name="meeting_id">
+                        <option value="">—</option>{% for m in meetings %}<option value="{{ m.id }}">{{ m.title }}
+                        </option>{% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>From</label><input type="date" name="period_from"></div>
+                <div class="form-group"><label>To</label><input type="date" name="period_to"></div>
+            </div>
+            <div class="form-group"><label>Achievements</label><textarea name="achievements" rows="2"></textarea></div>
+            <div class="form-group"><label>Challenges</label><textarea name="challenges" rows="2"></textarea></div>
+            <div class="form-group"><label>Recommendations</label><textarea name="recommendations" rows="2"></textarea>
+            </div>
+            <div class="form-group"><label>Conclusion</label><textarea name="conclusion" rows="2"></textarea></div>
+            <button class="btn btn-primary">Create</button>
+        </form>
+    </details>
+    {% endif %}
+
+    {% for r in reports %}
+    <div class="card"
+        style="border-left:4px solid {{ 'var(--success)' if r.status == 'published' else 'var(--warning)' }};">
+        <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+            <strong style="color:var(--navy);">{{ r.type }}</strong>
+            <span class="badge badge-{{ r.status }}">{{ r.status }}</span>
+        </div>
+        <p style="color:var(--muted);font-size:13px;">{{ r.period_from or '?' }} – {{ r.period_to or '?' }} · ✍ {{
+            r.author_name or '—' }}</p>
+        {% if r.achievements %}<p style="margin-top:8px;">🏆 {{ r.achievements[:150] }}</p>{% endif %}
+        {% if role in ('CR', 'LECTURER') %}
+        <div style="margin-top:12px;display:flex;gap:8px;">
+            {% if r.status != 'published' %}<form method="post" action="/reports/{{ r.id }}/publish"><button
+                    class="btn btn-success btn-sm">📤 Publish</button></form>{% endif %}
+            <form method="post" action="/reports/{{ r.id }}/delete" onsubmit="return confirm('Delete?')"><button
+                    class="btn btn-danger btn-sm">🗑</button></form>
+        </div>
+        {% endif %}
+    </div>
+    {% else %}
+    <div class="card empty">
+        <p>No reports yet.</p>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
