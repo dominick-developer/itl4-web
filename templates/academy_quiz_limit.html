@@ -1,0 +1,180 @@
+@'
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz — Attempt Limit Reached</title>
+    <link rel="icon" href="/static/icon-192.png">
+    <style>
+        :root {
+            --navy: #0B1F33;
+            --orange: #F47721;
+            --bg: #F5F7FA;
+            --border: #E2E8F0;
+            --muted: #64748B;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--navy);
+            font-size: 17px;
+            line-height: 1.6;
+        }
+
+        a {
+            text-decoration: none;
+            color: var(--orange);
+        }
+
+        .ac-nav {
+            background: var(--navy);
+            padding: 14px 24px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .ac-nav img {
+            width: 38px;
+            height: 38px;
+            border-radius: 9px;
+        }
+
+        .ac-nav-title {
+            color: white;
+            font-weight: 800;
+            font-size: 14px;
+        }
+
+        .ac-nav-links {
+            margin-left: auto;
+            display: flex;
+            gap: 10px;
+        }
+
+        .ac-nav-links a {
+            color: #cbd5e1;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .container {
+            max-width: 680px;
+            margin: 0 auto;
+            padding: 40px 24px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            padding: 36px 28px;
+            text-align: center;
+        }
+
+        .icon {
+            font-size: 60px;
+            margin-bottom: 12px;
+        }
+
+        h1 {
+            font-size: 24px;
+            font-weight: 900;
+            color: var(--navy);
+            margin-bottom: 10px;
+        }
+
+        p {
+            color: var(--muted);
+            margin-bottom: 18px;
+            font-size: 15px;
+        }
+
+        .best-score {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .best-score .lbl {
+            font-size: 12px;
+            color: var(--muted);
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+
+        .best-score .val {
+            font-size: 32px;
+            font-weight: 900;
+            color: var(--orange);
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 12px 28px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 15px;
+            margin: 4px;
+        }
+
+        .btn-primary {
+            background: var(--orange);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #e6670f;
+        }
+
+        .btn-outline {
+            background: white;
+            border: 1.5px solid var(--border);
+            color: var(--navy);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="ac-nav">
+        <img src="/static/logo.png" alt="Logo">
+        <div>
+            <div class="ac-nav-title">IT Expert Academy</div>
+        </div>
+        <div class="ac-nav-links"><a href="/academy/courses/{{ assessment.course_id }}">← Course</a></div>
+    </div>
+    <div class="container">
+        <div class="card">
+            <div class="icon">🔒</div>
+            <h1>Attempt Limit Reached</h1>
+            <p>You have used all {{ assessment.max_attempts }} attempts for this quiz.</p>
+            {% if best %}
+            <div class="best-score">
+                <div class="lbl">Your Best Score</div>
+                <div class="val">{{ (best.score * 100 / best.max_score)|int if best.max_score > 0 else 0 }}%</div>
+                <div style="font-size:14px;color:var(--muted);margin-top:6px;">
+                    {{ best.score }} / {{ best.max_score }} points · {% if best.passed %}✅ Passed{% else %}❌ Not
+                    passed{% endif %}
+                </div>
+            </div>
+            {% endif %}
+            <a href="/academy/courses/{{ assessment.course_id }}" class="btn btn-outline">← Back to Course</a>
+            <a href="/academy/lessons/{{ assessment.lesson_id }}" class="btn btn-primary">Back to Lesson</a>
+        </div>
+    </div>
+</body>
+
+</html>
+'@ | Out-File -FilePath templates/academy_quiz_limit.html -Encoding UTF8

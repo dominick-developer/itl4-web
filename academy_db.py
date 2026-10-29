@@ -8,7 +8,57 @@ def init_academy():
     """Create Academy tables and seed initial content (idempotent)."""
     conn = get_connection()
     cur = conn.cursor()
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS assessments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        lesson_id INTEGER NOT NULL,
+        title TEXT NOT NULL,
+        description TEXT,
+        passing_score INTEGER DEFAULT 70,
+        max_attempts INTEGER DEFAULT 3,
+        status TEXT DEFAULT 'published',
+        created_at TEXT DEFAULT (datetime('now','localtime')),
+        FOREIGN KEY (lesson_id) REFERENCES lessons(id) ON DELETE CASCADE
+    )""")
 
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS assessment_questions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        assessment_id INTEGER NOT NULL,
+        question_type TEXT NOT NULL,
+        question_text TEXT NOT NULL,
+        options_json TEXT,
+        correct_answer TEXT NOT NULL,
+        explanation TEXT,
+        points INTEGER DEFAULT 10,
+        sequence_number INTEGER DEFAULT 1,
+        FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON DELETE CASCADE
+    )""")
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS assessment_attempts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        assessment_id INTEGER NOT NULL,
+        user_id INTEGER NOT NULL,
+        attempt_number INTEGER DEFAULT 1,
+        score INTEGER DEFAULT 0,
+        max_score INTEGER DEFAULT 0,
+        passed INTEGER DEFAULT 0,
+        submitted_at TEXT DEFAULT (datetime('now','localtime')),
+        FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON DELETE CASCADE
+    )""")
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS assessment_responses (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        attempt_id INTEGER NOT NULL,
+        question_id INTEGER NOT NULL,
+        selected_answer TEXT,
+        is_correct INTEGER DEFAULT 0,
+        points_awarded INTEGER DEFAULT 0,
+        FOREIGN KEY (attempt_id) REFERENCES assessment_attempts(id) ON DELETE CASCADE,
+        FOREIGN KEY (question_id) REFERENCES assessment_questions(id) ON DELETE CASCADE
+    )""")
     cur.execute("""
     CREATE TABLE IF NOT EXISTS learning_paths (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -95,7 +145,7 @@ def init_academy():
         related_id INTEGER,
         recorded_at TEXT DEFAULT (datetime('now','localtime'))
     )""")
-
+    _seed_python_quiz(cur)
     conn.commit()
     _seed_paths(cur)
     _seed_python_course(cur)
@@ -412,3 +462,204 @@ def get_next_lesson(current_lesson_id):
     conn.close()
     return row["id"] if row else None
 '@ | Out-File -FilePath academy_db.py -Encoding UTF8
+def _seed_python_quiz(cur):
+    """Seed one quiz for the Variables and Data Types lesson."""
+    existing = cur.execute("SELECT id FROM assessments LIMIT 1").fetchone()
+    if existing:
+        return
+    lesson = cur.execute(
+        "SELECT id FROM lessons WHERE title = 'Variables and Data Types' LIMIT 1"
+    ).fetchone()
+    if not lesson:
+        return
+
+    import json as _json
+
+    cur.execute(
+        "INSERT INTO assessments (lesson_id, title, description, passing_score, max_attempts) "
+        "VALUES (?, ?, ?, ?, ?)",
+        (lesson["id"], "Variables & Data Types — Quiz",
+         "Jaribu uelewa wako wa variables na aina za data katika Python.",
+         70, 3))
+    aid = cur.lastrowid
+
+    questions = [
+        ("multiple_choice", "Ni ipi kati ya hizi ni string?",
+         ["42", '"Habari"', "3.14", "True"], "1",
+         "String ni maandishi yaliyofungwa kwenye quotes. `\"Habari\"` ni string.", 10),
+        ("true_false", '`jina = "Amina"` inahifadhi maandishi kwenye variable inayoitwa `jina`.',
+         ["True", "False"], "0",
+         "Kweli. Ishara `=` inahifadhi thamani upande wa kulia kwenye variable upande wa kushoto.", 10),
+        ("multiple_choice", "Namba `3.14` ni aina gani ya data?",
+         ["Integer", "String", "Float", "Boolean"], "2",
+         "Float ni namba yenye desimali (pointi).", 10),
+        ("true_false", "Variable inaweza kuanza na namba, mfano `1jina`.",
+         ["True", "False"], "1",
+         "Uongo. Variable haiwezi kuanza na namba. Tumia `jina1` badala yake.", 10),
+        ("multiple_choice", "Kuchapisha variable `jina` kwenye Python, unatumia:",
+         ["show jina", "print(jina)", "echo jina", "display jina"], "1",
+         "`print(jina)` inachapisha thamani ya variable.", 10),
+    ]
+
+    for qi, (qtype, qtext, options, correct, explanation, pts) in enumerate(questions):
+        cur.execute(
+            "INSERT INTO assessment_questions "
+            "(assessment_id, question_type, question_text, options_json, "
+            "correct_answer, explanation, points, sequence_number) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (aid, qtype, qtext, _json.dumps(options, ensure_ascii=False),
+             correct, explanation, pts, qi + 1))
+# ============================================================
+# QUIZZES / ASSESSMENTS
+# ============================================================
+def get_assessment_for_lesson(lesson_id):
+    conn = get_connection()
+    row = conn.execute(
+        "SELECT * FROM assessments WHERE lesson_id = ? AND status = 'published'",
+        (lesson_id,)).fetchone()
+    conn.close()
+    return row
+
+
+def get_assessment(assessment_id):
+    conn = get_connection()
+    row = conn.execute(
+        "SELECT a.*, l.title AS lesson_title, l.id AS lesson_id, "
+        "m.course_id, c.title AS course_title "
+        "FROM assessments a "
+        "JOIN lessons l ON a.lesson_id = l.id "
+        "JOIN course_modules m ON l.module_id = m.id "
+        "JOIN academy_courses c ON m.course_id = c.id "
+        "WHERE a.id = ?", (assessment_id,)).fetchone()
+    conn.close()
+    return row
+
+
+def get_assessment_questions(assessment_id):
+    import json as _json
+    conn = get_connection()
+    rows = conn.execute(
+        "SELECT * FROM assessment_questions WHERE assessment_id = ? "
+        "ORDER BY sequence_number, id", (assessment_id,)).fetchall()
+    conn.close()
+    result = []
+    for r in rows:
+        d = dict(r)
+        try:
+            d["options"] = _json.loads(d.get("options_json") or "[]")
+        except Exception:
+            d["options"] = []
+        result.append(d)
+    return result
+
+
+def get_total_points(assessment_id):
+    conn = get_connection()
+    n = conn.execute(
+        "SELECT COALESCE(SUM(points), 0) FROM assessment_questions WHERE assessment_id = ?",
+        (assessment_id,)).fetchone()[0]
+    conn.close()
+    return n or 0
+
+
+def get_user_attempts(assessment_id, user_id):
+    conn = get_connection()
+    rows = conn.execute(
+        "SELECT * FROM assessment_attempts WHERE assessment_id = ? AND user_id = ? "
+        "ORDER BY attempt_number DESC", (assessment_id, user_id)).fetchall()
+    conn.close()
+    return rows
+
+
+def get_best_attempt(assessment_id, user_id):
+    conn = get_connection()
+    row = conn.execute(
+        "SELECT * FROM assessment_attempts WHERE assessment_id = ? AND user_id = ? "
+        "ORDER BY score DESC, submitted_at DESC LIMIT 1",
+        (assessment_id, user_id)).fetchone()
+    conn.close()
+    return row
+
+
+def submit_attempt(assessment_id, user_id, answers):
+    """
+    Grade and save a new attempt.
+    answers = {question_id: selected_index_as_string}
+    Returns (attempt_id, score, max_score, passed).
+    """
+    assessment = get_assessment(assessment_id)
+    if not assessment:
+        return None, 0, 0, False
+
+    # Attempt limit check
+    prior = get_user_attempts(assessment_id, user_id)
+    if len(prior) >= assessment["max_attempts"]:
+        return None, 0, 0, False
+
+    questions = get_assessment_questions(assessment_id)
+    max_score = sum(q["points"] for q in questions)
+    score = 0
+
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "INSERT INTO assessment_attempts (assessment_id, user_id, attempt_number, "
+        "score, max_score, passed) VALUES (?, ?, ?, ?, ?, ?)",
+        (assessment_id, user_id, len(prior) + 1, 0, max_score, 0))
+    attempt_id = cur.lastrowid
+
+    for q in questions:
+        selected = answers.get(str(q["id"]), "")
+        is_correct = 1 if str(selected).strip() == str(q["correct_answer"]).strip() else 0
+        awarded = q["points"] if is_correct else 0
+        score += awarded
+        cur.execute(
+            "INSERT INTO assessment_responses (attempt_id, question_id, "
+            "selected_answer, is_correct, points_awarded) VALUES (?, ?, ?, ?, ?)",
+            (attempt_id, q["id"], str(selected), is_correct, awarded))
+
+    passing = assessment["passing_score"]
+    pct = (score * 100 // max_score) if max_score > 0 else 0
+    passed = 1 if pct >= passing else 0
+
+    cur.execute(
+        "UPDATE assessment_attempts SET score = ?, max_score = ?, passed = ? "
+        "WHERE id = ?", (score, max_score, passed, attempt_id))
+    conn.commit()
+    conn.close()
+
+    # Auto-complete the linked lesson if passed
+    if passed:
+        mark_lesson_complete(user_id, assessment["lesson_id"])
+
+    return attempt_id, score, max_score, bool(passed)
+
+
+def get_attempt_details(attempt_id):
+    """Get attempt + questions + user answers for the result page."""
+    conn = get_connection()
+    attempt = conn.execute(
+        "SELECT * FROM assessment_attempts WHERE id = ?", (attempt_id,)).fetchone()
+    if not attempt:
+        conn.close()
+        return None
+    responses = conn.execute(
+        "SELECT r.*, q.question_text, q.options_json, q.correct_answer, "
+        "q.explanation, q.question_type, q.points, q.sequence_number "
+        "FROM assessment_responses r "
+        "JOIN assessment_questions q ON r.question_id = q.id "
+        "WHERE r.attempt_id = ? ORDER BY q.sequence_number",
+        (attempt_id,)).fetchall()
+    conn.close()
+
+    import json as _json
+    items = []
+    for r in responses:
+        d = dict(r)
+        try:
+            d["options"] = _json.loads(d.get("options_json") or "[]")
+        except Exception:
+            d["options"] = []
+        items.append(d)
+
+    return {"attempt": dict(attempt), "responses": items}

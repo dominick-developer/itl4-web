@@ -313,7 +313,29 @@
             {% else %}
             <p>Finished reading? Mark this lesson as complete to track your progress.</p>
             {% endif %}
-
+    {% if quiz %}
+    <div
+        style="background:linear-gradient(135deg,#fff7ed 0%,#fffbeb 100%);border:2px solid #F47721;border-radius:14px;padding:24px;margin-bottom:20px;">
+        <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+            <div style="font-size:40px;">📝</div>
+            <div style="flex:1;min-width:220px;">
+                <h3 style="font-size:18px;font-weight:800;color:var(--navy);margin-bottom:4px;">{{ quiz.title }}</h3>
+                <p style="color:var(--muted);font-size:14px;margin:0;">
+                    {% if quiz_best %}
+                    Your best: <strong
+                        style="color:{% if quiz_best.passed %}var(--success,#16A34A){% else %}var(--danger,#DC2626){% endif %};">{{
+                        (quiz_best.score * 100 / quiz_best.max_score)|int if quiz_best.max_score > 0 else 0 }}%</strong>
+                    · Attempts used: {{ quiz_attempts }}
+                    {% else %}
+                    Test your understanding · Pass mark: {{ quiz.passing_score }}%
+                    {% endif %}
+                </p>
+            </div>
+            <a href="/academy/quizzes/{{ quiz.id }}" class="btn btn-primary" style="padding:12px 24px;">{% if quiz_best
+                %}Retake Quiz{% else %}Take Quiz{% endif %} →</a>
+        </div>
+    </div>
+    {% endif %}
             <div class="actions">
                 <a href="/academy/courses/{{ lesson.course_id }}" class="btn btn-outline">← Back to Course</a>
                 {% if not (progress and progress.status == 'completed') %}
