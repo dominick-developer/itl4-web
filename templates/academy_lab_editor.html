@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ project.title }} — Coding Lab</title>
+    <link rel="icon" href="/static/icon-192.png">
+
+    <!-- CodeMirror -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/material-darker.min.css">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+            background: #0B1F33;
+            color: white;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .lab-top {
+            background: #0B1F33;
+            border-bottom: 1px solid #1e293b;
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-shrink: 0;
+            flex-wrap: wrap;
+        }
+
+        .lab-top img {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+        }
+
+        .lab-title {
+            font-weight: 800;
+            font-size: 14px;
+            color: white;
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .lab-lang {
+            font-size: 11px;
+            text-transform: uppercase;
+            font-weight: 700;
+            background: #1e40af;
+            padding: 3px 10px;
+            border-radius: 10px;
+        }
+
+        .lab-btn {
+            background: #F47721;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 7px;
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: background .15s;
+        }
+
+        .lab-btn:hover {
+            background: #e6670f;
+        }
+
+        .lab-btn.secondary {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, .2);
+            color: #cbd5e1;
+        }
+
+        .lab-btn.secondary:hover {
+            background: rgba(255, 255, 255, .1);
+        }
+
+        .lab-btn:disabled {
+            opacity: .5;
+            cursor: not-allowed;
+        }
+
+        .save-status {
+            font-size: 11px;
+            color: #94a3b8;
+            padding: 0 8px;
+        }
+
+        .lab-body {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .lab-editor {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            border-right: 1px solid #1e293b;
+        }
+
+        .CodeMirror {
+            height: 100% !important;
+            font-size: 14px;
+            font-family: 'Consolas', 'Monaco', monospace;
+        }
+
+        .lab-preview {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            background: white;
+        }
+
+        .preview-label {
+            background: #1e293b;
+            color: #94a3b8;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            padding: 6px 12px;
+            flex-shrink: 0;
+        }
+
+        #previewFrame {
+            flex: 1;
+            border: none;
+            width: 100%;
+            background: white;
+        }
+
+        .output-panel {
+            background: #0f172a;
+            color: #e2e8f0;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            padding: 12px;
+            overflow-y: auto;
+            flex: 1;
+            white-space: pre-wrap;
+        }
+
+        .output-panel .error {
+            color: #fca5a5;
+        }
+
+        .output-panel .log {
+            color: #a5b4fc;
+        }
+
+        .run-status {
+            color: #fbbf24;
+            font-style: italic;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="lab-top">
+        <a href="/academy/lab"><img src="/static/logo.png" alt="Back"></a>
+        <div class="lab-title">{{ project.title }}</div>
+        <span class="lab-lang">{{ project.language }}</span>
+        <span class="save-status" id="saveStatus">Ready</span>
+        <button class="lab-btn secondary" onclick="renameProject()">Rename</button>
+        <button class="lab-btn secondary" onclick="resetCode()">Reset</button>
+        <button class="lab-btn" onclick="saveProject()" id="saveBtn">💾 Save</button>
+        <button class="lab-btn" onclick="runCode()" id="runBtn">
+            {% if project.language == 'html' %}▶ Refresh Preview{% elif project.language == 'python' %}▶ Run Python{%
+            else %}▶ Run Code{% endif %}
+        </button>
+    </div>
+
+    <div class="lab-body">
+        <div class="lab-editor">
+            <textarea id="codeInput">{{ project.code_content or '' }}</textarea>
+        </div>
+
+        <div class="lab-preview" id="previewArea">
+            <div class="preview-label" id="previewLabel">
+                {% if project.language == 'html' %}Live Preview{% elif project.language == 'python' %}Python Output{%
+                else %}Console Output{% endif %}
+            </div>
+            {% if project.language == 'html' %}
+            <iframe id="previewFrame" sandbox="allow-scripts"></iframe>
+            {% elif project.language == 'python' %}
+            <div class="output-panel" id="outputPanel">Bonyeza "Run Python" kuanza...\n(Pyodide ita-load mara ya kwanza
+                — inaweza kuchukua sekunde 10-20)</div>
+            {% else %}
+            <div class="output-panel" id="outputPanel">Bonyeza "Run Code" kuanza...</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- CodeMirror -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/xml/xml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/htmlmixed/htmlmixed.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/css/css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+
+    <script>
+        const PROJECT_ID = {{ project.id }};
+        const LANGUAGE = "{{ project.language }}";
+        const STARTER = {{ (project.code_content or '')| tojson }};
+
+        const modeMap = { html: "htmlmixed", javascript: "javascript", python: "python" };
+
+        const editor = CodeMirror.fromTextArea(document.getElementById('codeInput'), {
+            lineNumbers: true,
+            mode: modeMap[LANGUAGE] || "htmlmixed",
+            theme: "material-darker",
+            indentUnit: 4,
+            tabSize: 4,
+            lineWrapping: true,
+            autofocus: true,
+        });
+
+        let dirty = false;
+        editor.on('change', function () { dirty = true; document.getElementById('saveStatus').textContent = 'Unsaved changes'; });
+
+        // --- HTML Preview ---
+        function runHtmlPreview() {
+            var frame = document.getElementById('previewFrame');
+            if (!frame) return;
+            var code = editor.getValue();
+            // Reassign src via srcdoc — iframe is sandboxed, so cannot access parent
+            frame.srcdoc = code;
+        }
+
+        // --- JavaScript console capture ---
+        function runJavascript() {
+            var panel = document.getElementById('outputPanel');
+            panel.innerHTML = '<div class="run-status">Running...</div>';
+            var output = [];
+            var code = editor.getValue();
+
+            var fakeConsole = {
+                log: function () { output.push('<div class="log">▶ ' + Array.from(arguments).map(String).join(' ') + '</div>'); },
+                error: function () { output.push('<div class="error">✗ ' + Array.from(arguments).map(String).join(' ') + '</div>'); },
+                warn: function () { output.push('<div class="log">⚠ ' + Array.from(arguments).map(String).join(' ') + '</div>'); },
+                info: function () { output.push('<div class="log">ℹ ' + Array.from(arguments).map(String).join(' ') + '</div>'); },
+            };
+
+            try {
+                var runner = new Function('console', code);
+                runner(fakeConsole);
+                panel.innerHTML = output.length ? output.join('') : '<div class="run-status">(no output — tumia console.log())</div>';
+            } catch (err) {
+                panel.innerHTML = output.join('') + '<div class="error">✗ ' + (err.name || 'Error') + ': ' + (err.message || String(err)) + '</div>';
+            }
+        }
+
+        // --- Python via Pyodide ---
+        let pyodideReady = false;
+        let pyodide = null;
+        async function runPython() {
+            var panel = document.getElementById('outputPanel');
+            var btn = document.getElementById('runBtn');
+            btn.disabled = true;
+
+            if (!pyodideReady) {
+                panel.innerHTML = '<div class="run-status">⏳ Loading Python (Pyodide) — this takes 10-20 seconds the first time...</div>';
+                try {
+                    if (typeof loadPyodide === 'undefined') {
+                        await new Promise(function (resolve, reject) {
+                            var s = document.createElement('script');
+                            s.src = 'https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js';
+                            s.onload = resolve;
+                            s.onerror = reject;
+                            document.head.appendChild(s);
+                        });
+                    }
+                    pyodide = await loadPyodide();
+                    pyodideReady = true;
+                } catch (err) {
+                    panel.innerHTML = '<div class="error">✗ Failed to load Pyodide: ' + err + '</div>';
+                    btn.disabled = false;
+                    return;
+                }
+            }
+
+            panel.innerHTML = '<div class="run-status">Running...</div>';
+            var code = editor.getValue();
+
+            // Redirect stdout/stderr
+            pyodide.runPython(`
+import sys, io
+_capture_out = io.StringIO()
+_capture_err = io.StringIO()
+sys.stdout = _capture_out
+sys.stderr = _capture_err
+`);
+
+            try {
+                await pyodide.runPythonAsync(code);
+                var out = pyodide.runPython("_capture_out.getvalue()") || "";
+                var err = pyodide.runPython("_capture_err.getvalue()") || "";
+                var html = "";
+                if (out) html += '<div class="log">' + out.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</div>';
+                if (err) html += '<div class="error">' + err.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</div>';
+                panel.innerHTML = html || '<div class="run-status">(no output — tumia print())</div>';
+            } catch (err) {
+                panel.innerHTML = '<div class="error">✗ ' + String(err) + '</div>';
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        // --- Dispatcher ---
+        function runCode() {
+            if (LANGUAGE === 'html') runHtmlPreview();
+            else if (LANGUAGE === 'python') runPython();
+            else runJavascript();
+        }
+
+        // --- Save ---
+        async function saveProject() {
+            var btn = document.getElementById('saveBtn');
+            btn.disabled = true;
+            document.getElementById('saveStatus').textContent = 'Saving...';
+            try {
+                var form = new FormData();
+                form.append('code', editor.getValue());
+                var res = await fetch('/academy/lab/p/' + PROJECT_ID + '/save', {
+                    method: 'POST', body: form
+                });
+                if (res.ok) {
+                    var data = await res.json();
+                    document.getElementById('saveStatus').textContent = '✓ Saved ' + (data.saved_at || '');
+                    dirty = false;
+                } else {
+                    document.getElementById('saveStatus').textContent = '✗ Save failed';
+                }
+            } catch (err) {
+                document.getElementById('saveStatus').textContent = '✗ Network error';
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        // --- Reset ---
+        function resetCode() {
+            if (!confirm('Rudisha code kwenye starter template? Kazi yako ya sasa itapotea.')) return;
+            editor.setValue(STARTER);
+        }
+
+        // --- Rename ---
+        function renameProject() {
+            var newTitle = prompt('New project name:', '{{ project.title }}');
+            if (!newTitle || newTitle.trim() === '' || newTitle === '{{ project.title }}') return;
+            var form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/academy/lab/p/{{ project.id }}/rename';
+            var input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'title';
+            input.value = newTitle.trim();
+            form.appendChild(input);
+            document.body.appendChild(form);
+            form.submit();
+        }
+
+        // --- Keyboard shortcuts ---
+        document.addEventListener('keydown', function (e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault();
+                saveProject();
+            }
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                runCode();
+            }
+        });
+
+        // --- Auto-run HTML preview on load ---
+        if (LANGUAGE === 'html') {
+            runHtmlPreview();
+        }
+
+        // --- Warn on leave ---
+        window.addEventListener('beforeunload', function (e) {
+            if (dirty) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        });
+    </script>
+</body>
+
+</html>

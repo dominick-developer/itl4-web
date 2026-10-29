@@ -39,6 +39,7 @@ def startup():
     print("âœ… Database ready")
     academy.init_academy()
     academy.init_ai_tables()
+    academy.init_coding_tables()
     print("âœ… Academy ready")
 
     # 2. Hakikisha CR 'cr' yupo na ana password 123456
@@ -1085,10 +1086,13 @@ def academy_course_detail(request: Request, course_id: int):
 def academy_enroll(request: Request, course_id: int):
     if "user_id" not in request.session:
         return RedirectResponse("/login", 303)
+    course = academy.get_course(course_id)
+    if not course:
+        raise HTTPException(404)
+    if course["status"] != "published":
+        raise HTTPException(400, detail="Course hii bado haijawa tayari.")
     academy.enrol_user(request.session["user_id"], course_id)
     return RedirectResponse(f"/academy/courses/{course_id}", 303)
-
-
 @app.get("/academy/lessons/{lesson_id}", response_class=HTMLResponse)
 def academy_lesson(request: Request, lesson_id: int):
     if "user_id" not in request.session:
@@ -1362,3 +1366,86 @@ def academy_tutor_delete(request: Request, conv_id: int):
         return RedirectResponse("/login", 303)
     academy.delete_conversation(conv_id, request.session["user_id"])
     return RedirectResponse("/academy/tutor", 303)
+
+
+# ============================================================
+# CODING LAB (Phase 5)
+# ============================================================
+@app.get("/academy/lab", response_class=HTMLResponse)
+def academy_lab_home(request: Request):
+    if "user_id" not in request.session:
+        return RedirectResponse("/login", 303)
+    user_id = request.session["user_id"]
+    projects = academy.get_user_projects(user_id)
+    return render("academy_lab.html", {
+        "request": request,
+        "projects": projects,
+        "now": datetime.now(),
+    })
+
+
+@app.post("/academy/lab/new")
+def academy_lab_new(request: Request, language: str = Form(...),
+                     title: str = Form(...)):
+    if "user_id" not in request.session:
+        return RedirectResponse("/login", 303)
+    if language not in ("html", "javascript", "python"):
+        raise HTTPException(400)
+    title = title.strip()[:80] or "Untitled"
+    pid = academy.create_project(
+        request.session["user_id"], title, language)
+    if not pid:
+        raise HTTPException(400)
+    return RedirectResponse(f"/academy/lab/p/{pid}", 303)
+
+
+@app.get("/academy/lab/p/{pid}", response_class=HTMLResponse)
+def academy_lab_editor(request: Request, pid: int):
+    if "user_id" not in request.session:
+        return RedirectResponse("/login", 303)
+    user_id = request.session["user_id"]
+    project = academy.get_project(pid, user_id)
+    if not project:
+        raise HTTPException(404)
+    return render("academy_lab_editor.html", {
+        "request": request,
+        "project": project,
+        "now": datetime.now(),
+    })
+
+
+@app.post("/academy/lab/p/{pid}/save")
+async def academy_lab_save(request: Request, pid: int):
+    if "user_id" not in request.session:
+        return RedirectResponse("/login", 303)
+    user_id = request.session["user_id"]
+    project = academy.get_project(pid, user_id)
+    if not project:
+        raise HTTPException(404)
+
+    form = await request.form()
+    code = form.get("code", "")
+    if len(code) > 100_000:
+        raise HTTPException(413, "Code too large (max 100KB)")
+
+    academy.save_project(pid, user_id, code)
+
+    # Return JSON for AJAX save
+    from fastapi.responses import JSONResponse
+    return JSONResponse({"ok": True, "saved_at": datetime.now().strftime("%H:%M:%S")})
+
+
+@app.post("/academy/lab/p/{pid}/rename")
+def academy_lab_rename(request: Request, pid: int, title: str = Form(...)):
+    if "user_id" not in request.session:
+        return RedirectResponse("/login", 303)
+    academy.rename_project(pid, request.session["user_id"], title.strip()[:80])
+    return RedirectResponse(f"/academy/lab/p/{pid}", 303)
+
+
+@app.post("/academy/lab/p/{pid}/delete")
+def academy_lab_delete(request: Request, pid: int):
+    if "user_id" not in request.session:
+        return RedirectResponse("/login", 303)
+    academy.delete_project(pid, request.session["user_id"])
+    return RedirectResponse("/academy/lab", 303)

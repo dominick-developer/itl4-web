@@ -628,6 +628,9 @@
                 <a href="/attendance" class="sb-item {% if request.url.path == '/attendance' %}active{% endif %}">
                     <span class="sb-icon">✓</span> Attendance
                 </a>
+                <a href="/academy/lab" class="sb-item {% if request.url.path.startswith('/academy/lab') %}active{% endif %}">
+                    <span class="sb-icon">💻</span> Coding Lab
+                </a>
                 <a href="/modules" class="sb-item {% if request.url.path.startswith('/modules') %}active{% endif %}">
                     <span class="sb-icon">📚</span> Modules
                 </a>
@@ -655,6 +658,10 @@
                 </a>
                 <a href="/announcements" class="sb-item {% if request.url.path == '/announcements' %}active{% endif %}">
                     <span class="sb-icon">📢</span> Announcements
+                </a>
+                <a href="/academy"
+                    class="sb-item {% if request.url.path == '/academy' or request.url.path.startswith('/academy/') and not request.url.path.startswith('/academy/lab') %}active{% endif %}">
+                    <span class="sb-icon">🎓</span> Academy
                 </a>
                 <a href="/daily_message" class="sb-item {% if request.url.path == '/daily_message' %}active{% endif %}">
                     <span class="sb-icon">💭</span> Daily Message

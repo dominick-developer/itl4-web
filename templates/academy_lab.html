@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Coding Lab — IT Expert Academy{% endblock %}
+{% block page_title %}💻 Coding Lab{% endblock %}
+
+{% block body %}
+<div class="container">
+
+    <div
+        style="background:linear-gradient(135deg,#0B1F33 0%,#1e40af 100%);border-radius:16px;padding:28px;color:white;margin-bottom:22px;">
+        <h1 style="font-size:26px;font-weight:900;margin-bottom:8px;">💻 Coding Lab</h1>
+        <p style="color:#cbd5e1;margin-bottom:20px;">Andika HTML, JavaScript, au Python — na uone matokeo papo hapo
+            kwenye browser yako.</p>
+
+        <form method="post" action="/academy/lab/new" style="display:flex;gap:10px;flex-wrap:wrap;">
+            <input type="text" name="title" required placeholder="Jina la project (mf. My First Page)"
+                style="flex:1;min-width:200px;padding:12px;border:none;border-radius:8px;font-family:inherit;font-size:14px;">
+            <select name="language" required
+                style="padding:12px;border:none;border-radius:8px;font-family:inherit;font-size:14px;background:white;">
+                <option value="html">🌐 HTML/CSS/JS</option>
+                <option value="javascript">⚡ JavaScript</option>
+                <option value="python">🐍 Python</option>
+            </select>
+            <button type="submit" class="btn btn-primary" style="padding:12px 24px;">+ New Project</button>
+        </form>
+    </div>
+
+    <h2 style="font-size:20px;font-weight:800;color:var(--navy);margin-bottom:14px;">📁 My Projects</h2>
+
+    {% if projects %}
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;">
+        {% for p in projects %}
+        <div class="card" style="padding:16px;">
+            <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:8px;">
+                <span style="font-size:24px;">
+                    {% if p.language == 'html' %}🌐{% elif p.language == 'python' %}🐍{% else %}⚡{% endif %}
+                </span>
+                <div style="flex:1;min-width:0;">
+                    <h3 style="font-size:15px;font-weight:800;color:var(--navy);margin:0;word-break:break-word;">{{
+                        p.title }}</h3>
+                    <div
+                        style="font-size:11px;color:var(--muted);margin-top:4px;text-transform:uppercase;font-weight:700;">
+                        {{ p.language }}</div>
+                </div>
+            </div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">
+                {{ p.code_size or 0 }} bytes · Updated {{ p.updated_at }}
+            </div>
+            <div style="display:flex;gap:8px;">
+                <a href="/academy/lab/p/{{ p.id }}" class="btn btn-primary"
+                    style="flex:1;padding:8px;font-size:12px;text-align:center;">Open →</a>
+                <form method="post" action="/academy/lab/p/{{ p.id }}/delete" style="display:inline;"
+                    onsubmit="return confirm('Delete this project?');">
+                    <button type="submit" class="btn btn-danger"
+                        style="padding:8px 12px;font-size:12px;">Delete</button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="card" style="text-align:center;padding:50px 20px;">
+        <div style="font-size:44px;margin-bottom:12px;">💻</div>
+        <h3 style="color:var(--navy);font-size:18px;font-weight:800;margin-bottom:8px;">You don't have any projects yet.
+        </h3>
+        <p style="color:var(--muted);margin-bottom:20px;">Create your first project above — choose HTML, JavaScript, or
+            Python.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

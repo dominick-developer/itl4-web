@@ -1,3 +1,4 @@
+@'
 <!DOCTYPE html>
 <html lang="en">
 
@@ -113,36 +114,53 @@
         }
 
         .container {
-            max-width: 1100px;
+            max-width: 1200px;
             margin: 0 auto;
-            padding: 40px 24px 60px;
+            padding: 40px 24px 80px;
         }
 
-        .section-title {
+        .category-section {
+            margin-bottom: 44px;
+        }
+
+        .category-head {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 20px;
+            padding-bottom: 14px;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .category-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+
+        .category-title {
             font-size: 24px;
             font-weight: 800;
             color: var(--navy);
-            margin: 32px 0 18px;
+            margin: 0;
         }
 
-        .path-pill {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            background: white;
-            border: 1px solid var(--border);
-            border-radius: 30px;
-            padding: 10px 18px;
-            margin: 0 8px 8px 0;
+        .category-count {
             font-size: 14px;
+            color: var(--muted);
             font-weight: 600;
-            color: var(--navy);
+            margin-left: auto;
         }
 
         .course-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+            gap: 18px;
         }
 
         .course-card {
@@ -151,6 +169,9 @@
             border-radius: 16px;
             overflow: hidden;
             transition: all .2s;
+            position: relative;
+            display: flex;
+            flex-direction: column;
         }
 
         .course-card:hover {
@@ -158,53 +179,83 @@
             box-shadow: 0 12px 32px rgba(0, 0, 0, .08);
         }
 
-        .course-card-head {
-            padding: 24px;
-            color: white;
-            position: relative;
+        .course-card.coming-soon {
+            opacity: .85;
         }
 
-        .course-card-head .icon {
-            font-size: 36px;
-            margin-bottom: 10px;
+        .course-card.coming-soon:hover {
+            transform: none;
+            box-shadow: none;
+        }
+
+        .course-card-head {
+            padding: 22px;
+            color: white;
+            position: relative;
+            min-height: 110px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
 
         .course-card-head h3 {
-            font-size: 20px;
+            font-size: 18px;
             font-weight: 800;
             margin-bottom: 6px;
             color: white;
+            line-height: 1.25;
         }
 
         .course-card-head .meta {
-            font-size: 13px;
+            font-size: 12px;
             opacity: .9;
+            font-weight: 600;
+        }
+
+        .coming-badge {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: rgba(255, 255, 255, .25);
+            backdrop-filter: blur(8px);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: .5px;
+            text-transform: uppercase;
         }
 
         .course-card-body {
-            padding: 20px 24px 24px;
+            padding: 18px 22px 22px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
         }
 
         .course-card-body p {
             color: var(--muted);
-            font-size: 14px;
+            font-size: 13px;
             line-height: 1.6;
-            margin-bottom: 16px;
-            min-height: 60px;
+            margin-bottom: 14px;
+            flex: 1;
+            min-height: 52px;
         }
 
         .course-meta-row {
             display: flex;
             gap: 12px;
-            font-size: 13px;
+            font-size: 12px;
             color: var(--muted);
-            margin-bottom: 16px;
+            margin-bottom: 14px;
             flex-wrap: wrap;
+            font-weight: 600;
         }
 
         .btn {
             display: inline-block;
-            padding: 11px 22px;
+            padding: 10px 20px;
             border-radius: 9px;
             font-weight: 700;
             font-size: 14px;
@@ -224,19 +275,21 @@
             background: #e6670f;
         }
 
+        .btn-success {
+            background: #16A34A;
+            color: white;
+        }
+
+        .btn-disabled {
+            background: #f1f5f9;
+            color: #94a3b8;
+            cursor: not-allowed;
+        }
+
         .btn-outline {
             background: white;
             border: 1.5px solid var(--border);
             color: var(--navy);
-        }
-
-        .btn-outline:hover {
-            background: #f8fafc;
-        }
-
-        .btn-success {
-            background: #16A34A;
-            color: white;
         }
 
         .empty {
@@ -251,7 +304,11 @@
             }
 
             .container {
-                padding: 24px 16px 40px;
+                padding: 24px 16px 60px;
+            }
+
+            .category-title {
+                font-size: 19px;
             }
         }
     </style>
@@ -277,59 +334,66 @@
     </div>
 
     <div class="hero">
-        <h1>Explore Our Courses</h1>
-        <p>Learn computer skills, programming, web development, and AI-assisted building — at your own pace.</p>
+        <h1>Explore Courses</h1>
+        <p>Choose a skill. Start learning. Build your future.</p>
     </div>
 
     <div class="container">
 
-        <h2 class="section-title">📚 Learning Paths</h2>
-        <div>
-            {% for p in paths %}
-            <div class="path-pill">
-                <span>{{ p.icon }}</span>
-                <span>{{ p.title }}</span>
-                <span style="color:var(--muted);font-size:12px;">({{ p.course_count }})</span>
-            </div>
-            {% endfor %}
-        </div>
+        {% for path in paths %}
+        {% set path_courses = [] %}
+        {% for c in courses %}
+        {% if c.path_title == path.title %}
+        {% set _ = path_courses.append(c) %}
+        {% endif %}
+        {% endfor %}
 
-        <h2 class="section-title">🎯 Available Courses</h2>
-
-        {% if courses %}
-        <div class="course-grid">
-            {% for c in courses %}
-            <div class="course-card">
-                <div class="course-card-head"
-                    style="background:linear-gradient(135deg,{{ c.path_color or '#0B1F33' }} 0%,#0B1F33 100%);">
-                    <div class="icon">{{ c.path_icon or '📘' }}</div>
-                    <h3>{{ c.title }}</h3>
-                    <div class="meta">{{ c.path_title }} · {{ c.difficulty_level }}</div>
+        {% if path_courses %}
+        <div class="category-section">
+            <div class="category-head">
+                <div class="category-icon" style="background:{{ path.color }}20;color:{{ path.color }};">{{ path.icon }}
                 </div>
-                <div class="course-card-body">
-                    <p>{{ c.description[:150] }}{% if c.description|length > 150 %}...{% endif %}</p>
-                    <div class="course-meta-row">
-                        <span>📖 {{ c.lesson_count }} lessons</span>
-                        <span>⏱ {{ c.estimated_duration_min }} min</span>
+                <h2 class="category-title">{{ path.title }}</h2>
+                <span class="category-count">{{ path_courses|length }} course{% if path_courses|length != 1 %}s{% endif
+                    %}</span>
+            </div>
+            <div class="course-grid">
+                {% for c in path_courses %}
+                <div class="course-card {% if c.status != 'published' %}coming-soon{% endif %}">
+                    <div class="course-card-head"
+                        style="background:linear-gradient(135deg,{{ c.path_color }} 0%,#0B1F33 100%);">
+                        <h3>{{ c.title }}</h3>
+                        <div class="meta">{{ c.difficulty_level }} · {{ c.estimated_duration_min }} min</div>
+                        {% if c.status != 'published' %}
+                        <span class="coming-badge">🚧 Soon</span>
+                        {% endif %}
                     </div>
-                    {% if c.id in enrolled_ids %}
-                    <a href="/academy/courses/{{ c.id }}" class="btn btn-success">✓ Continue</a>
-                    {% else %}
-                    <a href="/academy/courses/{{ c.id }}" class="btn btn-primary">View Course →</a>
-                    {% endif %}
+                    <div class="course-card-body">
+                        <p>{{ c.description[:150] }}{% if c.description and c.description|length > 150 %}...{% endif %}
+                        </p>
+                        <div class="course-meta-row">
+                            <span>📖 {{ c.lesson_count }} lesson{% if c.lesson_count != 1 %}s{% endif %}</span>
+                        </div>
+                        {% if c.status == 'published' %}
+                        {% if c.id in enrolled_ids %}
+                        <a href="/academy/courses/{{ c.id }}" class="btn btn-success">✓ Continue</a>
+                        {% else %}
+                        <a href="/academy/courses/{{ c.id }}" class="btn btn-primary">View Course →</a>
+                        {% endif %}
+                        {% else %}
+                        <button class="btn btn-disabled" disabled>🚧 Coming Soon</button>
+                        {% endif %}
+                    </div>
                 </div>
+                {% endfor %}
             </div>
-            {% endfor %}
-        </div>
-        {% else %}
-        <div class="empty">
-            <h3>No courses available yet</h3>
-            <p>New courses are being prepared. Check back soon!</p>
         </div>
         {% endif %}
+        {% endfor %}
 
     </div>
 
 </body>
 
 </html>
+'@ | Out-File -FilePath templates/academy_courses.html -Encoding UTF8

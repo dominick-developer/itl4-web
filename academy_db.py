@@ -148,36 +148,45 @@ def init_academy():
     conn.commit()
     _seed_paths(cur)
     _seed_python_course(cur)
+    _seed_course_placeholders(cur)
     conn.commit()
     conn.close()
-
-
 def _seed_paths(cur):
-    paths = [
-        ("Computer Foundations", "computer-foundations",
-         "Anza kujenga ujuzi wa msingi wa kompyuta â€” kutoka kwa kuwasha hadi kutumia ofisi.",
-         "ðŸ’»", "#2563EB", "Beginner", 1),
-        ("Programming Foundations", "programming-foundations",
-         "Jifunze misingi ya programu kwa Python â€” kutoka kwa dhana hadi msimbo halisi.",
-         "âŒ¨ï¸", "#7C3AED", "Beginner", 2),
-        ("Web Development", "web-development",
-         "Jenga tovuti na aplikesheni za browser kwa HTML, CSS, na JavaScript.",
-         "ðŸŒ", "#DC2626", "Intermediate", 3),
-        ("Databases & Backend", "databases-backend",
-         "Jifunze SQL, API, na jinsi ya kujenga mifumo ya data yenye usalama.",
-         "ðŸ—„ï¸", "#0E8F78", "Intermediate", 4),
-        ("AI-Assisted Development", "ai-assisted-development",
-         "Tumia AI kujenga software haraka â€” bila kupoteza uelewa wa nini kinafanya kazi.",
-         "ðŸ¤–", "#F47721", "Intermediate", 5),
+    """Seed/update 5 categories. Slugs stay stable to preserve FKs."""
+    categories = [
+        # (slug, title, icon, color, description, seq)
+        ("computer-foundations", "Computer & Digital Skills",
+         "💻", "#2563EB",
+         "Anza kujenga ujuzi wa msingi wa kompyuta — kutoka kwa kuwasha hadi kutumia ofisi.",
+         1),
+        ("programming-foundations", "Software & Programming",
+         "⌨️", "#7C3AED",
+         "Jifunze programu, uendelezaji wa tovuti, APIs, na databases.",
+         2),
+        ("ai-assisted-development", "AI & Data",
+         "🤖", "#F47721",
+         "AI, data analytics, machine learning, na AI-powered development.",
+         3),
+        ("web-development", "Networking, Security & Infrastructure",
+         "🔒", "#0E8F78",
+         "Networking, cybersecurity, Linux, na cloud infrastructure.",
+         4),
+        ("databases-backend", "Digital Business & Creative Technology",
+         "🎨", "#DC2626",
+         "Digital marketing, graphic design, na IT project management.",
+         5),
     ]
-    for title, slug, desc, icon, color, level, seq in paths:
+
+    for slug, title, icon, color, desc, seq in categories:
+        cur.execute(
+            "UPDATE learning_paths SET title=?, icon=?, color=?, "
+            "description=?, sequence_number=? WHERE slug=?",
+            (title, icon, color, desc, seq, slug))
         cur.execute(
             "INSERT OR IGNORE INTO learning_paths "
             "(title, slug, description, icon, color, target_level, sequence_number) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?)",
-            (title, slug, desc, icon, color, level, seq))
-
-
+            "VALUES (?, ?, ?, ?, ?, 'Beginner', ?)",
+            (title, slug, desc, icon, color, seq))
 def _seed_python_course(cur):
     """Seed one complete course: Python Fundamentals 101."""
     existing = cur.execute(
@@ -266,14 +275,15 @@ def get_all_courses():
     conn = get_connection()
     rows = conn.execute(
         "SELECT c.*, p.title AS path_title, p.icon AS path_icon, p.color AS path_color, "
+        "p.sequence_number AS path_seq, "
         "(SELECT COUNT(*) FROM course_modules WHERE course_id = c.id) AS module_count, "
         "(SELECT COUNT(*) FROM lessons l JOIN course_modules m ON l.module_id = m.id "
         " WHERE m.course_id = c.id) AS lesson_count "
         "FROM academy_courses c JOIN learning_paths p ON c.learning_path_id = p.id "
-        "WHERE c.status = 'published' ORDER BY p.sequence_number, c.id").fetchall()
+        "WHERE c.status IN ('published', 'coming_soon') "
+        "ORDER BY p.sequence_number, c.id").fetchall()
     conn.close()
     return rows
-
 
 def get_course(course_id):
     conn = get_connection()
@@ -816,3 +826,233 @@ def get_today_ai_usage(user_id):
         (user_id,)).fetchone()
     conn.close()
     return row["count"] if row else 0
+
+
+# ============================================================
+# CODING LAB (Phase 5)
+# ============================================================
+def init_coding_tables():
+    """Create coding lab tables (idempotent)."""
+    conn = get_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS coding_projects (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        owner_user_id INTEGER NOT NULL,
+        course_id INTEGER,
+        lesson_id INTEGER,
+        title TEXT NOT NULL,
+        description TEXT,
+        language TEXT NOT NULL,
+        code_content TEXT,
+        visibility TEXT DEFAULT 'private',
+        created_at TEXT DEFAULT (datetime('now','localtime')),
+        updated_at TEXT DEFAULT (datetime('now','localtime'))
+    )""")
+
+    conn.commit()
+    conn.close()
+
+
+STARTER_CODE = {
+    "html": """<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>My Page</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f7fa;
+      color: #0B1F33;
+      padding: 40px;
+      text-align: center;
+    }
+    h1 { color: #F47721; }
+    button {
+      background: #F47721;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>Habari, Dunia! 👋</h1>
+  <p>Badilisha code hii na uone matokeo papo hapo.</p>
+  <button onclick="alert('Umebonyeza!')">Bonyeza Mimi</button>
+</body>
+</html>
+""",
+    "javascript": """// JavaScript Playground
+// Output itaonekana kwenye console hapa chini
+
+console.log("Habari, Dunia!");
+
+let jina = "Amina";
+let umri = 20;
+
+console.log(`Jina langu ni ${jina}, nina miaka ${umri}.`);
+
+function salamu(jina) {
+  return `Karibu, ${jina}!`;
+}
+
+console.log(salamu("Mwanafunzi"));
+""",
+    "python": """# Python Playground
+# Inaendesha kwenye browser kwa Pyodide
+
+print("Habari, Dunia!")
+
+jina = "Amina"
+umri = 20
+
+print(f"Jina langu ni {jina}, nina miaka {umri}.")
+
+def salamu(jina):
+    return f"Karibu, {jina}!"
+
+print(salamu("Mwanafunzi"))
+""",
+}
+
+
+def create_project(user_id, title, language, code=None, description="",
+                   course_id=None, lesson_id=None):
+    """Create a new coding project."""
+    if language not in STARTER_CODE:
+        return None
+    code = code if code else STARTER_CODE[language]
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "INSERT INTO coding_projects (owner_user_id, course_id, lesson_id, "
+        "title, description, language, code_content) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (user_id, course_id, lesson_id, title, description, language, code))
+    pid = cur.lastrowid
+    conn.commit()
+    conn.close()
+    return pid
+
+
+def get_project(pid, user_id):
+    """Get a project owned by this user."""
+    conn = get_connection()
+    row = conn.execute(
+        "SELECT * FROM coding_projects WHERE id = ? AND owner_user_id = ?",
+        (pid, user_id)).fetchone()
+    conn.close()
+    return row
+
+
+def get_user_projects(user_id, limit=50):
+    conn = get_connection()
+    rows = conn.execute(
+        "SELECT id, title, language, updated_at, "
+        "LENGTH(code_content) AS code_size "
+        "FROM coding_projects WHERE owner_user_id = ? "
+        "ORDER BY updated_at DESC LIMIT ?",
+        (user_id, limit)).fetchall()
+    conn.close()
+    return rows
+
+
+def save_project(pid, user_id, code):
+    conn = get_connection()
+    conn.execute(
+        "UPDATE coding_projects SET code_content = ?, "
+        "updated_at = datetime('now','localtime') "
+        "WHERE id = ? AND owner_user_id = ?",
+        (code, pid, user_id))
+    conn.commit()
+    conn.close()
+
+
+def rename_project(pid, user_id, new_title):
+    conn = get_connection()
+    conn.execute(
+        "UPDATE coding_projects SET title = ?, "
+        "updated_at = datetime('now','localtime') "
+        "WHERE id = ? AND owner_user_id = ?",
+        (new_title, pid, user_id))
+    conn.commit()
+    conn.close()
+
+
+def delete_project(pid, user_id):
+    conn = get_connection()
+    conn.execute(
+        "DELETE FROM coding_projects WHERE id = ? AND owner_user_id = ?",
+        (pid, user_id))
+    conn.commit()
+    conn.close()
+def _seed_course_placeholders(cur):
+    """Seed 10 priority courses. Python is already published; others = coming_soon."""
+    priority_courses = [
+        # (slug, title, category_slug, difficulty, minutes, description, status)
+        ("computer-fundamentals", "Computer Fundamentals",
+         "computer-foundations", "Beginner", 180,
+         "Computer basics, Windows, files, folders, software, troubleshooting na computer maintenance.",
+         "coming_soon"),
+        ("microsoft-office", "Microsoft Office & Productivity",
+         "computer-foundations", "Beginner", 240,
+         "Microsoft Word, Excel, PowerPoint, professional documents, spreadsheets na presentations.",
+         "coming_soon"),
+        # Python Fundamentals 101 already exists — leave it
+        ("web-design-development", "Web Design & Development",
+         "programming-foundations", "Beginner", 300,
+         "HTML, CSS, JavaScript, responsive websites na frontend development.",
+         "coming_soon"),
+        ("database-management-sql", "Database Management & SQL",
+         "programming-foundations", "Intermediate", 240,
+         "Database design, SQL, PostgreSQL, relationships, queries, backups na data security.",
+         "coming_soon"),
+        ("ai-tools", "AI & AI Tools",
+         "ai-assisted-development", "Beginner", 180,
+         "AI fundamentals, ChatGPT, AI productivity, prompting, responsible AI na matumizi ya AI kazini.",
+         "coming_soon"),
+        ("ai-powered-dev", "AI-Powered Software Development",
+         "ai-assisted-development", "Intermediate", 300,
+         "Kutumia AI kujenga applications, kuelewa code, debugging, testing na project development.",
+         "coming_soon"),
+        ("data-analytics", "Data Analytics & Visualization",
+         "ai-assisted-development", "Intermediate", 280,
+         "Excel advanced, SQL, Power BI, data cleaning, dashboards na data interpretation.",
+         "coming_soon"),
+        ("networking-it-support", "Computer Networking & IT Support",
+         "web-development", "Beginner", 240,
+         "Networking fundamentals, IP addressing, routers, switches, troubleshooting na IT support.",
+         "coming_soon"),
+        ("cybersecurity-fundamentals", "Cybersecurity Fundamentals",
+         "web-development", "Beginner", 240,
+         "Digital security, network security, access control, threat awareness, safe systems na incident response.",
+         "coming_soon"),
+    ]
+
+    for slug, title, cat_slug, diff, mins, desc, status in priority_courses:
+        cat = cur.execute(
+            "SELECT id FROM learning_paths WHERE slug = ?", (cat_slug,)
+        ).fetchone()
+        if not cat:
+            continue
+        existing = cur.execute(
+            "SELECT id FROM academy_courses WHERE slug = ?", (slug,)
+        ).fetchone()
+        if existing:
+            cur.execute(
+                "UPDATE academy_courses SET learning_path_id=?, title=?, "
+                "description=?, difficulty_level=?, estimated_duration_min=?, status=? "
+                "WHERE slug=?",
+                (cat["id"], title, desc, diff, mins, status, slug))
+        else:
+            cur.execute(
+                "INSERT INTO academy_courses "
+                "(learning_path_id, title, slug, description, difficulty_level, "
+                "language, estimated_duration_min, status) "
+                "VALUES (?, ?, ?, ?, ?, 'sw', ?, ?)",
+                (cat["id"], title, slug, desc, diff, mins, status))
