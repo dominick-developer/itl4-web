@@ -528,15 +528,15 @@
             <h1>Turn Your Curiosity into Real Tech Skills.</h1>
             <p>Learn computer skills, programming, web development, and AI-assisted software building step by step —
                 with an AI tutor helping you understand concepts, solve problems, and build real projects.</p>
-            <div class="ac-btns">
-                {% if logged_in %}
-                <a href="/academy/courses" class="ac-btn ac-btn-primary">Browse Courses →</a>
-                <a href="/academy/dashboard" class="ac-btn ac-btn-outline">My Learning</a>
-                {% else %}
-                <a href="/signup" class="ac-btn ac-btn-primary">Get Started →</a>
-                <a href="/login" class="ac-btn ac-btn-outline">Log In</a>
-                {% endif %}
-            </div>
+<div class="ac-btns">
+    {% if logged_in %}
+    <a href="/academy/careers" class="ac-btn ac-btn-primary">Choose Career Path →</a>
+    <a href="/academy/courses" class="ac-btn ac-btn-outline">Browse Courses</a>
+    {% else %}
+    <a href="/signup" class="ac-btn ac-btn-primary">Get Started →</a>
+    <a href="/academy/courses" class="ac-btn ac-btn-outline">Browse Courses</a>
+    {% endif %}
+</div>
         </div>
     </div>
 

@@ -992,49 +992,56 @@ def delete_project(pid, user_id):
     conn.commit()
     conn.close()
 def _seed_course_placeholders(cur):
-    """Seed 10 priority courses. Python is already published; others = coming_soon."""
-    priority_courses = [
-        # (slug, title, category_slug, difficulty, minutes, description, status)
-        ("computer-fundamentals", "Computer Fundamentals",
-         "computer-foundations", "Beginner", 180,
-         "Computer basics, Windows, files, folders, software, troubleshooting na computer maintenance.",
-         "coming_soon"),
-        ("microsoft-office", "Microsoft Office & Productivity",
-         "computer-foundations", "Beginner", 240,
-         "Microsoft Word, Excel, PowerPoint, professional documents, spreadsheets na presentations.",
-         "coming_soon"),
-        # Python Fundamentals 101 already exists — leave it
-        ("web-design-development", "Web Design & Development",
-         "programming-foundations", "Beginner", 300,
-         "HTML, CSS, JavaScript, responsive websites na frontend development.",
-         "coming_soon"),
-        ("database-management-sql", "Database Management & SQL",
-         "programming-foundations", "Intermediate", 240,
-         "Database design, SQL, PostgreSQL, relationships, queries, backups na data security.",
-         "coming_soon"),
-        ("ai-tools", "AI & AI Tools",
-         "ai-assisted-development", "Beginner", 180,
-         "AI fundamentals, ChatGPT, AI productivity, prompting, responsible AI na matumizi ya AI kazini.",
-         "coming_soon"),
-        ("ai-powered-dev", "AI-Powered Software Development",
-         "ai-assisted-development", "Intermediate", 300,
-         "Kutumia AI kujenga applications, kuelewa code, debugging, testing na project development.",
-         "coming_soon"),
-        ("data-analytics", "Data Analytics & Visualization",
-         "ai-assisted-development", "Intermediate", 280,
-         "Excel advanced, SQL, Power BI, data cleaning, dashboards na data interpretation.",
-         "coming_soon"),
-        ("networking-it-support", "Computer Networking & IT Support",
-         "web-development", "Beginner", 240,
-         "Networking fundamentals, IP addressing, routers, switches, troubleshooting na IT support.",
-         "coming_soon"),
-        ("cybersecurity-fundamentals", "Cybersecurity Fundamentals",
-         "web-development", "Beginner", 240,
-         "Digital security, network security, access control, threat awareness, safe systems na incident response.",
-         "coming_soon"),
+    """Seed all 19 courses from the Master Curriculum. Python already published; others coming_soon."""
+    all_courses = [
+        # COMPUTER & DIGITAL SKILLS
+        ("computer-fundamentals", "Computer Fundamentals", "computer-foundations", "Beginner", 180,
+         "Computer basics, Windows, files, folders, software, troubleshooting na computer maintenance."),
+        ("microsoft-office", "Microsoft Office & Productivity", "computer-foundations", "Beginner", 240,
+         "Microsoft Word, Excel, PowerPoint, professional documents, spreadsheets na presentations."),
+        ("internet-digital-work", "Internet, Digital Communication & Online Work", "computer-foundations", "Beginner", 150,
+         "Email, cloud storage, online collaboration, research, remote work na digital professionalism."),
+
+        # SOFTWARE & PROGRAMMING
+        ("web-design-development", "Web Design & Development", "programming-foundations", "Beginner", 300,
+         "HTML, CSS, JavaScript, responsive websites na frontend development."),
+        ("modern-frontend", "Modern Frontend Development", "programming-foundations", "Intermediate", 320,
+         "React, components, application interfaces, APIs, state management na modern web applications."),
+        ("backend-apis", "Backend Development & APIs", "programming-foundations", "Intermediate", 300,
+         "Server-side programming, REST APIs, authentication, validation na application architecture."),
+        ("database-management-sql", "Database Management & SQL", "programming-foundations", "Intermediate", 240,
+         "Database design, SQL, PostgreSQL, relationships, queries, backups na data security."),
+
+        # AI & DATA
+        ("ai-tools", "AI & AI Tools", "ai-assisted-development", "Beginner", 180,
+         "AI fundamentals, ChatGPT, AI productivity, prompting, responsible AI na matumizi ya AI kazini."),
+        ("ai-powered-dev", "AI-Powered Software Development", "ai-assisted-development", "Intermediate", 300,
+         "Kutumia AI kujenga applications, kuelewa code, debugging, testing na project development."),
+        ("data-analytics", "Data Analytics & Visualization", "ai-assisted-development", "Intermediate", 280,
+         "Excel advanced, SQL, Power BI, data cleaning, dashboards na data interpretation."),
+        ("data-science-ml", "Data Science & Machine Learning", "ai-assisted-development", "Advanced", 360,
+         "Python for data, statistics, data preparation, machine learning fundamentals na practical models."),
+
+        # NETWORKING, SECURITY & INFRASTRUCTURE
+        ("networking-it-support", "Computer Networking & IT Support", "web-development", "Beginner", 240,
+         "Networking fundamentals, IP addressing, routers, switches, troubleshooting na IT support."),
+        ("cybersecurity-fundamentals", "Cybersecurity Fundamentals", "web-development", "Beginner", 240,
+         "Digital security, network security, access control, threat awareness, safe systems na incident response."),
+        ("linux-server", "Linux & Server Administration", "web-development", "Intermediate", 300,
+         "Linux commands, users, permissions, services, server configuration, Nginx na basic deployment."),
+        ("cloud-devops", "Cloud Computing & DevOps", "web-development", "Advanced", 320,
+         "Cloud fundamentals, deployment, Docker, CI/CD, monitoring na infrastructure management."),
+
+        # DIGITAL BUSINESS & CREATIVE
+        ("digital-marketing", "Digital Marketing & E-Commerce", "databases-backend", "Beginner", 220,
+         "Social media marketing, online branding, digital advertising, online stores na customer engagement."),
+        ("graphic-design", "Graphic Design & Digital Content", "databases-backend", "Beginner", 240,
+         "Canva, design fundamentals, branding, image editing, video editing na content production."),
+        ("it-project-management", "IT Project Management", "databases-backend", "Intermediate", 200,
+         "Requirements, project planning, Agile fundamentals, teamwork, documentation na project delivery."),
     ]
 
-    for slug, title, cat_slug, diff, mins, desc, status in priority_courses:
+    for slug, title, cat_slug, diff, mins, desc in all_courses:
         cat = cur.execute(
             "SELECT id FROM learning_paths WHERE slug = ?", (cat_slug,)
         ).fetchone()
@@ -1046,13 +1053,220 @@ def _seed_course_placeholders(cur):
         if existing:
             cur.execute(
                 "UPDATE academy_courses SET learning_path_id=?, title=?, "
-                "description=?, difficulty_level=?, estimated_duration_min=?, status=? "
+                "description=?, difficulty_level=?, estimated_duration_min=? "
                 "WHERE slug=?",
-                (cat["id"], title, desc, diff, mins, status, slug))
+                (cat["id"], title, desc, diff, mins, slug))
         else:
             cur.execute(
                 "INSERT INTO academy_courses "
                 "(learning_path_id, title, slug, description, difficulty_level, "
                 "language, estimated_duration_min, status) "
-                "VALUES (?, ?, ?, ?, ?, 'sw', ?, ?)",
-                (cat["id"], title, slug, desc, diff, mins, status))
+                "VALUES (?, ?, ?, ?, ?, 'sw', ?, 'coming_soon')",
+                (cat["id"], title, slug, desc, diff, mins))
+
+
+# ============================================================
+# CAREER LEARNING PATHS (Modification 2)
+# ============================================================
+def init_career_tables():
+    """Create career_paths tables and seed them."""
+    conn = get_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS career_paths (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        slug TEXT UNIQUE NOT NULL,
+        title TEXT NOT NULL,
+        role_target TEXT,
+        description TEXT,
+        icon TEXT,
+        color TEXT,
+        sequence_number INTEGER DEFAULT 1,
+        status TEXT DEFAULT 'active'
+    )""")
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS career_path_courses (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        career_id INTEGER NOT NULL,
+        course_id INTEGER NOT NULL,
+        sequence_number INTEGER DEFAULT 1,
+        is_required INTEGER DEFAULT 1,
+        notes TEXT,
+        FOREIGN KEY (career_id) REFERENCES career_paths(id) ON DELETE CASCADE,
+        FOREIGN KEY (course_id) REFERENCES academy_courses(id) ON DELETE CASCADE,
+        UNIQUE(career_id, course_id)
+    )""")
+
+    conn.commit()
+    _seed_career_paths(cur)
+    conn.commit()
+    conn.close()
+
+
+def _seed_career_paths(cur):
+    """Seed 5 career paths linked to courses by slug."""
+    careers = [
+        {
+            "slug": "web-developer",
+            "title": "Become a Web Developer",
+            "role_target": "Web Developer",
+            "icon": "🌐",
+            "color": "#2563EB",
+            "description": "Jenga tovuti na web applications za kisasa — kuanzia HTML/CSS hadi backend na database. Ujuzi wa kuajiriwa kama Web Developer.",
+            "courses": [
+                ("web-design-development", 1, 1),
+                ("modern-frontend", 2, 1),
+                ("backend-apis", 3, 1),
+                ("database-management-sql", 4, 1),
+                ("it-project-management", 5, 0),
+            ],
+        },
+        {
+            "slug": "data-analyst",
+            "title": "Become a Data Analyst",
+            "role_target": "Data Analyst",
+            "icon": "📊",
+            "color": "#7C3AED",
+            "description": "Jifunze kuchambua data, kujenga dashboards, na kufanya maamuzi kwa data. Ujuzi wa kuajiriwa kama Data Analyst.",
+            "courses": [
+                ("microsoft-office", 1, 1),
+                ("data-analytics", 2, 1),
+                ("database-management-sql", 3, 1),
+                ("python-fundamentals-101", 4, 1),
+                ("data-science-ml", 5, 0),
+            ],
+        },
+        {
+            "slug": "ai-developer",
+            "title": "Become an AI-Assisted Developer",
+            "role_target": "AI-Assisted Developer",
+            "icon": "🤖",
+            "color": "#F47721",
+            "description": "Tumia AI kujenga software haraka na kwa ubora. Ujuzi wa kisasa unaotafutwa na waajiri wengi leo.",
+            "courses": [
+                ("computer-fundamentals", 1, 1),
+                ("python-fundamentals-101", 2, 1),
+                ("ai-tools", 3, 1),
+                ("ai-powered-dev", 4, 1),
+                ("database-management-sql", 5, 0),
+            ],
+        },
+        {
+            "slug": "cybersecurity",
+            "title": "Become a Cybersecurity Specialist",
+            "role_target": "Cybersecurity Specialist",
+            "icon": "🔒",
+            "color": "#0E8F78",
+            "description": "Linda mifumo ya kidijitali dhidi ya vitisho. Ujuzi wa usalama wa mtandao unaohitajika sana nchini.",
+            "courses": [
+                ("computer-fundamentals", 1, 1),
+                ("networking-it-support", 2, 1),
+                ("cybersecurity-fundamentals", 3, 1),
+                ("linux-server", 4, 1),
+                ("cloud-devops", 5, 0),
+            ],
+        },
+        {
+            "slug": "it-support",
+            "title": "Become an IT Support Technician",
+            "role_target": "IT Support Technician",
+            "icon": "💻",
+            "color": "#DC2626",
+            "description": "Saidia watumiaji na mifumo ya kompyuta. Kazi nyingi za IT Support zinapatikana kila siku Tanzania.",
+            "courses": [
+                ("computer-fundamentals", 1, 1),
+                ("microsoft-office", 2, 1),
+                ("networking-it-support", 3, 1),
+                ("cybersecurity-fundamentals", 4, 0),
+            ],
+        },
+    ]
+
+    for seq, c in enumerate(careers, 1):
+        existing = cur.execute(
+            "SELECT id FROM career_paths WHERE slug = ?", (c["slug"],)
+        ).fetchone()
+        if existing:
+            cur.execute(
+                "UPDATE career_paths SET title=?, role_target=?, description=?, "
+                "icon=?, color=?, sequence_number=? WHERE slug=?",
+                (c["title"], c["role_target"], c["description"],
+                 c["icon"], c["color"], seq, c["slug"]))
+            career_id = existing["id"]
+        else:
+            cur.execute(
+                "INSERT INTO career_paths (slug, title, role_target, description, "
+                "icon, color, sequence_number) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (c["slug"], c["title"], c["role_target"],
+                 c["description"], c["icon"], c["color"], seq))
+            career_id = cur.lastrowid
+
+        # Link courses
+        cur.execute(
+            "DELETE FROM career_path_courses WHERE career_id = ?", (career_id,))
+        for course_slug, course_seq, is_required in c["courses"]:
+            course = cur.execute(
+                "SELECT id FROM academy_courses WHERE slug = ?", (course_slug,)
+            ).fetchone()
+            if course:
+                cur.execute(
+                    "INSERT INTO career_path_courses (career_id, course_id, "
+                    "sequence_number, is_required) VALUES (?, ?, ?, ?)",
+                    (career_id, course["id"], course_seq, is_required))
+
+
+def get_all_career_paths():
+    conn = get_connection()
+    rows = conn.execute(
+        "SELECT cp.*, "
+        "(SELECT COUNT(*) FROM career_path_courses WHERE career_id = cp.id) AS course_count "
+        "FROM career_paths cp WHERE cp.status = 'active' "
+        "ORDER BY cp.sequence_number").fetchall()
+    conn.close()
+    return rows
+
+
+def get_career_path(slug):
+    conn = get_connection()
+    row = conn.execute(
+        "SELECT * FROM career_paths WHERE slug = ?", (slug,)).fetchone()
+    conn.close()
+    return row
+
+
+def get_career_courses(career_id):
+    conn = get_connection()
+    rows = conn.execute(
+        "SELECT cpc.*, "
+        "c.title, c.slug, c.description, c.difficulty_level, "
+        "c.estimated_duration_min, c.status, "
+        "c.id AS course_id, "
+        "p.icon AS path_icon, p.color AS path_color, p.title AS path_title "
+        "FROM career_path_courses cpc "
+        "JOIN academy_courses c ON cpc.course_id = c.id "
+        "JOIN learning_paths p ON c.learning_path_id = p.id "
+        "WHERE cpc.career_id = ? "
+        "ORDER BY cpc.sequence_number", (career_id,)).fetchall()
+    conn.close()
+    return rows
+
+
+def get_user_career_progress(user_id, career_id):
+    """Return (completed_courses, total_courses) for a user."""
+    conn = get_connection()
+    total = conn.execute(
+        "SELECT COUNT(*) FROM career_path_courses WHERE career_id = ?",
+        (career_id,)).fetchone()[0]
+    if total == 0:
+        conn.close()
+        return 0, 0
+    # Completed = course has a certificate
+    completed = conn.execute(
+        "SELECT COUNT(*) FROM career_path_courses cpc "
+        "JOIN certificates cert ON cert.course_id = cpc.course_id "
+        "WHERE cpc.career_id = ? AND cert.user_id = ?",
+        (career_id, user_id)).fetchone()[0]
+    conn.close()
+    return completed, total

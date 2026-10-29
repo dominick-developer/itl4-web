@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Career Paths — IT Expert Academy</title>
+    <link rel="icon" href="/static/icon-192.png">
+    <style>
+        :root {
+            --navy: #0B1F33;
+            --orange: #F47721;
+            --bg: #F5F7FA;
+            --border: #E2E8F0;
+            --muted: #64748B;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--navy);
+            font-size: 17px;
+            line-height: 1.6;
+        }
+
+        a {
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .ac-nav {
+            background: var(--navy);
+            padding: 14px 24px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .ac-nav img {
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+        }
+
+        .ac-nav-title {
+            color: white;
+            font-weight: 800;
+            font-size: 16px;
+        }
+
+        .ac-nav-sub {
+            color: #94a3b8;
+            font-size: 12px;
+        }
+
+        .ac-nav-links {
+            margin-left: auto;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .ac-nav-links a {
+            color: #cbd5e1;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .ac-nav-links a:hover {
+            background: rgba(255, 255, 255, .08);
+            color: white;
+        }
+
+        .ac-nav-cta {
+            background: var(--orange);
+            color: white !important;
+            font-weight: 700 !important;
+        }
+
+        .hero {
+            background: linear-gradient(135deg, #0B1F33 0%, #1e40af 100%);
+            color: white;
+            padding: 60px 24px;
+            text-align: center;
+        }
+
+        .hero h1 {
+            font-size: 38px;
+            font-weight: 900;
+            margin-bottom: 12px;
+        }
+
+        .hero p {
+            font-size: 17px;
+            color: #cbd5e1;
+            max-width: 640px;
+            margin: 0 auto;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 40px 24px 80px;
+        }
+
+        .career-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+        }
+
+        .career-card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 26px;
+            transition: all .2s;
+            display: flex;
+            flex-direction: column;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .career-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 16px 40px rgba(0, 0, 0, .1);
+            border-color: transparent;
+        }
+
+        .career-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            margin-bottom: 16px;
+        }
+
+        .career-role {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--orange);
+            font-weight: 800;
+            margin-bottom: 6px;
+        }
+
+        .career-title {
+            font-size: 20px;
+            font-weight: 900;
+            color: var(--navy);
+            margin-bottom: 10px;
+            line-height: 1.25;
+        }
+
+        .career-desc {
+            font-size: 14px;
+            color: var(--muted);
+            line-height: 1.6;
+            margin-bottom: 18px;
+            flex: 1;
+        }
+
+        .career-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+        }
+
+        .career-count {
+            font-size: 13px;
+            color: var(--muted);
+            font-weight: 700;
+        }
+
+        .career-cta {
+            color: var(--orange);
+            font-weight: 800;
+            font-size: 14px;
+        }
+
+        .progress-bar {
+            height: 6px;
+            background: #e2e8f0;
+            border-radius: 3px;
+            margin: 12px 0 6px;
+            overflow: hidden;
+        }
+
+        .progress-bar>div {
+            height: 100%;
+            background: linear-gradient(90deg, #F47721, #0E8F78);
+        }
+
+        .progress-text {
+            font-size: 12px;
+            color: var(--muted);
+            font-weight: 600;
+        }
+
+        @media (max-width:640px) {
+            .hero h1 {
+                font-size: 26px;
+            }
+
+            .container {
+                padding: 24px 16px 60px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="ac-nav">
+        <img src="/static/logo.png" alt="Logo">
+        <div>
+            <div class="ac-nav-title">IT Expert Academy</div>
+            <div class="ac-nav-sub">Career Learning Paths</div>
+        </div>
+        <div class="ac-nav-links">
+            {% if logged_in %}
+            <a href="/academy/dashboard">My Learning</a>
+            {% else %}
+            <a href="/login">Login</a>
+            <a href="/signup" class="ac-nav-cta">Sign Up</a>
+            {% endif %}
+            <a href="/academy/courses">All Courses</a>
+        </div>
+    </div>
+
+    <div class="hero">
+        <h1>Choose Your Career Path</h1>
+        <p>Pick a goal. The Academy guides you through the exact courses you need — step by step.</p>
+    </div>
+
+    <div class="container">
+
+        {% if careers %}
+        <div class="career-grid">
+            {% for c in careers %}
+            <a href="/academy/careers/{{ c.slug }}" class="career-card">
+                <div class="career-icon" style="background:{{ c.color }}20;color:{{ c.color }};">{{ c.icon }}</div>
+                <div class="career-role">{{ c.role_target }}</div>
+                <h2 class="career-title">{{ c.title }}</h2>
+                <p class="career-desc">{{ c.description }}</p>
+
+                {% if progress and progress.get(c.id) %}
+                {% set prog = progress[c.id] %}
+                {% if prog.total > 0 %}
+                <div class="progress-bar">
+                    <div style="width:{{ (prog.done * 100 / prog.total)|int }}%;"></div>
+                </div>
+                <div class="progress-text">{{ prog.done }}/{{ prog.total }} courses completed</div>
+                {% endif %}
+                {% endif %}
+
+                <div class="career-meta">
+                    <span class="career-count">{{ c.course_count }} courses</span>
+                    <span class="career-cta">View Path →</span>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div style="text-align:center;padding:60px 20px;color:var(--muted);">
+            <div style="font-size:44px;margin-bottom:12px;">🗺️</div>
+            <h3>Career paths coming soon</h3>
+            <p>We're preparing structured learning paths.</p>
+        </div>
+        {% endif %}
+
+    </div>
+
+</body>
+
+</html>

@@ -1449,3 +1449,45 @@ def academy_lab_delete(request: Request, pid: int):
         return RedirectResponse("/login", 303)
     academy.delete_project(pid, request.session["user_id"])
     return RedirectResponse("/academy/lab", 303)
+
+
+# ============================================================
+# CAREER LEARNING PATHS (Modification 2)
+# ============================================================
+@app.get("/academy/careers", response_class=HTMLResponse)
+def academy_careers(request: Request):
+    careers = academy.get_all_career_paths()
+    user_id = request.session.get("user_id")
+    progress = {}
+    if user_id:
+        for c in careers:
+            done, total = academy.get_user_career_progress(user_id, c["id"])
+            progress[c["id"]] = {"done": done, "total": total}
+    return render("academy_careers.html", {
+        "request": request,
+        "careers": careers,
+        "progress": progress,
+        "logged_in": user_id is not None,
+        "now": datetime.now(),
+    })
+
+
+@app.get("/academy/careers/{slug}", response_class=HTMLResponse)
+def academy_career_detail(request: Request, slug: str):
+    career = academy.get_career_path(slug)
+    if not career:
+        raise HTTPException(404)
+    courses = academy.get_career_courses(career["id"])
+    user_id = request.session.get("user_id")
+    progress = None
+    if user_id:
+        done, total = academy.get_user_career_progress(user_id, career["id"])
+        progress = {"done": done, "total": total}
+    return render("academy_career_detail.html", {
+        "request": request,
+        "career": career,
+        "courses": courses,
+        "progress": progress,
+        "logged_in": user_id is not None,
+        "now": datetime.now(),
+    })
