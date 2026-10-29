@@ -948,3 +948,29 @@ def remove_logo(request: Request):
         raise HTTPException(403)
     db.save_settings_list([("logo_base64", "")])
     return RedirectResponse("/settings?success=Logo+removed", 303)
+@app.get("/verify/debug")
+def verify_debug(username: str = ""):
+    """TEMPORARY: show DB state for a user. Remove after debugging."""
+    if not username:
+        return {"error": "Add ?username=ITL4/STU/XXX"}
+    conn = db.get_connection()
+    row = conn.execute(
+        "SELECT id, full_name, reg_number, email, is_verified, "
+        "verification_code, verification_expires_at, membership_status "
+        "FROM students WHERE LOWER(reg_number) = LOWER(?)",
+        (username.strip().upper(),)
+    ).fetchone()
+    conn.close()
+    if not row:
+        return {"error": "Not found", "username": username}
+    return {
+        "id": row["id"],
+        "reg_number": row["reg_number"],
+        "email": row["email"],
+        "is_verified": row["is_verified"],
+        "verification_code": row["verification_code"],
+        "verification_expires_at": row["verification_expires_at"],
+        "membership_status": row["membership_status"],
+        "now_utc": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
+        "now_local": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+    }

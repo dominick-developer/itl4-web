@@ -8,7 +8,6 @@ import shutil
 import time
 from pathlib import Path
 from datetime import datetime
-
 DB_PATH = Path(__file__).parent / "itl4.db"
 
 
@@ -2969,6 +2968,8 @@ def verify_student_code(admission_no, code):
     admission_no = (admission_no or "").strip().upper()
     code = (code or "").strip()
 
+    print(f"[VERIFY] attempt: user={admission_no!r}, code={code!r}")
+
     if not admission_no or not code:
         return False, "Username and code are required."
 
@@ -2982,82 +2983,46 @@ def verify_student_code(admission_no, code):
 
     if not student:
         conn.close()
+        print(f"[VERIFY] user NOT found")
         return False, "Account not found."
+
+    saved_code = student["verification_code"]
+    print(f"[VERIFY] saved_code={saved_code!r}, is_verified={student['is_verified']}")
 
     if student["is_verified"]:
         conn.close()
         return False, "Account is already verified. Please login."
 
-    if not student["verification_code"]:
+    if not saved_code:
         conn.close()
-        return False, "No verification code on file. Please resend."
+        return False, "No verification code on file. Please click 'Resend Code'."
 
     expires_str = student["verification_expires_at"]
     if expires_str:
         try:
             exp = datetime.strptime(expires_str, "%Y-%m-%d %H:%M:%S")
-            if datetime.utcnow() > exp:
+            now = datetime.utcnow()
+            print(f"[VERIFY] expires={exp}, now={now}, expired={now > exp}")
+            if now > exp:
                 conn.close()
-                return False, "Code has expired. Please resend a new code."
-        except ValueError:
-            pass
+                return False, "Code has expired. Please click 'Resend Code' for a new one."
+        except ValueError as e:
+            print(f"[VERIFY] expiry parse error: {e}")
 
-    if student["verification_code"] != code:
+    if saved_code.strip() != code:
         conn.close()
+        print(f"[VERIFY] MISMATCH: saved={saved_code!r}, entered={code!r}")
         return False, "Incorrect code. Please try again."
 
+    # SUCCESS
     conn.execute(
         "UPDATE students SET is_verified = 1, membership_status = 'approved', "
         "verification_code = NULL, verification_expires_at = NULL "
         "WHERE id = ?", (student["id"],))
     conn.commit()
     conn.close()
+    print(f"[VERIFY] SUCCESS for {admission_no}")
     return True, "Account verified successfully! You can now log in."
-
-
-def resend_verification_code(admission_no):
-    """Generate new code and return it. Returns (ok, info, message)."""
-    from datetime import datetime, timedelta
-    import random
-
-    admission_no = (admission_no or "").strip().upper()
-    conn = get_connection()
-    student = conn.execute(
-        "SELECT id, is_verified, full_name, email FROM students "
-        "WHERE LOWER(reg_number) = LOWER(?)",
-        (admission_no,)
-    ).fetchone()
-
-    if not student:
-        conn.close()
-        return False, None, "Account not found."
-
-    if student["is_verified"]:
-        conn.close()
-        return False, None, "Account is already verified."
-
-    if not student["email"]:
-        conn.close()
-        return False, None, "No email on file. Cannot resend."
-
-    code = f"{random.randint(100000, 999999)}"
-    expires_at = (datetime.utcnow() + timedelta(minutes=15)).strftime(
-        "%Y-%m-%d %H:%M:%S")
-
-    conn.execute(
-        "UPDATE students SET verification_code = ?, "
-        "verification_expires_at = ? WHERE id = ?",
-        (code, expires_at, student["id"]))
-    conn.commit()
-    conn.close()
-
-    info = {
-        "student_id": student["id"],
-        "code": code,
-        "email": student["email"],
-        "full_name": student["full_name"],
-    }
-    return True, info, "New code sent."
 if __name__ == "__main__":
     init_database()
     print(f"Database: {DB_PATH}")
