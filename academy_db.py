@@ -1,4 +1,4 @@
-# academy_db.py — IT Expert Academy data layer
+﻿# academy_db.py â€” IT Expert Academy data layer
 import sqlite3
 from datetime import datetime
 from database import get_connection
@@ -155,20 +155,20 @@ def init_academy():
 def _seed_paths(cur):
     paths = [
         ("Computer Foundations", "computer-foundations",
-         "Anza kujenga ujuzi wa msingi wa kompyuta — kutoka kwa kuwasha hadi kutumia ofisi.",
-         "💻", "#2563EB", "Beginner", 1),
+         "Anza kujenga ujuzi wa msingi wa kompyuta â€” kutoka kwa kuwasha hadi kutumia ofisi.",
+         "ðŸ’»", "#2563EB", "Beginner", 1),
         ("Programming Foundations", "programming-foundations",
-         "Jifunze misingi ya programu kwa Python — kutoka kwa dhana hadi msimbo halisi.",
-         "⌨️", "#7C3AED", "Beginner", 2),
+         "Jifunze misingi ya programu kwa Python â€” kutoka kwa dhana hadi msimbo halisi.",
+         "âŒ¨ï¸", "#7C3AED", "Beginner", 2),
         ("Web Development", "web-development",
          "Jenga tovuti na aplikesheni za browser kwa HTML, CSS, na JavaScript.",
-         "🌐", "#DC2626", "Intermediate", 3),
+         "ðŸŒ", "#DC2626", "Intermediate", 3),
         ("Databases & Backend", "databases-backend",
          "Jifunze SQL, API, na jinsi ya kujenga mifumo ya data yenye usalama.",
-         "🗄️", "#0E8F78", "Intermediate", 4),
+         "ðŸ—„ï¸", "#0E8F78", "Intermediate", 4),
         ("AI-Assisted Development", "ai-assisted-development",
-         "Tumia AI kujenga software haraka — bila kupoteza uelewa wa nini kinafanya kazi.",
-         "🤖", "#F47721", "Intermediate", 5),
+         "Tumia AI kujenga software haraka â€” bila kupoteza uelewa wa nini kinafanya kazi.",
+         "ðŸ¤–", "#F47721", "Intermediate", 5),
     ]
     for title, slug, desc, icon, color, level, seq in paths:
         cur.execute(
@@ -197,7 +197,7 @@ def _seed_python_course(cur):
         "difficulty_level, language, estimated_duration_min, status) "
         "VALUES (?, ?, ?, ?, ?, ?, ?, 'published')",
         (path["id"], "Python Fundamentals 101", "python-fundamentals-101",
-         "Kozi ya kuanzia Python — kuanzia dhana za msingi hadi kuandika programu yako ya kwanza yenye mantiki.",
+         "Kozi ya kuanzia Python â€” kuanzia dhana za msingi hadi kuandika programu yako ya kwanza yenye mantiki.",
          "Beginner", "sw", 240))
 
     course_id = cur.lastrowid
@@ -214,15 +214,15 @@ def _seed_python_course(cur):
     lessons_data = {
         0: [
             ("What is Python?",
-             "<h2>What is Python?</h2><p>Python ni lugha ya programu inayojulikana kwa urahisi wake. Ilianzishwa mwaka 1991 na Guido van Rossum na leo inatumika katika:</p><ul><li>Uendelezaji wa tovuti (web development)</li><li>Sayansi ya data (data science)</li><li>Akili bandia (artificial intelligence)</li><li>Uendeshaji wa mifumo (automation)</li></ul><h3>Kwa nini Python?</h3><p>Python ni rahisi kusoma — karibu kama Kiingereza cha kawaida. Hii inafanya iwe lugha nzuri kwa wanaoanza.</p><pre><code>print(\"Habari, Dunia!\")</code></pre><p>Mstari huu mmoja unaandika ujumbe kwenye skrini. Ni programu yako ya kwanza!</p><h3>Unachohitaji kuanza</h3><ul><li>Kompyuta (Windows, Mac, au Linux)</li><li>Python iliyosakinishwa (tutaiona kwenye somo lijalo)</li><li>Hamasa ya kujifunza</li></ul>", 15),
+             "<h2>What is Python?</h2><p>Python ni lugha ya programu inayojulikana kwa urahisi wake. Ilianzishwa mwaka 1991 na Guido van Rossum na leo inatumika katika:</p><ul><li>Uendelezaji wa tovuti (web development)</li><li>Sayansi ya data (data science)</li><li>Akili bandia (artificial intelligence)</li><li>Uendeshaji wa mifumo (automation)</li></ul><h3>Kwa nini Python?</h3><p>Python ni rahisi kusoma â€” karibu kama Kiingereza cha kawaida. Hii inafanya iwe lugha nzuri kwa wanaoanza.</p><pre><code>print(\"Habari, Dunia!\")</code></pre><p>Mstari huu mmoja unaandika ujumbe kwenye skrini. Ni programu yako ya kwanza!</p><h3>Unachohitaji kuanza</h3><ul><li>Kompyuta (Windows, Mac, au Linux)</li><li>Python iliyosakinishwa (tutaiona kwenye somo lijalo)</li><li>Hamasa ya kujifunza</li></ul>", 15),
             ("Your First Program",
-             "<h2>Your First Program</h2><p>Tutaandika programu yetu ya kwanza halisi. Fungua Python (au editor yoyote) na andika:</p><pre><code>print(\"Karibu IT Expert Academy!\")</code></pre><h3>Kile kinachotokea</h3><ol><li><strong>print</strong> — ni kazi (function) inayochapisha kitu kwenye skrini</li><li><strong>\"Karibu...\"</strong> — ni maandishi (string) tuliyotaka kuchapisha</li><li><strong>(...)</strong> — mabano yanaelekeza print kile cha kuchapisha</li></ol><h3>Jaribu</h3><p>Badilisha maandishi ndani ya quotes na uone kinachotokea:</p><pre><code>print(\"Jina langu ni [jina lako]\")</code></pre><p>Hongera! Umeandika programu yako ya kwanza yenye maana.</p>", 20),
+             "<h2>Your First Program</h2><p>Tutaandika programu yetu ya kwanza halisi. Fungua Python (au editor yoyote) na andika:</p><pre><code>print(\"Karibu IT Expert Academy!\")</code></pre><h3>Kile kinachotokea</h3><ol><li><strong>print</strong> â€” ni kazi (function) inayochapisha kitu kwenye skrini</li><li><strong>\"Karibu...\"</strong> â€” ni maandishi (string) tuliyotaka kuchapisha</li><li><strong>(...)</strong> â€” mabano yanaelekeza print kile cha kuchapisha</li></ol><h3>Jaribu</h3><p>Badilisha maandishi ndani ya quotes na uone kinachotokea:</p><pre><code>print(\"Jina langu ni [jina lako]\")</code></pre><p>Hongera! Umeandika programu yako ya kwanza yenye maana.</p>", 20),
             ("Variables and Data Types",
-             "<h2>Variables and Data Types</h2><p><strong>Variable</strong> ni chombo cha kuhifadhi taarifa. Fikiria kama sanduku lenye jina:</p><pre><code>jina = \"Amina\"\numri = 25\nurefu = 1.68\namefaulu = True</code></pre><h3>Aina za data kuu</h3><ul><li><strong>String (str)</strong> — maandishi: <code>\"Habari\"</code></li><li><strong>Integer (int)</strong> — namba nzima: <code>42</code></li><li><strong>Float</strong> — namba yenye desimali: <code>3.14</code></li><li><strong>Boolean (bool)</strong> — kweli au uongo: <code>True</code> / <code>False</code></li></ul><h3>Kuchapisha variables</h3><pre><code>jina = \"Amina\"\nprint(\"Habari, \" + jina)</code></pre><p>Matokeo: <em>Habari, Amina</em></p><h3>Kumbuka</h3><p>Majina ya variables hayawezi kuwa na nafasi au kuanza na namba. Tumia <code>_</code> badala ya nafasi: <code>jina_langu</code>.</p>", 25),
+             "<h2>Variables and Data Types</h2><p><strong>Variable</strong> ni chombo cha kuhifadhi taarifa. Fikiria kama sanduku lenye jina:</p><pre><code>jina = \"Amina\"\numri = 25\nurefu = 1.68\namefaulu = True</code></pre><h3>Aina za data kuu</h3><ul><li><strong>String (str)</strong> â€” maandishi: <code>\"Habari\"</code></li><li><strong>Integer (int)</strong> â€” namba nzima: <code>42</code></li><li><strong>Float</strong> â€” namba yenye desimali: <code>3.14</code></li><li><strong>Boolean (bool)</strong> â€” kweli au uongo: <code>True</code> / <code>False</code></li></ul><h3>Kuchapisha variables</h3><pre><code>jina = \"Amina\"\nprint(\"Habari, \" + jina)</code></pre><p>Matokeo: <em>Habari, Amina</em></p><h3>Kumbuka</h3><p>Majina ya variables hayawezi kuwa na nafasi au kuanza na namba. Tumia <code>_</code> badala ya nafasi: <code>jina_langu</code>.</p>", 25),
         ],
         1: [
             ("if / elif / else",
-             "<h2>if / elif / else — Kufanya Maamuzi</h2><p>Programu mara nyingi zinahitaji kuchagua kile cha kufanya kulingana na hali. Tunatumia <code>if</code>:</p><pre><code>umri = 18\nif umri >= 18:\n    print(\"Wewe ni mtu mzima\")\nelse:\n    print(\"Wewe ni kijana\")</code></pre><h3>elif kwa hali nyingi</h3><pre><code>alama = 75\nif alama >= 80:\n    print(\"A\")\nelif alama >= 60:\n    print(\"B\")\nelse:\n    print(\"F\")</code></pre><h3>Kumbuka</h3><ul><li><code>if</code> na <code>else</code> zinahitaji <code>:</code> mwishoni</li><li>Msimbo ndani ya <code>if</code> unahitaji <strong>indentation</strong> (nafasi 4)</li><li>Masharti yanaweza kuwa <code>==</code>, <code>!=</code>, <code>&gt;</code>, <code>&lt;</code>, <code>&gt;=</code>, <code>&lt;=</code></li></ul>", 30),
+             "<h2>if / elif / else â€” Kufanya Maamuzi</h2><p>Programu mara nyingi zinahitaji kuchagua kile cha kufanya kulingana na hali. Tunatumia <code>if</code>:</p><pre><code>umri = 18\nif umri >= 18:\n    print(\"Wewe ni mtu mzima\")\nelse:\n    print(\"Wewe ni kijana\")</code></pre><h3>elif kwa hali nyingi</h3><pre><code>alama = 75\nif alama >= 80:\n    print(\"A\")\nelif alama >= 60:\n    print(\"B\")\nelse:\n    print(\"F\")</code></pre><h3>Kumbuka</h3><ul><li><code>if</code> na <code>else</code> zinahitaji <code>:</code> mwishoni</li><li>Msimbo ndani ya <code>if</code> unahitaji <strong>indentation</strong> (nafasi 4)</li><li>Masharti yanaweza kuwa <code>==</code>, <code>!=</code>, <code>&gt;</code>, <code>&lt;</code>, <code>&gt;=</code>, <code>&lt;=</code></li></ul>", 30),
         ],
     }
 
@@ -460,7 +460,6 @@ def get_next_lesson(current_lesson_id):
         (current["course_id"], current["module_id"], current["module_id"], current_lesson_id)).fetchone()
     conn.close()
     return row["id"] if row else None
-'@ | Out-File -FilePath academy_db.py -Encoding UTF8
 def _seed_python_quiz(cur):
     """Seed one quiz for the Variables and Data Types lesson."""
     existing = cur.execute("SELECT id FROM assessments LIMIT 1").fetchone()
@@ -477,7 +476,7 @@ def _seed_python_quiz(cur):
     cur.execute(
         "INSERT INTO assessments (lesson_id, title, description, passing_score, max_attempts) "
         "VALUES (?, ?, ?, ?, ?)",
-        (lesson["id"], "Variables & Data Types — Quiz",
+        (lesson["id"], "Variables & Data Types â€” Quiz",
          "Jaribu uelewa wako wa variables na aina za data katika Python.",
          70, 3))
     aid = cur.lastrowid

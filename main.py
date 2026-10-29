@@ -1,4 +1,4 @@
-# ✅ IWE HIVI
+﻿# âœ… IWE HIVI
 import os
 RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
 from pathlib import Path
@@ -35,9 +35,9 @@ def render(name: str, context: dict):
 def startup():
     # 1. Init database (migrations za columns mpya zipo ndani ya init_database)
     db.init_database()
-    print("✅ Database ready")
+    print("âœ… Database ready")
     academy.init_academy()
-    print("✅ Academy ready")
+    print("âœ… Academy ready")
 
     # 2. Hakikisha CR 'cr' yupo na ana password 123456
     import hashlib, os
@@ -63,14 +63,14 @@ def startup():
             "VALUES (?, ?, ?, ?, ?, 1)",
             ("CR", sid, "cr", pwd_hash, salt))
         conn.commit()
-        print("✅ CR 'cr' created with password 123456")
+        print("âœ… CR 'cr' created with password 123456")
     else:
         # Update password kuwa 123456 kila app inapowaka
         conn.execute(
             "UPDATE users SET password_hash = ?, salt = ? WHERE username = 'cr'",
             (pwd_hash, salt))
         conn.commit()
-        print("✅ CR 'cr' password reset to 123456")
+        print("âœ… CR 'cr' password reset to 123456")
 
     conn.close()
 
@@ -171,7 +171,7 @@ def signup_post(request: Request, full_name: str = Form(...),
     if not ok:
         return render("signup.html", {"request": request, "error": msg})
 
-    # CR hahitaji verification — login moja kwa moja
+    # CR hahitaji verification â€” login moja kwa moja
     if role == "CR":
         return RedirectResponse("/login?success=CR+account+created.+You+can+log+in+now.", 303)
 
