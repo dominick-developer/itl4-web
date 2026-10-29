@@ -1,4 +1,4 @@
-﻿# âœ… IWE HIVI
+# âœ… IWE HIVI
 import os
 RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
 from pathlib import Path
@@ -1103,6 +1103,17 @@ def academy_lesson(request: Request, lesson_id: int):
         raise HTTPException(404)
     if not academy.is_enrolled(user_id, lesson["course_id"]):
         return RedirectResponse(f"/academy/courses/{lesson['course_id']}", 303)
+
+    # MASTERY GATING
+    if not academy.is_lesson_unlocked(user_id, lesson):
+        lock_info = academy.get_lesson_lock_info(user_id, lesson)
+        return render("academy_lesson_locked.html", {
+            "request": request,
+            "lesson": lesson,
+            "lock_reason": lock_info.get("reason", "Somo hili bado limefungwa."),
+            "now": datetime.now(),
+        })
+
     academy.touch_enrolment(user_id, lesson["course_id"])
     progress = academy.get_lesson_progress(user_id, lesson_id)
     next_lesson_id = academy.get_next_lesson(lesson_id)
@@ -1112,6 +1123,7 @@ def academy_lesson(request: Request, lesson_id: int):
     if quiz:
         quiz_attempts = len(academy.get_user_attempts(quiz["id"], user_id))
         quiz_best = academy.get_best_attempt(quiz["id"], user_id)
+
     return render("academy_lesson.html", {
         "request": request,
         "lesson": lesson,
@@ -1122,7 +1134,6 @@ def academy_lesson(request: Request, lesson_id: int):
         "quiz_attempts": quiz_attempts,
         "now": datetime.now(),
     })
-
 @app.post("/academy/lessons/{lesson_id}/complete")
 def academy_lesson_complete(request: Request, lesson_id: int):
     if "user_id" not in request.session:
@@ -1355,7 +1366,7 @@ async def academy_tutor_send(request: Request, conv_id: int):
     else:
         academy.add_message(
             conv_id, "assistant",
-            f"⚠️ {result.get('error', 'AI haipatikani kwa sasa.')}")
+            f"?? {result.get('error', 'AI haipatikani kwa sasa.')}")
 
     return RedirectResponse(f"/academy/tutor/c/{conv_id}", 303)
 
