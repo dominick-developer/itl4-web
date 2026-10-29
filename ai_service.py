@@ -163,7 +163,18 @@ def chat(mode, language, lesson_context, history, user_message):
             system=system_prompt,
             messages=messages,
         )
-        text = response.content[0].text if response.content else ""
+        # Extract text from the first TextBlock (skipping ThinkingBlock)
+text = ""
+if response.content:
+    for block in response.content:
+        block_type = getattr(block, "type", None)
+        # Accept TextBlock or any block that has a 'text' attribute
+        if block_type == "text" or hasattr(block, "text"):
+            text = getattr(block, "text", "")
+            if text.strip():
+                break
+    # Fallback: if no text block found but a thinking block exists, you could
+    # optionally use block.thinking, but usually the final answer is in TextBlock.
         tokens_in = response.usage.input_tokens
         tokens_out = response.usage.output_tokens
 
