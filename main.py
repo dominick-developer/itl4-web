@@ -30,11 +30,46 @@ def render(name: str, context: dict):
         raise ValueError("context must include 'request'")
     return templates.TemplateResponse(request, name, context)
 
-
 @app.on_event("startup")
 def startup():
+    # 1. Init database (migrations za columns mpya zipo ndani ya init_database)
     db.init_database()
     print("✅ Database ready")
+
+    # 2. Hakikisha CR 'cr' yupo na ana password 123456
+    import hashlib, os
+    conn = db.get_connection()
+    row = conn.execute(
+        "SELECT u.id FROM users u WHERE u.username = 'cr'"
+    ).fetchone()
+
+    salt = os.urandom(16).hex()
+    pwd_hash = hashlib.sha256((salt + "123456").encode()).hexdigest()
+
+    if not row:
+        # Unda CR mpya
+        cur = conn.cursor()
+        cur.execute(
+            "INSERT INTO students (full_name, reg_number, phone, is_active, "
+            "membership_status, date_joined, is_verified) "
+            "VALUES (?, ?, ?, 1, 'approved', date('now'), 1)",
+            ("Class Representative", "ITL4/CR/001", "0700111111"))
+        sid = cur.lastrowid
+        cur.execute(
+            "INSERT INTO users (role, student_id, username, password_hash, salt, is_admin) "
+            "VALUES (?, ?, ?, ?, ?, 1)",
+            ("CR", sid, "cr", pwd_hash, salt))
+        conn.commit()
+        print("✅ CR 'cr' created with password 123456")
+    else:
+        # Update password kuwa 123456 kila app inapowaka
+        conn.execute(
+            "UPDATE users SET password_hash = ?, salt = ? WHERE username = 'cr'",
+            (pwd_hash, salt))
+        conn.commit()
+        print("✅ CR 'cr' password reset to 123456")
+
+    conn.close()
 
 
 def require_login(request: Request):
