@@ -1,0 +1,71 @@
+@'
+{% extends "base.html" %}
+{% block title %}My Learning — IT Expert Academy{% endblock %}
+{% block page_title %}🎓 IT Expert Academy{% endblock %}
+
+{% block body %}
+<div class="container">
+
+    <div
+        style="background:linear-gradient(135deg,#0B1F33 0%,#1e40af 100%);border-radius:16px;padding:32px;color:white;margin-bottom:22px;">
+        <h1 style="font-size:26px;font-weight:900;margin-bottom:8px;">Karibu, {{ full_name }}!</h1>
+        <p style="color:#cbd5e1;margin-bottom:20px;">Endelea kujifunza na kufikia malengo yako ya teknolojia.</p>
+        <div style="display:flex;gap:24px;flex-wrap:wrap;">
+            <div>
+                <div style="font-size:28px;font-weight:800;color:#F47721;">{{ stats.enrolled }}</div>
+                <div style="font-size:12px;color:#94a3b8;">Courses Enrolled</div>
+            </div>
+            <div>
+                <div style="font-size:28px;font-weight:800;color:#F47721;">{{ stats.lessons_completed }}</div>
+                <div style="font-size:12px;color:#94a3b8;">Lessons Completed</div>
+            </div>
+            <div>
+                <div style="font-size:28px;font-weight:800;color:#F47721;">{{ stats.courses_completed }}</div>
+                <div style="font-size:12px;color:#94a3b8;">Courses Finished</div>
+            </div>
+        </div>
+    </div>
+
+    {% if continue %}
+    <div class="card" style="border-left:5px solid var(--orange);margin-bottom:22px;">
+        <div style="font-size:12px;color:var(--orange);font-weight:700;text-transform:uppercase;margin-bottom:6px;">▶
+            Continue Learning</div>
+        <h2 style="font-size:20px;font-weight:800;color:var(--navy);margin-bottom:6px;">{{ continue.lesson_title }}</h2>
+        <p style="color:var(--muted);font-size:14px;margin-bottom:14px;">{{ continue.course_title }}</p>
+        <a href="/academy/lessons/{{ continue.lesson_id }}" class="btn btn-primary">Resume Lesson →</a>
+    </div>
+    {% endif %}
+
+    <h2 style="font-size:20px;font-weight:800;color:var(--navy);margin:26px 0 14px;">📚 My Courses</h2>
+
+    {% if enrollments %}
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;">
+        {% for e in enrollments %}
+        <div class="card" style="padding:18px;">
+            <div style="font-size:12px;color:{{ e.path_color or '#F47721' }};font-weight:700;margin-bottom:8px;">{{
+                e.path_icon }} {{ e.path_title }}</div>
+            <h3 style="font-size:17px;font-weight:800;color:var(--navy);margin-bottom:8px;">{{ e.title }}</h3>
+            <div style="background:#e2e8f0;height:8px;border-radius:4px;overflow:hidden;margin:12px 0;">
+                {% set pct = (e.completed_lessons * 100 / e.total_lessons)|int if e.total_lessons > 0 else 0 %}
+                <div style="height:100%;background:linear-gradient(90deg,#F47721,#0E8F78);width:{{ pct }}%;"></div>
+            </div>
+            <div style="font-size:13px;color:var(--muted);margin-bottom:14px;">{{ e.completed_lessons }}/{{
+                e.total_lessons }} lessons · {{ pct }}%</div>
+            <a href="/academy/courses/{{ e.course_id }}" class="btn btn-primary"
+                style="font-size:13px;padding:8px 16px;">Continue →</a>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="card" style="text-align:center;padding:50px 20px;">
+        <div style="font-size:44px;margin-bottom:12px;">🎓</div>
+        <h3 style="color:var(--navy);font-size:18px;font-weight:800;margin-bottom:8px;">You haven't enrolled in any
+            courses yet.</h3>
+        <p style="color:var(--muted);margin-bottom:20px;">Browse available courses and start learning today.</p>
+        <a href="/academy/courses" class="btn btn-primary">Browse Courses →</a>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}
+'@ | Out-File -FilePath templates/academy_dashboard.html -Encoding UTF8

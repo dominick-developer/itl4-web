@@ -12,6 +12,7 @@ import base64
 
 import database as db
 import auth
+import academy_db as academy
 from email_service import send_verification_email
 
 BASE_DIR = Path(__file__).parent
@@ -35,6 +36,8 @@ def startup():
     # 1. Init database (migrations za columns mpya zipo ndani ya init_database)
     db.init_database()
     print("✅ Database ready")
+    academy.init_academy()
+    print("✅ Academy ready")
 
     # 2. Hakikisha CR 'cr' yupo na ana password 123456
     import hashlib, os
@@ -96,11 +99,12 @@ def ctx(request, extra=None):
     return d
 @app.get("/academy", response_class=HTMLResponse)
 def academy_page(request: Request):
+    logged_in = "user_id" in request.session
     return render("academy.html", {
         "request": request,
+        "logged_in": logged_in,
         "role": request.session.get("role"),
         "full_name": request.session.get("full_name"),
-        "logged_in": "user_id" in request.session,
         "now": datetime.now(),
     })
 # ============================================================
@@ -1015,4 +1019,117 @@ def verify_debug(username: str = ""):
         "membership_status": row["membership_status"],
         "now_utc": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
         "now_local": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+    }
+    # ============================================================
+# IT EXPERT ACADEMY
+# ============================================================
+@app.get("/academy/courses", response_class=HTMLResponse)
+def academy_courses(request: Request):
+    courses = academy.get_all_courses()
+    paths = academy.get_all_paths()
+    user_id = request.session.get("user_id")
+    enrolled_ids = set()
+    if user_id:
+        for e in academy.get_user_enrollments(user_id):
+            enrolled_ids.add(e["course_id"])
+    return render("academy_courses.html", {
+        "request": request,
+        "courses": courses,
+        "paths": paths,
+        "enrolled_ids": enrolled_ids,
+        "logged_in": user_id is not None,
+        "now": datetime.now(),
+    })
+
+
+@app.get("/academy/dashboard", response_class=HTMLResponse)
+def academy_dashboard(request: Request):
+    if "user_id" not in request.session:
+        return RedirectResponse("/login", 303)
+    user_id = request.session["user_id"]
+    return render("academy_dashboard.html", ctx(request, {
+        "enrollments": academy.get_user_enrollments(user_id),
+        "stats": academy.get_user_academy_stats(user_id),
+        "continue": academy.get_continue_learning(user_id),
+        "all_paths": academy.get_all_paths(),
+    }))
+
+
+@app.get("/academy/courses/{course_id}", response_class=HTMLResponse)
+def academy_course_detail(request: Request, course_id: int):
+    course = academy.get_course(course_id)
+    if not course:
+        raise HTTPException(404)
+    modules = academy.get_course_modules(course_id)
+    modules_with_lessons = []
+    for m in modules:
+        modules_with_lessons.append({
+            "module": m,
+            "lessons": academy.get_lessons_for_module(m["id"]),
+        })
+    user_id = request.session.get("user_id")
+    is_enrolled = academy.is_enrolled(user_id, course_id) if user_id else False
+    return render("academy_course_detail.html", {
+        "request": request,
+        "course": course,
+        "modules": modules_with_lessons,
+        "is_enrolled": is_enrolled,
+        "logged_in": user_id is not None,
+        "now": datetime.now(),
+    })
+
+
+@app.post("/academy/enroll/{course_id}")
+def academy_enroll(request: Request, course_id: int):
+    if "user_id" not in request.session:
+        return RedirectResponse("/login", 303)
+    academy.enrol_user(request.session["user_id"], course_id)
+    return RedirectResponse(f"/academy/courses/{course_id}", 303)
+
+
+@app.get("/academy/lessons/{lesson_id}", response_class=HTMLResponse)
+def academy_lesson(request: Request, lesson_id: int):
+    if "user_id" not in request.session:
+        return RedirectResponse("/login", 303)
+    user_id = request.session["user_id"]
+    lesson = academy.get_lesson(lesson_id)
+    if not lesson:
+        raise HTTPException(404)
+    if not academy.is_enrolled(user_id, lesson["course_id"]):
+        return RedirectResponse(f"/academy/courses/{lesson['course_id']}", 303)
+
+    academy.touch_enrolment(user_id, lesson["course_id"])
+    progress = academy.get_lesson_progress(user_id, lesson_id)
+    next_lesson_id = academy.get_next_lesson(lesson_id)
+
+    return render("academy_lesson.html", {
+        "request": request,
+        "lesson": lesson,
+        "progress": progress,
+        "next_lesson_id": next_lesson_id,
+        "now": datetime.now(),
+    })
+
+
+@app.post("/academy/lessons/{lesson_id}/complete")
+def academy_lesson_complete(request: Request, lesson_id: int):
+    if "user_id" not in request.session:
+        return RedirectResponse("/login", 303)
+    user_id = request.session["user_id"]
+    academy.mark_lesson_complete(user_id, lesson_id)
+    next_id = academy.get_next_lesson(lesson_id)
+    if next_id:
+        return RedirectResponse(f"/academy/lessons/{next_id}", 303)
+    lesson = academy.get_lesson(lesson_id)
+    return RedirectResponse(f"/academy/courses/{lesson['course_id']}?completed=1", 303)
+
+
+@app.get("/academy/debug")
+def academy_debug():
+    """Temporary: verify Academy DB state."""
+    paths = academy.get_all_paths()
+    courses = academy.get_all_courses()
+    return {
+        "paths": [dict(p) for p in paths],
+        "courses": [dict(c) for c in courses],
     }

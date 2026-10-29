@@ -529,9 +529,12 @@
             <p>Learn computer skills, programming, web development, and AI-assisted software building step by step —
                 with an AI tutor helping you understand concepts, solve problems, and build real projects.</p>
             <div class="ac-btns">
-                <span class="ac-btn ac-btn-disabled">🚧 Learning Paths — Coming Soon</span>
-                {% if not logged_in %}
-                <a href="/signup" class="ac-btn ac-btn-outline">Join IT Level 4 Connect</a>
+                {% if logged_in %}
+                <a href="/academy/courses" class="ac-btn ac-btn-primary">Browse Courses →</a>
+                <a href="/academy/dashboard" class="ac-btn ac-btn-outline">My Learning</a>
+                {% else %}
+                <a href="/signup" class="ac-btn ac-btn-primary">Get Started →</a>
+                <a href="/login" class="ac-btn ac-btn-outline">Log In</a>
                 {% endif %}
             </div>
         </div>
@@ -585,9 +588,8 @@
     <div class="ac-section" style="padding-top:0;">
         <div class="ac-soon">
             <div class="ac-soon-icon">🚀</div>
-            <h3>We're Building Something Special</h3>
-            <p>IT Expert Academy is currently in development. Full lessons, projects, and the AI tutor will be available
-                in the next phase. Stay tuned!</p>
+            <h3>Full Learning Paths Are Live</h3>
+            <p>Start with Python Fundamentals 101 — more courses are being added in the coming weeks.</p>
         </div>
     </div>
 
