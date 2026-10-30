@@ -6,3 +6,5 @@ itsdangerous>=2.2
 resend
 python-dotenv
 anthropic
+pywebpush
+py-vapid

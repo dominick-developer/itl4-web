@@ -3003,21 +3003,29 @@ def resend_verification_code(admission_no):
 # ============================================================
 # TIMETABLE (Standalone - CR Managed)
 # ============================================================
-def add_timetable_entry(day, start_time, end_time, module_id, teacher_id, venue, notes=""):
+def add_timetable_entry(day, start_time, end_time, module_id, teacher_id, venue, notes="", session_name=""):
     conn = get_connection()
     cur = conn.cursor()
+    # Ensure session_name column exists
+    cur.execute("PRAGMA table_info(timetable)")
+    cols = [r[1] for r in cur.fetchall()]
+    if "session_name" not in cols:
+        try:
+            cur.execute("ALTER TABLE timetable ADD COLUMN session_name TEXT")
+        except Exception:
+            pass
     cur.execute(
-        "INSERT INTO timetable (day, start_time, end_time, module_id, teacher_id, venue, notes) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?)",
-        (day, start_time, end_time, module_id, teacher_id, venue, notes))
+        "INSERT INTO timetable (day, start_time, end_time, module_id, teacher_id, venue, notes, session_name) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        (day, start_time, end_time, module_id, teacher_id, venue, notes, session_name))
     conn.commit()
     entry_id = cur.lastrowid
     conn.close()
     return entry_id
-
-
 def get_all_timetable_entries():
     conn = get_connection()
+    # Ensure session_name exists
+    conn.execute("PRAGMA table_info(timetable)")
     rows = conn.execute(
         "SELECT t.*, m.name AS module_name, m.code AS module_code, "
         "te.full_name AS teacher_name "
@@ -3033,7 +3041,6 @@ def get_all_timetable_entries():
         "t.start_time").fetchall()
     conn.close()
     return rows
-
 
 def get_timetable_grouped_by_day():
     rows = get_all_timetable_entries()

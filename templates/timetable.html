@@ -4,7 +4,67 @@
 
 {% block body %}
 <div class="container">
+<div id="notifBanner"
+    style="display:none;background:#fff7ed;border:1px solid #F47721;border-radius:10px;padding:14px 18px;margin-bottom:18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+    <span style="font-size:24px;">🔔</span>
+    <div style="flex:1;min-width:200px;">
+        <div style="font-weight:800;color:var(--navy);font-size:14px;">Enable Push Notifications</div>
+        <div style="font-size:13px;color:var(--muted);">Pata taarifa za ratiba kwenye simu yako.</div>
+    </div>
+    <button onclick="enablePush()" class="btn btn-primary" style="padding:10px 20px;font-size:13px;"
+        id="enableBtn">Enable</button>
+</div>
 
+<script>
+    const VAPID_PUBLIC_KEY = '{{ vapid_public_key or "" }}';
+
+    function urlBase64ToUint8Array(base64String) {
+        const padding = '='.repeat((4 - base64String.length % 4) % 4);
+        const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+        const rawData = window.atob(base64);
+        const outputArray = new Uint8Array(rawData.length);
+        for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
+        return outputArray;
+    }
+
+    async function enablePush() {
+        if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+            alert('Push notifications hazitumiki kwenye browser hii.');
+            return;
+        }
+        try {
+            const perm = await Notification.requestPermission();
+            if (perm !== 'granted') {
+                alert('Notification permission imekataliwa.');
+                return;
+            }
+            const reg = await navigator.serviceWorker.ready;
+            const sub = await reg.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+            });
+            await fetch('/api/push/subscribe', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(sub.toJSON())
+            });
+            document.getElementById('notifBanner').style.display = 'none';
+            alert('✅ Notifications zimewashwa! Utapokea taarifa za ratiba.');
+        } catch (err) {
+            alert('Hitilafu: ' + err.message);
+        }
+    }
+
+    (async () => {
+        if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+        if (!VAPID_PUBLIC_KEY) return;
+        const reg = await navigator.serviceWorker.ready;
+        const sub = await reg.pushManager.getSubscription();
+        if (!sub) {
+            document.getElementById('notifBanner').style.display = 'flex';
+        }
+    })();
+</script>
     <div style="background:linear-gradient(135deg,#0B1F33 0%,#1e40af 100%);border-radius:16px;padding:28px;color:white;margin-bottom:22px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;">
         <div>
             <h1 style="font-size:24px;font-weight:900;margin:0 0 6px;">📅 Weekly Timetable</h1>

@@ -12,13 +12,13 @@
             <p style="color:#cbd5e1;margin:0;font-size:14px;">Weka masomo, walimu, na venye kwa kila siku</p>
         </div>
         <a href="/timetable" class="btn btn-outline" style="background:white;color:var(--navy);padding:10px 20px;">👁
-            View Timetable</a>
+            View</a>
     </div>
 
     <!-- ADD / EDIT FORM -->
     <div class="card" style="margin-bottom:22px;">
         <h2 style="color:var(--navy);font-size:18px;font-weight:800;margin-bottom:16px;">
-            {% if edit_entry %}✏️ Edit Session{% else %}➕ Add New Session{% endif %}
+            {% if edit_entry %}✏️ Edit Session{% else %}➕ Add Session{% endif %}
         </h2>
         <form method="post"
             action="{% if edit_entry %}/timetable/{{ edit_entry.id }}/update{% else %}/timetable/add{% endif %}">
@@ -44,41 +44,24 @@
             </div>
             <div class="form-row">
                 <div class="form-group">
-                    <label>Module</label>
-                    <select name="module_id">
-                        <option value="">— Chagua Module —</option>
-                        {% for m in modules %}
-                        <option value="{{ m.id }}" {% if edit_entry and edit_entry.module_id==m.id %}selected{% endif
-                            %}>{{ m.name }}{% if m.code %} ({{ m.code }}){% endif %}</option>
-                        {% endfor %}
-                    </select>
+                    <label>Session Name *</label>
+                    <input type="text" name="session_name" required placeholder="e.g. Programming in Java"
+                        value="{{ edit_entry.session_name if edit_entry and edit_entry.session_name else '' }}">
                 </div>
                 <div class="form-group">
-                    <label>Teacher</label>
-                    <select name="teacher_id">
-                        <option value="">— Chagua Teacher —</option>
-                        {% for t in teachers %}
-                        <option value="{{ t.id }}" {% if edit_entry and edit_entry.teacher_id==t.id %}selected{% endif
-                            %}>{{ t.full_name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-            </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Venue (Room)</label>
+                    <label>Venue</label>
                     <input type="text" name="venue" value="{{ edit_entry.venue if edit_entry else '' }}"
                         placeholder="e.g. Room 203">
                 </div>
-                <div class="form-group">
-                    <label>Notes</label>
-                    <input type="text" name="notes" value="{{ edit_entry.notes if edit_entry else '' }}"
-                        placeholder="Optional">
-                </div>
+            </div>
+            <div class="form-group">
+                <label>Notes (optional)</label>
+                <input type="text" name="notes" value="{{ edit_entry.notes if edit_entry else '' }}"
+                    placeholder="e.g. Bring laptop">
             </div>
             <div style="display:flex;gap:10px;flex-wrap:wrap;">
-                <button type="submit" class="btn btn-primary">{% if edit_entry %}Save Changes{% else %}Add Session{%
-                    endif %}</button>
+                <button type="submit" class="btn btn-primary">{% if edit_entry %}Save{% else %}Add Session{% endif
+                    %}</button>
                 {% if edit_entry %}
                 <a href="/timetable/manage" class="btn btn-outline">Cancel</a>
                 {% endif %}
@@ -86,9 +69,9 @@
         </form>
     </div>
 
-    <!-- EXISTING ENTRIES -->
-    <h2 style="font-size:18px;font-weight:800;color:var(--navy);margin:22px 0 12px;">📅 Current Timetable ({{
-        entries|length }})</h2>
+    <!-- EXISTING -->
+    <h2 style="font-size:18px;font-weight:800;color:var(--navy);margin:22px 0 12px;">📅 Current ({{ entries|length }})
+    </h2>
 
     {% if entries %}
     <div style="display:grid;gap:10px;">
@@ -102,17 +85,17 @@
                 {{ e.start_time }}{% if e.end_time %} – {{ e.end_time }}{% endif %}
             </div>
             <div style="flex:1;min-width:180px;">
-                <div style="font-weight:800;color:var(--navy);font-size:15px;">{{ e.module_name or '—' }}</div>
-                {% if e.teacher_name %}<div style="font-size:12px;color:var(--muted);">👨‍🏫 {{ e.teacher_name }}</div>
-                {% endif %}
+                <div style="font-weight:800;color:var(--navy);font-size:15px;">
+                    {% if e.session_name %}{{ e.session_name }}{% elif e.module_name %}{{ e.module_name }}{% else
+                    %}Session{% endif %}
+                </div>
+                {% if e.venue %}<div style="font-size:12px;color:var(--muted);">📍 {{ e.venue }}</div>{% endif %}
             </div>
-            {% if e.venue %}<div style="font-size:13px;color:var(--muted);font-weight:600;">📍 {{ e.venue }}</div>{%
-            endif %}
             <div style="display:flex;gap:6px;">
                 <a href="/timetable/manage/{{ e.id }}/edit" class="btn btn-outline"
                     style="padding:6px 14px;font-size:13px;">Edit</a>
-                <form method="post" action="/timetable/{{ e.id }}/delete"
-                    onsubmit="return confirm('Delete this session?');" style="display:inline;">
+                <form method="post" action="/timetable/{{ e.id }}/delete" onsubmit="return confirm('Delete?');"
+                    style="display:inline;">
                     <button type="submit" class="btn btn-danger"
                         style="padding:6px 14px;font-size:13px;">Delete</button>
                 </form>
@@ -122,8 +105,7 @@
     </div>
     {% else %}
     <div class="card" style="text-align:center;padding:40px 20px;color:var(--muted);">
-        <div style="font-size:36px;margin-bottom:8px;">📅</div>
-        <p>Timetable haijawekwa bado. Ongeza session ya kwanza hapo juu.</p>
+        <p>Timetable haijawekwa. Ongeza session ya kwanza hapo juu.</p>
     </div>
     {% endif %}
 
