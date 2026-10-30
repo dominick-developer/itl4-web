@@ -1,4 +1,4 @@
-﻿# academy_db.py â€” IT Expert Academy data layer
+# academy_db.py â€” IT Expert Academy data layer
 import sqlite3
 from datetime import datetime
 from database import get_connection
@@ -145,6 +145,23 @@ def init_academy():
         recorded_at TEXT DEFAULT (datetime('now','localtime'))
     )""")
     _seed_python_quiz(cur)
+
+    # Ensure courses with published lessons are marked as published
+    try:
+        cur.execute("""
+            UPDATE academy_courses
+            SET status = 'published'
+            WHERE slug = 'web-design-development'
+            AND EXISTS (
+                SELECT 1 FROM course_modules m
+                JOIN lessons l ON l.module_id = m.id
+                WHERE m.course_id = academy_courses.id
+                AND l.status = 'published'
+            )
+        """)
+    except Exception:
+        pass
+
     conn.commit()
     _seed_paths(cur)
     _seed_python_course(cur)
