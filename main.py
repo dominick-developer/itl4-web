@@ -42,6 +42,18 @@ def startup():
     academy.init_coding_tables()
     print("âœ… Academy ready")
 
+    # FORCE-PUBLISH all courses with lessons (startup safety)
+    try:
+        _c = db.get_connection()
+        _c.execute("UPDATE academy_courses SET status = 'published' WHERE slug = 'web-design-development'")
+        _c.commit()
+        _r = _c.execute("SELECT status FROM academy_courses WHERE slug = 'web-design-development'").fetchone()
+        _n = _c.execute("SELECT COUNT(*) FROM lessons WHERE status = 'published'").fetchone()[0]
+        print(f"FORCE-PUBLISH: status={_r[0] if _r else 'NOT FOUND'}, lessons={_n}")
+        _c.close()
+    except Exception as _e:
+        print(f"FORCE-PUBLISH FAILED: {_e}")
+
     # 2. Hakikisha CR 'cr' yupo na ana password 123456
     import hashlib, os
     conn = db.get_connection()
