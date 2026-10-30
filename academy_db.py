@@ -167,6 +167,27 @@ def init_academy():
     _seed_python_course(cur)
     _seed_course_placeholders(cur)
     conn.commit()
+
+    # MIGRATIONS: Add structured lesson columns if missing
+    try:
+        _existing_cols = [r[1] for r in cur.execute("PRAGMA table_info(lessons)").fetchall()]
+        _new_cols = [
+            ("objectives_json", "TEXT"),
+            ("sections_json", "TEXT"),
+            ("key_takeaways_json", "TEXT"),
+            ("common_mistakes_json", "TEXT"),
+            ("exercise_prompt", "TEXT"),
+            ("exercise_solution", "TEXT"),
+            ("module_order", "INTEGER DEFAULT 0"),
+            ("lesson_order", "INTEGER DEFAULT 0"),
+        ]
+        for _cn, _ct in _new_cols:
+            if _cn not in _existing_cols:
+                cur.execute(f"ALTER TABLE lessons ADD COLUMN {_cn} {_ct}")
+                print(f"✅ Migration: added lessons.{_cn}")
+        conn.commit()
+    except Exception as _e:
+        print(f"⚠️  Migration error: {_e}")
     conn.close()
 def _seed_paths(cur):
     """Seed/update 5 categories. Slugs stay stable to preserve FKs."""
