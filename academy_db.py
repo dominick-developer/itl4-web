@@ -1,4 +1,4 @@
-﻿# academy_db.py â€” IT Expert Academy data layer
+# academy_db.py â€” IT Expert Academy data layer
 import sqlite3
 from datetime import datetime
 from database import get_connection
@@ -396,7 +396,15 @@ def _seed_python_course(cur):
             (course_id, mtitle, mdesc, mi + 1))
         module_id = cur.lastrowid
 
-        for li, (ltitle, lcontent, lmin) in enumerate(lessons_data.get(mi, [])):
+        for li, item in enumerate(lessons_data.get(mi, [])):
+            if isinstance(item, dict):
+                ltitle = item.get('title', '')
+                lcontent = item.get('content', '')
+                lmin = item.get('duration', 15)
+            else:
+                ltitle = item[0] if len(item) > 0 else ''
+                lcontent = item[1] if len(item) > 1 else ''
+                lmin = item[2] if len(item) > 2 else 15
             cur.execute(
                 "INSERT INTO lessons (module_id, title, content, sequence_number, estimated_duration_min) "
                 "VALUES (?, ?, ?, ?, ?)",
