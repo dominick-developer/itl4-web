@@ -7,4 +7,5 @@ resend
 python-dotenv
 anthropic
 pywebpush
+py-vapidpywebpush
 py-vapid
