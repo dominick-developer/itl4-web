@@ -42,6 +42,22 @@ def startup():
     academy.init_coding_tables()
     print("âœ… Academy ready")
 
+    # PHASE 1: Career + Web Design modules seeds
+    try:
+        academy.init_career_tables()
+        print("✅ Career + Web Design seeds complete")
+    except Exception as _e:
+        print(f"⚠️  init_career_tables failed: {_e}")
+
+    # PHASE 2: Portfolio + Certificates + Achievements (if exists)
+    try:
+        if hasattr(academy, "init_phase6_tables"):
+            academy.init_phase6_tables()
+            print("✅ Phase 6 tables complete")
+    except Exception as _e:
+        print(f"⚠️  init_phase6_tables failed: {_e}")
+
+
     # FORCE-PUBLISH all courses with lessons (startup safety)
     try:
         _c = db.get_connection()
