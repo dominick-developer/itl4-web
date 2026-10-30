@@ -1,4 +1,4 @@
-# academy_db.py â€” IT Expert Academy data layer
+﻿# academy_db.py â€” IT Expert Academy data layer
 import sqlite3
 from datetime import datetime
 from database import get_connection
@@ -1109,7 +1109,304 @@ def _seed_web_design_module2(cur):
                     "points, sequence_number) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                     (aid, qtype, qtext, _json.dumps(opts, ensure_ascii=False),
                      correct, expl, pts, qi))
+def _seed_web_design_module3(cur):
+    """Seed Module 3: JavaScript — 3 lessons + quiz."""
+    import json as _json
 
+    course = cur.execute(
+        "SELECT id FROM academy_courses WHERE slug = 'web-design-development'"
+    ).fetchone()
+    if not course:
+        return
+    course_id = course["id"]
+
+    existing = cur.execute(
+        "SELECT id FROM course_modules WHERE course_id = ? AND title LIKE 'Module 3%'",
+        (course_id,)).fetchone()
+
+    if existing:
+        module_id = existing["id"]
+    else:
+        cur.execute(
+            "INSERT INTO course_modules (course_id, title, description, sequence_number) "
+            "VALUES (?, ?, ?, ?)",
+            (course_id, "Module 3: JavaScript Programming",
+             "Ongeza tabia kwenye ukurasa wako — variables, masharti, loops, functions, na DOM manipulation.",
+             3))
+        module_id = cur.lastrowid
+
+    lessons_data = [
+        {
+            "title": "JavaScript Basics: Variables, Types & Operators",
+            "duration": 30,
+            "objectives": [
+                "Elewa JavaScript ni nini na inafanya nini kwenye ukurasa",
+                "Tumia let, const, na var kwa usahihi",
+                "Jua aina 6 za data: string, number, boolean, null, undefined, object",
+                "Tumia operators: hesabu, comparison, na logical",
+            ],
+            "sections": [
+                {"type": "text", "title": "JavaScript ni nini?",
+                 "body": "HTML = muundo. CSS = muonekano. JavaScript = tabia. JavaScript inafanya ukurasa uwe hai: bonyeza kitufe kinafanya kitu, fomu ina validate kabla ya kutuma, menu inafunguka, data inapakia bila ku-refresh. Bila JavaScript, ukurasa wako ni picha tulivu — unaweza kuitazama tu, si kuitumia."},
+                {"type": "callout", "title": "Mfano wa kila siku",
+                 "body": "Ukiwa kwenye Facebook na kubonyeza 'Like' — hapo JavaScript inatumika. Unabonyeza, JavaScript inatuma request kwa server, server inajibu, na namba ya likes inabadilika bila ku-refresh. Hiyo ndiyo nguvu ya JavaScript."},
+                {"type": "text", "title": "Jinsi ya kuongeza JavaScript",
+                 "body": "Kama CSS, kuna njia 3: (1) Inline — onclick='...' ndani ya HTML, (2) Internal — ndani ya <script> kwenye HTML, (3) External — faili la .js linalounganishwa na <script src='...'>. External ndiyo bora kwa miradi halisi."},
+                {"type": "code", "title": "JavaScript ya kwanza",
+                 "language": "html",
+                 "body": "",
+                 "code": "<!-- Internal -->\n<script>\n  console.log(\"Habari, Dunia!\");\n  alert(\"Karibu kwenye tovuti yetu!\");\n</script>\n\n<!-- External -->\n<script src=\"app.js\"></script>\n\n<!-- app.js -->\nconsole.log(\"Habari kutoka app.js\");"},
+                {"type": "callout", "title": "console.log — rafiki yako",
+                 "body": "console.log() inachapisha ujumbe kwenye console ya browser (F12 → Console tab). Tumia hii kujua code yako inafanya nini. Ni zana bora ya debugging."},
+                {"type": "text", "title": "Variables — let, const, var",
+                 "body": "Variable ni chombo cha kuhifadhi data. Kuna njia 3: (1) let — inaweza kubadilishwa, (2) const — haiwezi kubadilishwa (constant), (3) var — ya zamani, epuka. Kanuni: tumia const kwa default, let tu kama unahitaji kubadilisha, kamwe usitumie var."},
+                {"type": "code", "title": "Mifano ya variables",
+                 "language": "javascript",
+                 "body": "",
+                 "code": "const jina = \"Amina\";        // haiwezi kubadilishwa\nlet umri = 20;                // inaweza kubadilishwa\numri = 21;                    // Sawa\n\nconst nchi = \"Tanzania\";\n// nchi = \"Kenya\";            // KOSA — const haiwezi kubadilishwa\n\nconsole.log(jina, umri, nchi);"},
+                {"type": "text", "title": "Aina 6 za data",
+                 "body": "(1) String = maandishi ('habari', \"habari\", `habari`). (2) Number = namba (42, 3.14, -7). (3) Boolean = true au false. (4) null = hakuna kitu kwa makusudi. (5) undefined = haijapewa thamani. (6) Object = mkusanyiko wa data {jina: 'Amina', umri: 20}."},
+                {"type": "code", "title": "Aina za data kwa mfano",
+                 "language": "javascript",
+                 "body": "",
+                 "code": "const jina = \"Amina\";           // string\nconst umri = 20;                   // number\nconst niMwanafunzi = true;         // boolean\nconst hakuna = null;               // null\nlet haijulikani;                   // undefined\nconst mwanafunzi = {                // object\n  jina: \"Amina\",\n  umri: 20,\n  kozi: \"IT\"\n};\n\nconsole.log(typeof jina);          // \"string\"\nconsole.log(typeof umri);          // \"number\""},
+                {"type": "text", "title": "Operators — hesabu",
+                 "body": "+ (jumlisha), - (toa), * (zidisha), / (gawanya), % (modulo — salio), ** (power). Mfano: 5 + 3 = 8; 10 % 3 = 1 (kwa sababu 10 ÷ 3 = 3 salio 1); 2 ** 3 = 8."},
+                {"type": "text", "title": "Operators — comparison",
+                 "body": "== (sawa, lakini inabadilisha type), === (sawa, strict — type lazima ilingane), != (si sawa), !== (si sawa, strict), > (kubwa), < (ndogo), >= (kubwa au sawa), <= (ndogo au sawa). Daima tumia === na !== — ni salama zaidi."},
+                {"type": "code", "title": "Comparison na logical",
+                 "language": "javascript",
+                 "body": "",
+                 "code": "// Comparison\nconsole.log(5 == \"5\");   // true  (inabadilisha type)\nconsole.log(5 === \"5\");  // false (strict — type tofauti)\nconsole.log(5 !== \"5\");  // true\n\n// Logical\nconst umri = 20;\nconst niMwanafunzi = true;\n\nconsole.log(umri >= 18 && niMwanafunzi);  // true (&& = AND)\nconsole.log(umri < 18 || niMwanafunzi);   // true (|| = OR)\nconsole.log(!niMwanafunzi);               // false (! = NOT)"},
+                {"type": "code", "title": "Template strings — herufi za kisasa",
+                 "language": "javascript",
+                 "body": "Badala ya kuunganisha strings kwa +, tumia backticks (`) na ${}:",
+                 "code": "const jina = \"Amina\";\nconst umri = 20;\n\n// Zamani (ngumu kusoma)\nconst salamu1 = \"Habari, \" + jina + \"! Una miaka \" + umri;\n\n// Kisasa (rahisi kusoma)\nconst salamu2 = `Habari, ${jina}! Una miaka ${umri}`;\n\nconsole.log(salamu2);\n// Habari, Amina! Una miaka 20"},
+            ],
+            "key_takeaways": [
+                "JavaScript inaongeza tabia — HTML/CSS ni tuli bila JS",
+                "Tumia const kwa default, let kama unahitaji kubadilisha",
+                "Aina 6: string, number, boolean, null, undefined, object",
+                "Tumia === na !== (strict) badala ya == na !=",
+                "Template strings (\`...\${x}...\`) ni rahisi kuliko kuunganisha kwa +",
+                "console.log() ni rafiki yako kwa debugging",
+            ],
+            "common_mistakes": [
+                {"mistake": "Kutumia var badala ya let/const",
+                 "fix": "var ni ya zamani (ina matatizo ya scope). Tumia const kwa default, let tu inapohitajika."},
+                {"mistake": "Kutumia == badala ya ===",
+                 "fix": "== inabadilisha type (5 == '5' ni true). === ni strict (5 === '5' ni false). Tumia === daima."},
+                {"mistake": "Kusahau alama ya backtick (`) kwenye template strings",
+                 "fix": "Template strings zinahitaji backticks (\`), si single au double quotes."},
+                {"mistake": "Kubadilisha const",
+                 "fix": "const haiwezi kubadilishwa baada ya kupewa thamani. Kama unahitaji kubadilisha, tumia let."},
+            ],
+            "exercise_prompt": "Unda faili 'app.js' na uunganishe kwenye HTML. Ndani yake: (1) tengeneza variables 5 (jina, umri, kozi, niMwanafunzi, mji) kwa aina tofauti, (2) chapisha kila moja kwa console.log, (3) tengeneza salamu kwa template string: 'Habari, [jina]! Una miaka [umri] na unasoma [kozi] huko [mji].' (4) chapisha salamu hiyo.",
+            "exercise_solution": "// app.js\nconst jina = \"Amina Hassan\";\nconst umri = 20;\nconst kozi = \"IT Level 4\";\nconst niMwanafunzi = true;\nconst mji = \"Morogoro\";\n\nconsole.log(jina);\nconsole.log(umri);\nconsole.log(kozi);\nconsole.log(niMwanafunzi);\nconsole.log(mji);\n\nconst salamu = `Habari, ${jina}! Una miaka ${umri} na unasoma ${kozi} huko ${mji}.`;\nconsole.log(salamu);",
+        },
+
+        {
+            "title": "Control Flow & Functions",
+            "duration": 30,
+            "objectives": [
+                "Tumia if / else if / else kufanya maamuzi",
+                "Tumia loops (for, while) kurudia code",
+                "Tengeneza functions (declaration, arrow)",
+                "Elewa parameters na return values",
+            ],
+            "sections": [
+                {"type": "text", "title": "Control flow ni nini?",
+                 "body": "Bila control flow, code inaendesha mstari kwa mstari tu — hakuna maamuzi, hakuna kurudia. Control flow inatuwezesha: (1) kufanya maamuzi (if/else), (2) kurudia (loops), (3) kuunganisha code (functions). Hizi ni nguzo 3 za programming yoyote."},
+                {"type": "text", "title": "if / else if / else",
+                 "body": "if inaangalia sharti — kama ni kweli, inaendesha code ndani yake. else inaendesha kama sharti si kweli. else if inaruhusu masharti mengi."},
+                {"type": "code", "title": "if / else if / else",
+                 "language": "javascript",
+                 "body": "",
+                 "code": "const alama = 75;\n\nif (alama >= 80) {\n  console.log(\"Daraja A\");\n} else if (alama >= 70) {\n  console.log(\"Daraja B\");\n} else if (alama >= 60) {\n  console.log(\"Daraja C\");\n} else {\n  console.log(\"Daraja F\");\n}\n\n// Matokeo: \"Daraja B\""},
+                {"type": "callout", "title": "Kanuni",
+                 "body": "Masharti yanapimwa JUUTU? Hapana — kutoka JUU hadi CHINI. Mara ya kwanza sharti linapokutana na true, code inaingia na kuruka yote yaliyobaki. Kwa hiyo, weka masharti magumu kwanza, rahisi baadaye."},
+                {"type": "text", "title": "Loops — kurudia code",
+                 "body": "Loops hurudia code mara nyingi. Aina 3: (1) for — unajua idadi ya mara, (2) while — unaendelea hadi sharti liwe false, (3) for...of — kwa arrays. Kwa kawaida, for ndiyo inayotumika zaidi."},
+                {"type": "code", "title": "Mifano ya loops",
+                 "language": "javascript",
+                 "body": "",
+                 "code": "// for — namba 1 hadi 5\nfor (let i = 1; i <= 5; i++) {\n  console.log(i);\n}\n\n// for...of — kwa array\nconst rangi = [\"nyekundu\", \"bluu\", \"kijani\"];\nfor (const r of rangi) {\n  console.log(r);\n}\n\n// while — hadi sharti liwe false\nlet n = 0;\nwhile (n < 3) {\n  console.log(\"Mzunguko \" + n);\n  n++;\n}"},
+                {"type": "text", "title": "Functions — nguzo ya code",
+                 "body": "Function ni block ya code inayofanya kazi moja. Unaweza kuiita mara nyingi bila kuandika upya. Function ina: (1) jina, (2) parameters (data inayoingia), (3) return (data inayotoka). Njia 2: function declaration (ya kawaida) na arrow function (fupi)."},
+                {"type": "code", "title": "Functions — declaration na arrow",
+                 "language": "javascript",
+                 "body": "",
+                 "code": "// Function declaration\nfunction salamu(jina) {\n  return `Habari, ${jina}!`;\n}\n\nconsole.log(salamu(\"Amina\"));\nconsole.log(salamu(\"John\"));\n\n// Arrow function (kisasa, fupi)\nconst jumla = (a, b) => a + b;\nconsole.log(jumla(5, 3));  // 8\n\n// Arrow function yenye block\nconst kagua = (umri) => {\n  if (umri >= 18) {\n    return \"Mtu mzima\";\n  }\n  return \"Mtoto\";\n};\n\nconsole.log(kagua(20));  // \"Mtu mzima\""},
+                {"type": "callout", "title": "Return — muhimu!",
+                 "body": "Function bila 'return' inarudisha undefined. Kama unataka function ikurudishie kitu, tumia 'return'. Mfano: function jumla(a,b) { return a+b; } — bila return, hii haitafanya kazi."},
+                {"type": "code", "title": "Mfano wa vitendo: calculator",
+                 "language": "javascript",
+                 "body": "",
+                 "code": "function hesabu(a, b, operesheni) {\n  if (operesheni === \"jumlisha\") return a + b;\n  if (operesheni === \"toa\") return a - b;\n  if (operesheni === \"zidisha\") return a * b;\n  if (operesheni === \"gawanya\") return a / b;\n  return \"Operesheni haijulikani\";\n}\n\nconsole.log(hesabu(10, 5, \"jumlisha\"));   // 15\nconsole.log(hesabu(10, 5, \"toa\"));        // 5\nconsole.log(hesabu(10, 5, \"zidisha\"));     // 50\nconsole.log(hesabu(10, 5, \"gawanya\"));     // 2"},
+            ],
+            "key_takeaways": [
+                "if/else if/else inafanya maamuzi — masharti yanapimwa juu hadi chini",
+                "for inarudia idadi maalum; while inarudia hadi sharti liwe false",
+                "for...of ni safi kwa arrays",
+                "Function ina jina, parameters, na return",
+                "Arrow function (const f = () => ...) ni fupi na ya kisasa",
+                "return inarudisha thamani; bila return, function inarudisha undefined",
+            ],
+            "common_mistakes": [
+                {"mistake": "Kusahau return kwenye function",
+                 "fix": "Function bila return inarudisha undefined. Kama unataka thamani, tumia return."},
+                {"mistake": "Kuweka semicolon baada ya if/else/for",
+                 "fix": "if (x > 5) { ... } — hakuna semicolon baada ya if au {}. Semicolon ni kwa mistari ya code."},
+                {"mistake": "Kutumia = badala ya === kwenye if",
+                 "fix": "if (x = 5) ni kosa (inagawa thamani). if (x === 5) ndiyo sahihi (inalinganisha)."},
+                {"mistake": "Kusahau i++ kwenye for loop",
+                 "fix": "for (let i = 0; i < 5; i++) — bila i++, loop haitaisha (infinite loop)."},
+                {"mistake": "Kuchanganya arrow function na return",
+                 "fix": "Arrow function yenye block {} LAZIMA iwe na return. Arrow function bila {} ina return implicitly."},
+            ],
+            "exercise_prompt": "Unda function 'kaguaAlama(alama)' inayorudisha daraja: alama >= 80 → 'A', alama >= 70 → 'B', alama >= 60 → 'C', alama >= 50 → 'D', chini ya 50 → 'F'. Kisha unda array ya alama 5 (mf. [85, 72, 65, 48, 92]) na tumia for...of kuchapisha daraja la kila moja.",
+            "exercise_solution": "function kaguaAlama(alama) {\n  if (alama >= 80) return 'A';\n  if (alama >= 70) return 'B';\n  if (alama >= 60) return 'C';\n  if (alama >= 50) return 'D';\n  return 'F';\n}\n\nconst alama = [85, 72, 65, 48, 92];\n\nfor (const a of alama) {\n  console.log(`Alama: ${a} → Daraja: ${kaguaAlama(a)}`);\n}",
+        },
+
+        {
+            "title": "DOM Manipulation & Events",
+            "duration": 35,
+            "objectives": [
+                "Elewa DOM ni nini",
+                "Chagua elementi kwa querySelector na getElementById",
+                "Badilisha maudhui (textContent, innerHTML) na styles",
+                "Sikiliza events (bonyeza, ingiza) na kujibu",
+            ],
+            "sections": [
+                {"type": "text", "title": "DOM ni nini?",
+                 "body": "DOM (Document Object Model) ni mti wa HTML unaoweza kubadilishwa na JavaScript. Kila tag, kila attribute, kila kipande cha maandishi ni 'node' kwenye mti. JavaScript inaweza: kupata node, kubadilisha maudhui yake, kuongeza node mpya, kuondoa node, kubadilisha styles — kila kitu bila ku-refresh."},
+                {"type": "callout", "title": "Fikiria DOM kama mti",
+                 "body": "HTML yako ni mti: <html> ni shina, <body> ni tawi kubwa, <h1>, <p>, <div> ni matawi madogo. JavaScript inaweza kufika tawi lolote na kubadilisha kile kilicho juu yake."},
+                {"type": "text", "title": "Kuchagua elementi",
+                 "body": "Njia 2 muhimu: (1) document.getElementById('id') — kwa ID, (2) document.querySelector('.class') — kwa CSS selector yoyote (class, tag, attribute). querySelector inarudisha elementi ya kwanza tu; querySelectorAll inarudisha zote (NodeList)."},
+                {"type": "code", "title": "Kuchagua elementi",
+                 "language": "javascript",
+                 "body": "",
+                 "code": "// HTML: <h1 id=\"kichwa\">Habari</h1>\nconst kichwa = document.getElementById(\"kichwa\");\nconsole.log(kichwa.textContent);  // \"Habari\"\n\n// HTML: <p class=\"maelezo\">...</p>\nconst maelezo = document.querySelector(\".maelezo\");\n\n// HTML: <button>...</button> (zote)\nconst vitufe = document.querySelectorAll(\"button\");\nvitufe.forEach(v => console.log(v.textContent));"},
+                {"type": "text", "title": "Kubadilisha maudhui",
+                 "body": "textContent — inabadilisha maandishi tu (salama, hakuna HTML). innerHTML — inaruhusu HTML ndani (hatari kama data inatoka kwa mtumiaji — XSS). Kwa usalama, tumia textContent kwa data ya mtumiaji, innerHTML kwa template zako mwenyewe."},
+                {"type": "code", "title": "Kubadilisha maudhui",
+                 "language": "javascript",
+                 "body": "",
+                 "code": "const kichwa = document.getElementById(\"kichwa\");\n\n// textContent — maandishi tu\nkichwa.textContent = \"Habari Mpya\";\n\n// innerHTML — inaruhusu tags\nkichwa.innerHTML = \"<em>Habari</em> Mpya\";\n\n// Badilisha style\nkichwa.style.color = \"red\";\nkichwa.style.fontSize = \"32px\";\n\n// Ongeza/ondoa class\nkichwa.classList.add(\"active\");\nkichwa.classList.remove(\"hidden\");\nkichwa.classList.toggle(\"highlight\");"},
+                {"type": "text", "title": "Events — kujibu matendo",
+                 "body": "Event ni kitu kinachotokea: bonyeza, ingiza, badilisha, scroll, load. Ili kujibu, tumia addEventListener: element.addEventListener('event', function). Events muhimu: click (bonyeza), input (andika), submit (tuma form), keydown (bonyeza key)."},
+                {"type": "code", "title": "Event listener ya msingi",
+                 "language": "javascript",
+                 "body": "",
+                 "code": "// HTML: <button id=\"btn\">Bonyeza</button>\nconst btn = document.getElementById(\"btn\");\n\nbtn.addEventListener(\"click\", () => {\n  alert(\"Umebonyeza!\");\n});\n\n// Ingiza — input\n// HTML: <input id=\"jina\" type=\"text\">\nconst input = document.getElementById(\"jina\");\nconst output = document.getElementById(\"output\");\n\ninput.addEventListener(\"input\", (e) => {\n  output.textContent = \"Habari, \" + e.target.value;\n});"},
+                {"type": "callout", "title": "e.target — elementi iliyosababisha",
+                 "body": "Kila event listener inapokea 'event object' (e). e.target ni elementi iliyosababisha event. Kwa input: e.target.value ni thamani iliyoandikwa. Kwa button: e.target ni button yenyewe."},
+                {"type": "code", "title": "Mfano kamili: counter",
+                 "language": "html",
+                 "body": "",
+                 "code": "<!-- HTML -->\n<h1>Counter: <span id=\"namba\">0</span></h1>\n<button id=\"ongeza\">+</button>\n<button id=\"punguza\">−</button>\n<button id=\"reset\">Reset</button>\n\n<!-- JavaScript -->\n<script>\n  let count = 0;\n  const namba = document.getElementById(\"namba\");\n\n  document.getElementById(\"ongeza\").addEventListener(\"click\", () => {\n    count++;\n    namba.textContent = count;\n  });\n\n  document.getElementById(\"punguza\").addEventListener(\"click\", () => {\n    count--;\n    namba.textContent = count;\n  });\n\n  document.getElementById(\"reset\").addEventListener(\"click\", () => {\n    count = 0;\n    namba.textContent = count;\n  });\n</script>"},
+                {"type": "code", "title": "Mfano: To-Do list rahisi",
+                 "language": "html",
+                 "body": "",
+                 "code": "<!-- HTML -->\n<input id=\"todo-input\" type=\"text\" placeholder=\"Ongeza kazi...\">\n<button id=\"todo-add\">Ongeza</button>\n<ul id=\"todo-list\"></ul>\n\n<!-- JavaScript -->\n<script>\n  const input = document.getElementById(\"todo-input\");\n  const btn = document.getElementById(\"todo-add\");\n  const list = document.getElementById(\"todo-list\");\n\n  btn.addEventListener(\"click\", () => {\n    const text = input.value.trim();\n    if (!text) return;\n\n    const li = document.createElement(\"li\");\n    li.textContent = text;\n    li.addEventListener(\"click\", () => li.remove());\n    list.appendChild(li);\n\n    input.value = \"\";\n  });\n</script>"},
+            ],
+            "key_takeaways": [
+                "DOM ni mti wa HTML unaoweza kubadilishwa na JavaScript",
+                "querySelector inachagua elementi kwa CSS selector yoyote",
+                "textContent ni salama; innerHTML inaruhusu HTML (hatari kwa data ya mtumiaji)",
+                "addEventListener inasikiliza events",
+                "e.target inakupa elementi iliyosababisha event",
+                "createElement + appendChild huunda elementi mpya",
+            ],
+            "common_mistakes": [
+                {"mistake": "Kutumia innerHTML kwa data ya mtumiaji",
+                 "fix": "innerHTML inaruhusu <script> — hatari ya XSS. Tumia textContent kwa data ya mtumiaji."},
+                {"mistake": "Kuita script kabla HTML haijapakia",
+                 "fix": "Weka <script> mwishoni mwa <body>, au tumia defer attribute."},
+                {"mistake": "Kusahau kusikiliza event vizuri",
+                 "fix": "addEventListener('click', ...) si addEventListener('onclick', ...). Jina la event ni 'click', si 'onclick'."},
+                {"mistake": "Kutumia getElementById kwa class",
+                 "fix": "getElementById ni kwa ID tu. Kwa class, tumia querySelector('.class')."},
+            ],
+            "exercise_prompt": "Unda ukurasa 'counter.html' wenye: (1) <h2> yenye 'Bonyeza vitufe kubadilisha rangi', (2) <div id='box'> yenye background ya rangi, ukubwa 200x200px, (3) vitufe 3: 'Nyekundu', 'Bluu', 'Kijani'. Kila kitufe kibonyezwe → box inabadilisha rangi. Tumia addEventListener na style.backgroundColor.",
+            "exercise_solution": "<!DOCTYPE html>\n<html lang=\"sw\">\n<head>\n  <meta charset=\"UTF-8\">\n  <title>Counter</title>\n  <style>\n    body { font-family: sans-serif; padding: 40px; text-align: center; }\n    #box {\n      width: 200px;\n      height: 200px;\n      background: #ccc;\n      margin: 20px auto;\n      border-radius: 12px;\n      transition: background 0.3s;\n    }\n    button {\n      padding: 10px 20px;\n      margin: 4px;\n      border: none;\n      border-radius: 8px;\n      font-weight: 700;\n      cursor: pointer;\n    }\n  </style>\n</head>\n<body>\n  <h2>Bonyeza vitufe kubadilisha rangi</h2>\n  <div id=\"box\"></div>\n  <button id=\"btn-red\">Nyekundu</button>\n  <button id=\"btn-blue\">Bluu</button>\n  <button id=\"btn-green\">Kijani</button>\n\n  <script>\n    const box = document.getElementById(\"box\");\n    document.getElementById(\"btn-red\").addEventListener(\"click\", () => {\n      box.style.backgroundColor = \"#DC2626\";\n    });\n    document.getElementById(\"btn-blue\").addEventListener(\"click\", () => {\n      box.style.backgroundColor = \"#2563EB\";\n    });\n    document.getElementById(\"btn-green\").addEventListener(\"click\", () => {\n      box.style.backgroundColor = \"#16A34A\";\n    });\n  </script>\n</body>\n</html>",
+        },
+    ]
+
+    for li, lesson in enumerate(lessons_data, 1):
+        existing = cur.execute(
+            "SELECT id FROM lessons WHERE module_id = ? AND title = ?",
+            (module_id, lesson["title"])).fetchone()
+        if existing:
+            continue
+
+        html_fallback = f"<h2>{lesson['title']}</h2>"
+        html_fallback += "<h3>Malengo ya Somo</h3><ul>"
+        for obj in lesson["objectives"]:
+            html_fallback += f"<li>{obj}</li>"
+        html_fallback += "</ul>"
+
+        cur.execute(
+            "INSERT INTO lessons (module_id, title, content, lesson_type, "
+            "sequence_number, estimated_duration_min, status, "
+            "objectives_json, sections_json, key_takeaways_json, "
+            "common_mistakes_json, exercise_prompt, exercise_solution, "
+            "module_order, lesson_order) "
+            "VALUES (?, ?, ?, 'text', ?, ?, 'published', ?, ?, ?, ?, ?, ?, ?, ?)",
+            (module_id, lesson["title"], html_fallback, li,
+             lesson["duration"], li,
+             _json.dumps(lesson["objectives"], ensure_ascii=False),
+             _json.dumps(lesson["sections"], ensure_ascii=False),
+             _json.dumps(lesson["key_takeaways"], ensure_ascii=False),
+             _json.dumps(lesson["common_mistakes"], ensure_ascii=False),
+             lesson["exercise_prompt"],
+             lesson["exercise_solution"],
+             3, li))
+
+    # Quiz 3
+    existing_quiz = cur.execute(
+        "SELECT id FROM assessments WHERE title LIKE 'Module 3%' LIMIT 1"
+    ).fetchone()
+    if not existing_quiz:
+        first_lesson = cur.execute(
+            "SELECT id FROM lessons WHERE module_id = ? ORDER BY sequence_number LIMIT 1",
+            (module_id,)).fetchone()
+        if first_lesson:
+            cur.execute(
+                "INSERT INTO assessments (lesson_id, title, description, passing_score, max_attempts) "
+                "VALUES (?, ?, ?, ?, ?)",
+                (first_lesson["id"], "Module 3 Quiz: JavaScript",
+                 "Jaribu uelewa wako wa JavaScript, functions, na DOM.",
+                 70, 3))
+            aid = cur.lastrowid
+            questions = [
+                ("multiple_choice", "JavaScript inatumika kwa nini?",
+                 ["Kupamba ukurasa", "Kuunda muundo wa HTML",
+                  "Kuongeza tabia na mwingiliano", "Kuhifadhi data"], "2",
+                 "JavaScript inaongeza tabia: bonyeza, ingiza, tenda. HTML/CSS ni tuli bila JS.", 10),
+                ("multiple_choice", "Ni variable ipi HAIWEZI kubadilishwa?",
+                 ["var", "let", "const", "zote zinaweza"], "2",
+                 "const = constant (haiwezi kubadilishwa). let inaweza. var ni ya zamani.", 10),
+                ("multiple_choice", "Tofauti kati ya == na === ni nini?",
+                 ["Hakuna tofauti", "=== inalinganisha value TU",
+                  "=== inalinganisha value NA type", "== ni ya kisasa"], "2",
+                 "=== ni strict — type lazima ilingane. 5 == '5' ni true; 5 === '5' ni false.", 10),
+                ("multiple_choice", "if / else if / else inapima masharti kwa mpangilio gani?",
+                 ["Kutoka chini hadi juu", "Kutoka juu hadi chini",
+                  "Kwa random", "Yote kwa wakati mmoja"], "1",
+                 "Kutoka juu hadi chini — mara ya kwanza sharti linapokutana na true, code inaingia.", 10),
+                ("true_false", "textContent ni salama zaidi kuliko innerHTML kwa data ya mtumiaji.",
+                 ["True", "False"], "0",
+                 "Kweli. innerHTML inaruhusu <script> — hatari ya XSS. textContent ni maandishi tu.", 10),
+            ]
+            for qi, (qtype, qtext, opts, correct, expl, pts) in enumerate(questions, 1):
+                cur.execute(
+                    "INSERT INTO assessment_questions (assessment_id, question_type, "
+                    "question_text, options_json, correct_answer, explanation, "
+                    "points, sequence_number) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                    (aid, qtype, qtext, _json.dumps(opts, ensure_ascii=False),
+                     correct, expl, pts, qi))
 # ============================================================
 # AI TUTOR (Phase 4)
 # ============================================================
@@ -1539,7 +1836,8 @@ def init_career_tables():
     conn.commit()
     _seed_career_paths(cur)
     _seed_web_design_module1(cur)
-    _seed_web_design_module1(cur)
+    _seed_web_design_module2(cur)
+    _seed_web_design_module3(cur)
     conn.commit()
     conn.close()
 
