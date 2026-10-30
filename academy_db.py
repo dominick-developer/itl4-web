@@ -1127,6 +1127,19 @@ def _seed_web_design_module2(cur):
                     (aid, qtype, qtext, _json.dumps(opts, ensure_ascii=False),
                      correct, expl, pts, qi))
 def _seed_web_design_module3(cur):
+
+    # FORCE-PUBLISH: web-design has lessons, mark it published
+    try:
+        cur.execute("UPDATE academy_courses SET status = 'published' WHERE slug = 'web-design-development'")
+        row = cur.execute("SELECT status FROM academy_courses WHERE slug = 'web-design-development'").fetchone()
+        if row:
+            print(f"✅ FORCE-PUBLISH: web-design-development status = {row[0]}")
+        else:
+            print("⚠️ FORCE-PUBLISH: web-design course NOT FOUND")
+        n_lessons = cur.execute("SELECT COUNT(*) FROM lessons WHERE status = 'published'").fetchone()[0]
+        print(f"✅ Total published lessons: {n_lessons}")
+    except Exception as e:
+        print(f"⚠️ FORCE-PUBLISH failed: {e}")
     """Seed Module 3: JavaScript — 3 lessons + quiz."""
     import json as _json
 
