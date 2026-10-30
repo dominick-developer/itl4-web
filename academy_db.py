@@ -850,6 +850,331 @@ def get_attempt_details(attempt_id):
         items.append(d)
 
     return {"attempt": dict(attempt), "responses": items}
+def _seed_web_design_module1(cur):
+    """Seed Module 1: Foundations — 6 lessons + quiz."""
+    import json as _json
+
+    course = cur.execute(
+        "SELECT id FROM academy_courses WHERE slug = 'web-design-development'"
+    ).fetchone()
+    if not course:
+        return
+    course_id = course["id"]
+
+    existing = cur.execute(
+        "SELECT id FROM course_modules WHERE course_id = ? AND title LIKE 'Module 1%'",
+        (course_id,)).fetchone()
+
+    if existing:
+        module_id = existing["id"]
+    else:
+        cur.execute(
+            "INSERT INTO course_modules (course_id, title, description, sequence_number) "
+            "VALUES (?, ?, ?, ?)",
+            (course_id, "Module 1: Foundations of the Web",
+             "Jifunze jinsi mtandao unavyofanya kazi, uandike HTML yako ya kwanza, na uunde ukurasa wenye maandishi, viungo, picha, na orodha.",
+             1))
+        module_id = cur.lastrowid
+
+    lessons_data = [
+        {
+            "title": "How the Web Works",
+            "duration": 20,
+            "objectives": [
+                "Elewa tofauti kati ya client (browser) na server",
+                "Jua nini kinatokea unapoandika URL na kubonyeza Enter",
+                "Tambua majukumu ya HTML, CSS, na JavaScript",
+                "Andika ukurasa wako wa kwanza wa HTML",
+            ],
+            "sections": [
+                {"type": "text", "title": "Kila unapofungua tovuti, nini kinatokea?",
+                 "body": "Fikiria unabonyeza 'google.com'. Ndani ya sekunde 1: (1) Kompyuta yako inauliza DNS 'google.com ni IP gani?', (2) DNS inajibu '142.250.185.78', (3) Browser inatuma HTTP request kwa server hiyo, (4) Server inarudisha HTML, (5) Browser inasoma HTML, inapakua CSS/JS, na kuchora ukurasa."},
+                {"type": "callout", "title": "Client vs Server",
+                 "body": "Client = browser yako. Server = kompyuta yenye tovuti. Wewe (client) unaomba, server inakupa. Ni kama mteja na mhudumu wa hoteli."},
+                {"type": "text", "title": "Lugha tatu za mtandao",
+                 "body": "Kila tovuti inaundwa na lugha 3: HTML (muundo), CSS (muonekano), JavaScript (tabia)."},
+                {"type": "code", "title": "Programu yako ya kwanza",
+                 "language": "html",
+                 "body": "Fungua Notepad, andika haya, hifadhi kama 'hello.html':",
+                 "code": "<!DOCTYPE html>\n<html>\n<head>\n  <title>Ukurasa Wangu</title>\n</head>\n<body>\n  <h1>Habari, Dunia!</h1>\n  <p>Huu ni ukurasa wangu wa kwanza.</p>\n</body>\n</html>"},
+            ],
+            "key_takeaways": [
+                "Tovuti inaundwa na lugha 3: HTML, CSS, JavaScript",
+                "Browser (client) inaomba; server inatoa majibu",
+                "Kila ukurasa wa HTML una <!DOCTYPE html>, <html>, <head>, <body>",
+                "Faili la HTML linaisha na .html",
+            ],
+            "common_mistakes": [
+                {"mistake": "Kuhifadhi kama hello.txt badala ya hello.html",
+                 "fix": "Bonyeza 'Save As' na chagua 'All Files' kisha andika 'hello.html'."},
+                {"mistake": "Kusahau <!DOCTYPE html> mwanzoni",
+                 "fix": "Daima anza faili yako na <!DOCTYPE html>."},
+            ],
+            "exercise_prompt": "Unda 'about-me.html' yenye: (1) kichwa chako, (2) kifungu kimoja kinachojieleza. Fungua kwenye browser.",
+            "exercise_solution": "<!DOCTYPE html>\n<html>\n<head><title>Kuhusu Mimi</title></head>\n<body>\n  <h1>Amina</h1>\n  <p>Mimi ni mwanafunzi wa IT Level 4.</p>\n</body>\n</html>",
+        },
+        {
+            "title": "HTML Structure & Text",
+            "duration": 25,
+            "objectives": [
+                "Elewa anatomia kamili ya hati ya HTML",
+                "Tumia vichwa vya habari (h1-h6) kwa mpangilio sahihi",
+                "Andika vifungu na maandishi yenye msisitizo",
+            ],
+            "sections": [
+                {"type": "text", "title": "Anatomia ya hati ya HTML",
+                 "body": "Sehemu 4 kuu: (1) <!DOCTYPE html> — tamko la HTML5, (2) <html> — chombo cha kila kitu, (3) <head> — maelezo (title, style, meta), (4) <body> — maudhui yanayoonekana."},
+                {"type": "code", "title": "Muundo kamili",
+                 "language": "html",
+                 "body": "",
+                 "code": "<!DOCTYPE html>\n<html lang=\"sw\">\n<head>\n  <meta charset=\"UTF-8\">\n  <title>Jina la Ukurasa</title>\n</head>\n<body>\n  <!-- Maudhui yanaenda hapa -->\n</body>\n</html>"},
+                {"type": "text", "title": "Vichwa vya habari (h1-h6)",
+                 "body": "<h1> ni kikubwa (kichwa kikuu — tumia MARA MOJA tu), <h2> ni vidogo, hadi <h6>. Fikiria kama muundo wa kitabu."},
+                {"type": "code", "title": "Mifano",
+                 "language": "html",
+                 "body": "",
+                 "code": "<h1>Jina la Blog Yangu</h1>\n<h2>Makala ya Kwanza</h2>\n<p>Kumbuka: <strong>daima</strong> hifadhi kazi yako.</p>\n<p>Faili inaitwa <code>index.html</code>.</p>"},
+            ],
+            "key_takeaways": [
+                "Kila hati ya HTML ina DOCTYPE, html, head, body",
+                "Tumia <h1> mara moja tu kwa kila ukurasa",
+                "<strong> ni msisitizo; <em> ni italics",
+            ],
+            "common_mistakes": [
+                {"mistake": "Kutumia <h1> mara nyingi",
+                 "fix": "Tumia <h1> mara moja; <h2>, <h3> kwa sehemu ndogo."},
+                {"mistake": "Kusahau kufunga tags",
+                 "fix": "Kila tag ya ufunguzi ina tag ya kufunga, isipokuwa tags tupu kama <br>, <img>."},
+            ],
+            "exercise_prompt": "Unda 'my-bio.html' yenye: (1) <h1> jina lako, (2) <h2> 'Kuhusu Mimi', (3) <p> maelezo, (4) <h2> 'Mambo Ninayopenda', (5) <p> mambo 3. Weka <strong> kwenye neno muhimu.",
+            "exercise_solution": "<!DOCTYPE html>\n<html>\n<head><title>Wasifu</title></head>\n<body>\n  <h1>Amina</h1>\n  <h2>Kuhusu Mimi</h2>\n  <p>Mimi ni <strong>mwanafunzi wa IT Level 4</strong>.</p>\n  <h2>Mambo Ninayopenda</h2>\n  <p>Programu, muziki, kusoma.</p>\n</body>\n</html>",
+        },
+        {
+            "title": "Links, Images, and Lists",
+            "duration": 30,
+            "objectives": [
+                "Unda viungo (links) vya nje na vya ndani",
+                "Ongeza picha kwa maandishi mbadala (alt text)",
+                "Tumia orodha (ul na ol)",
+            ],
+            "sections": [
+                {"type": "text", "title": "Viungo (Links)",
+                 "body": "Tag ya <a> (anchor) inaunda kiungo. href inaelekeza ni wapi kinaenda."},
+                {"type": "code", "title": "Mifano ya viungo",
+                 "language": "html",
+                 "body": "",
+                 "code": "<!-- Kiungo cha nje -->\n<a href=\"https://google.com\">Nenda Google</a>\n\n<!-- Tab mpya -->\n<a href=\"https://example.com\" target=\"_blank\" rel=\"noopener\">Fungua</a>"},
+                {"type": "text", "title": "Picha (Images)",
+                 "body": "<img> ni tag tupu. src inaelekeza faili. alt ni maelezo mbadala — yanaonekana kama picha haijapakia na yanasomwa na watu wasioona."},
+                {"type": "code", "title": "Mifano ya picha",
+                 "language": "html",
+                 "body": "",
+                 "code": "<img src=\"https://example.com/logo.png\" alt=\"Nembo\" width=\"200\">\n<img src=\"picha/mimi.jpg\" alt=\"Picha yangu\">"},
+                {"type": "text", "title": "Orodha (Lists)",
+                 "body": "<ul> = orodha isiyo na namba. <ol> = orodha yenye namba. Kila kipengele ni <li>."},
+                {"type": "code", "title": "Mifano ya orodha",
+                 "language": "html",
+                 "body": "",
+                 "code": "<ul>\n  <li>Kupika</li>\n  <li>Kusoma</li>\n</ul>\n\n<ol>\n  <li>Amka</li>\n  <li>Kunywa chai</li>\n</ol>"},
+            ],
+            "key_takeaways": [
+                "<a href='...'>...</a> huunda kiungo",
+                "<img src='...' alt='...'> — alt ni LAZIMA",
+                "<ul> ni orodha isiyo na namba; <ol> ni yenye namba",
+            ],
+            "common_mistakes": [
+                {"mistake": "Kusahau alt kwenye <img>",
+                 "fix": "Daima weka alt — inasaidia watu wasioona."},
+                {"mistake": "Kuandika <a href='google.com'> bila https://",
+                 "fix": "URL kamili LAZIMA ianze na https:// au http://."},
+            ],
+            "exercise_prompt": "Unda 'favorites.html' yenye: (1) <h1>, (2) <ul> yenye viungo 3, (3) picha moja na alt, (4) <ol> yenye vitu 3.",
+            "exercise_solution": "<!DOCTYPE html>\n<html>\n<head><title>Favorites</title></head>\n<body>\n  <h1>Vitu Ninavyopenda</h1>\n  <ul>\n    <li><a href=\"https://google.com\">Google</a></li>\n    <li><a href=\"https://wikipedia.org\">Wikipedia</a></li>\n  </ul>\n  <img src=\"https://picsum.photos/300\" alt=\"Picha\">\n  <ol>\n    <li>Kusoma</li>\n    <li>Kupumzika</li>\n  </ol>\n</body>\n</html>",
+        },
+        {
+            "title": "Semantic HTML: Structure That Means Something",
+            "duration": 25,
+            "objectives": [
+                "Elewa tofauti kati ya <div> na semantic elements",
+                "Tumia <header>, <nav>, <main>, <section>, <article>, <aside>, <footer>",
+            ],
+            "sections": [
+                {"type": "text", "title": "Semantic HTML ni nini?",
+                 "body": "Semantic HTML ni kutumia tags zinazoeleza MAANA. <div> haisemi kitu. <nav> inasema 'hii ni sehemu ya viungo'. Inasaidia: (1) screen readers, (2) Google, (3) wewe mwenyewe kusoma code."},
+                {"type": "code", "title": "Muundo",
+                 "language": "html",
+                 "body": "",
+                 "code": "<header>\n  <h1>Blog Yangu</h1>\n  <nav>\n    <a href=\"/\">Nyumbani</a>\n  </nav>\n</header>\n<main>\n  <article>\n    <h2>Makala</h2>\n    <p>Maudhui...</p>\n  </article>\n</main>\n<footer>\n  <p>&copy; 2026</p>\n</footer>"},
+                {"type": "callout", "title": "Kanuni",
+                 "body": "<main> ni MOJA tu kwa kila ukurasa."},
+            ],
+            "key_takeaways": [
+                "Semantic HTML inaeleza maana",
+                "<main> ni moja tu",
+                "<article> = inajitegemea; <section> = sehemu yenye kichwa",
+            ],
+            "common_mistakes": [
+                {"mistake": "Kutumia <div> kwa kila kitu",
+                 "fix": "Kama kuna semantic element inayofaa, tumia hiyo kwanza."},
+                {"mistake": "Kutumia <main> zaidi ya moja",
+                 "fix": "<main> ni moja tu."},
+            ],
+            "exercise_prompt": "Badilisha wasifu wako kutumia semantic HTML: <header> yenye <h1> na <nav>, <main> yenye <section>, na <footer>.",
+            "exercise_solution": "<!DOCTYPE html>\n<html>\n<head><title>Wasifu</title></head>\n<body>\n  <header>\n    <h1>Amina</h1>\n    <nav><a href=\"#about\">Kuhusu</a></nav>\n  </header>\n  <main>\n    <section id=\"about\">\n      <h2>Kuhusu Mimi</h2>\n      <p>Mimi ni mwanafunzi.</p>\n    </section>\n  </main>\n  <footer><p>&copy; 2026</p></footer>\n</body>\n</html>",
+        },
+        {
+            "title": "Forms Part 1: Inputs and Labels",
+            "duration": 30,
+            "objectives": [
+                "Unda fomu yenye <input> za aina mbalimbali",
+                "Tumia <label> kuunganisha maandishi na input",
+            ],
+            "sections": [
+                {"type": "text", "title": "Forms ni nini?",
+                 "body": "Fomu inakusanya taarifa kutoka kwa mtumiaji. Kila kitu ndani ya <form>...</form>."},
+                {"type": "callout", "title": "Kanuni #1",
+                 "body": "KILA input LAZIMA iwe na <label>."},
+                {"type": "text", "title": "Input types 8 muhimu",
+                 "body": "text, email, password, number, tel, date, checkbox, radio."},
+                {"type": "code", "title": "Fomu kamili",
+                 "language": "html",
+                 "body": "",
+                 "code": "<form action=\"/signup\" method=\"POST\">\n  <label for=\"name\">Jina</label>\n  <input type=\"text\" id=\"name\" name=\"name\" required>\n\n  <label for=\"email\">Email</label>\n  <input type=\"email\" id=\"email\" name=\"email\" required>\n\n  <label for=\"pass\">Nenosiri</label>\n  <input type=\"password\" id=\"pass\" name=\"pass\" required minlength=\"8\">\n\n  <button type=\"submit\">Sajili</button>\n</form>"},
+                {"type": "text", "title": "for + id",
+                 "body": "<label for=\"name\"> na <input id=\"name\"> vinahusiana. Bonyeza maandishi — focus inaruka kwenye input."},
+            ],
+            "key_takeaways": [
+                "KILA input ina <label for='...'> inayohusiana na id",
+                "type='email' ina validate automatically",
+                "required inazuia submission mpaka ijazwe",
+            ],
+            "common_mistakes": [
+                {"mistake": "Kutumia placeholder badala ya label",
+                 "fix": "Placeholder inatoweka. Label daima inaonekana."},
+                {"mistake": "Kusahau name attribute",
+                 "fix": "Bila name, server HAITAPOKEA thamani."},
+            ],
+            "exercise_prompt": "Unda fomu ya 'wasiliana nasi' yenye: jina, email, simu, ujumbe, na button.",
+            "exercise_solution": "<form action=\"/contact\" method=\"POST\">\n  <label for=\"name\">Jina</label>\n  <input type=\"text\" id=\"name\" name=\"name\" required>\n  <label for=\"email\">Email</label>\n  <input type=\"email\" id=\"email\" name=\"email\" required>\n  <label for=\"phone\">Simu</label>\n  <input type=\"tel\" id=\"phone\" name=\"phone\">\n  <label for=\"msg\">Ujumbe</label>\n  <input type=\"text\" id=\"msg\" name=\"msg\" required>\n  <button type=\"submit\">Tuma →</button>\n</form>",
+        },
+        {
+            "title": "Forms Part 2: Select, Textarea, and Validation",
+            "duration": 30,
+            "objectives": [
+                "Tumia <textarea> kwa maandishi marefu",
+                "Tumia <select> kwa dropdown",
+                "Tumia checkbox na radio",
+            ],
+            "sections": [
+                {"type": "text", "title": "Textarea",
+                 "body": "Input ya kawaida ni mstari mmoja. <textarea> ni kwa paragraph, maelezo. Ina rows na cols."},
+                {"type": "code", "title": "Textarea",
+                 "language": "html",
+                 "body": "",
+                 "code": "<label for=\"fb\">Maoni yako</label>\n<textarea id=\"fb\" name=\"fb\" rows=\"5\" maxlength=\"500\"></textarea>"},
+                {"type": "text", "title": "Select — dropdown",
+                 "body": "<select> inaunda dropdown. Kila chaguo ni <option>."},
+                {"type": "code", "title": "Select",
+                 "language": "html",
+                 "body": "",
+                 "code": "<label for=\"c\">Chagua Kozi</label>\n<select id=\"c\" name=\"c\" required>\n  <option value=\"\">— Chagua —</option>\n  <option value=\"html\">HTML5</option>\n  <option value=\"css\">CSS3</option>\n</select>"},
+                {"type": "text", "title": "Checkbox vs Radio",
+                 "body": "Checkbox = chagua nyingi. Radio = chagua moja. Kila radio za kikundi kimoja LAZIMA ziwe na name ILE ILE."},
+                {"type": "code", "title": "Mifano",
+                 "language": "html",
+                 "body": "",
+                 "code": "<fieldset>\n  <legend>Hobbies</legend>\n  <input type=\"checkbox\" id=\"m\" name=\"hobby\" value=\"music\">\n  <label for=\"m\">Muziki</label>\n  <input type=\"checkbox\" id=\"s\" name=\"hobby\" value=\"sports\">\n  <label for=\"s\">Michezo</label>\n</fieldset>\n\n<fieldset>\n  <legend>Jinsia</legend>\n  <input type=\"radio\" id=\"me\" name=\"gender\" value=\"male\">\n  <label for=\"me\">Me</label>\n  <input type=\"radio\" id=\"ke\" name=\"gender\" value=\"female\">\n  <label for=\"ke\">Ke</label>\n</fieldset>"},
+            ],
+            "key_takeaways": [
+                "<textarea> kwa maandishi marefu",
+                "<select> + <option> kwa dropdown",
+                "Checkbox = chagua nyingi; Radio = chagua moja",
+                "HTML5 inafanya validation: required, minlength, type='email'",
+            ],
+            "common_mistakes": [
+                {"mistake": "Radio zenye name tofauti",
+                 "fix": "Zote za kikundi kimoja LAZIMA ziwe na name ILE ILE."},
+                {"mistake": "Kutumia <input> kwa maandishi marefu",
+                 "fix": "Tumia <textarea rows='5'> kwa paragraph."},
+            ],
+            "exercise_prompt": "Unda fomu ya 'maoni ya kozi' yenye: jina, email, kozi (select), kiwango (radio), mada (checkbox), maoni (textarea), button.",
+            "exercise_solution": "<form action=\"/feedback\" method=\"POST\">\n  <label for=\"n\">Jina</label>\n  <input type=\"text\" id=\"n\" name=\"n\" required>\n  <label for=\"e\">Email</label>\n  <input type=\"email\" id=\"e\" name=\"e\" required>\n  <label for=\"c\">Kozi</label>\n  <select id=\"c\" name=\"c\">\n    <option>HTML</option>\n    <option>CSS</option>\n  </select>\n  <fieldset><legend>Kiwango</legend>\n    <input type=\"radio\" id=\"b\" name=\"lvl\" value=\"b\"><label for=\"b\">Beginner</label>\n    <input type=\"radio\" id=\"i\" name=\"lvl\" value=\"i\"><label for=\"i\">Intermediate</label>\n  </fieldset>\n  <label for=\"m\">Maoni</label>\n  <textarea id=\"m\" name=\"m\" rows=\"5\"></textarea>\n  <button type=\"submit\">Tuma →</button>\n</form>",
+        },
+    ]
+
+    for li, lesson in enumerate(lessons_data, 1):
+        existing = cur.execute(
+            "SELECT id FROM lessons WHERE module_id = ? AND title = ?",
+            (module_id, lesson["title"])).fetchone()
+        if existing:
+            continue
+
+        html_fallback = f"<h2>{lesson['title']}</h2><h3>Malengo</h3><ul>"
+        for obj in lesson["objectives"]:
+            html_fallback += f"<li>{obj}</li>"
+        html_fallback += "</ul>"
+
+        cur.execute(
+            "INSERT INTO lessons (module_id, title, content, lesson_type, "
+            "sequence_number, estimated_duration_min, status, "
+            "objectives_json, sections_json, key_takeaways_json, "
+            "common_mistakes_json, exercise_prompt, exercise_solution, "
+            "module_order, lesson_order) "
+            "VALUES (?, ?, ?, 'text', ?, ?, 'published', ?, ?, ?, ?, ?, ?, ?, ?)",
+            (module_id, lesson["title"], html_fallback, li,
+             lesson["duration"], li,
+             _json.dumps(lesson["objectives"], ensure_ascii=False),
+             _json.dumps(lesson["sections"], ensure_ascii=False),
+             _json.dumps(lesson["key_takeaways"], ensure_ascii=False),
+             _json.dumps(lesson["common_mistakes"], ensure_ascii=False),
+             lesson["exercise_prompt"],
+             lesson["exercise_solution"],
+             1, li))
+
+    # Quiz 1
+    existing_quiz = cur.execute(
+        "SELECT id FROM assessments WHERE title LIKE 'Module 1%' LIMIT 1"
+    ).fetchone()
+    if not existing_quiz:
+        first_lesson = cur.execute(
+            "SELECT id FROM lessons WHERE module_id = ? ORDER BY sequence_number LIMIT 1",
+            (module_id,)).fetchone()
+        if first_lesson:
+            cur.execute(
+                "INSERT INTO assessments (lesson_id, title, description, passing_score, max_attempts) "
+                "VALUES (?, ?, ?, ?, ?)",
+                (first_lesson["id"], "Module 1 Quiz: Foundations",
+                 "Jaribu uelewa wako wa misingi ya mtandao, HTML, na viungo.",
+                 70, 3))
+            aid = cur.lastrowid
+            questions = [
+                ("multiple_choice", "HTML inasimamia nini?",
+                 ["Muonekano", "Muundo", "Tabia", "Server"], "1",
+                 "HTML = muundo. CSS = muonekano. JS = tabia.", 10),
+                ("true_false", "Kila hati ya HTML inahitaji <!DOCTYPE html>.",
+                 ["True", "False"], "0",
+                 "Kweli. DOCTYPE inaiambia browser ni HTML5.", 10),
+                ("multiple_choice", "Nini kinatokea unapoandika URL?",
+                 ["Browser inatuma request kwa server",
+                  "Server inatuma kwa browser",
+                  "DNS inachora", "Hakuna"], "0",
+                 "Browser inaomba; server inarudisha HTML.", 10),
+                ("multiple_choice", "Ni tag gani inaunda kifungu?",
+                 ["<div>", "<span>", "<p>", "<br>"], "2",
+                 "<p> inaunda kifungu.", 10),
+                ("true_false", "alt kwenye <img> ni ya hiari.",
+                 ["True", "False"], "1",
+                 "Uongo. alt ni LAZIMA.", 10),
+            ]
+            for qi, (qtype, qtext, opts, correct, expl, pts) in enumerate(questions, 1):
+                cur.execute(
+                    "INSERT INTO assessment_questions (assessment_id, question_type, "
+                    "question_text, options_json, correct_answer, explanation, "
+                    "points, sequence_number) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                    (aid, qtype, qtext, _json.dumps(opts, ensure_ascii=False),
+                     correct, expl, pts, qi))
+
+
 def _seed_web_design_module2(cur):
     """Seed Module 2: Styling with CSS — 3 lessons + quiz."""
     import json as _json
