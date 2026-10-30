@@ -1143,7 +1143,7 @@ def _seed_web_design_module1(cur):
             "module_order, lesson_order) "
             "VALUES (?, ?, ?, 'text', ?, ?, 'published', ?, ?, ?, ?, ?, ?, ?, ?)",
             (module_id, lesson["title"], html_fallback, li,
-             lesson["duration"], li,
+             lesson["duration"],
              _json.dumps(lesson["objectives"], ensure_ascii=False),
              _json.dumps(lesson["sections"], ensure_ascii=False),
              _json.dumps(lesson["key_takeaways"], ensure_ascii=False),
@@ -1421,7 +1421,7 @@ def _seed_web_design_module2(cur):
             "module_order, lesson_order) "
             "VALUES (?, ?, ?, 'text', ?, ?, 'published', ?, ?, ?, ?, ?, ?, ?, ?)",
             (module_id, lesson["title"], html_fallback, li,
-             lesson["duration"], li,
+             lesson["duration"],
              _json.dumps(lesson["objectives"], ensure_ascii=False),
              _json.dumps(lesson["sections"], ensure_ascii=False),
              _json.dumps(lesson["key_takeaways"], ensure_ascii=False),
@@ -1564,7 +1564,7 @@ def _seed_web_design_module3(cur):
                 "Tumia const kwa default, let kama unahitaji kubadilisha",
                 "Aina 6: string, number, boolean, null, undefined, object",
                 "Tumia === na !== (strict) badala ya == na !=",
-                "Template strings (\`...\${x}...\`) ni rahisi kuliko kuunganisha kwa +",
+                "Template strings (`...${x}...`) ni rahisi kuliko kuunganisha kwa +",
                 "console.log() ni rafiki yako kwa debugging",
             ],
             "common_mistakes": [
@@ -1573,7 +1573,7 @@ def _seed_web_design_module3(cur):
                 {"mistake": "Kutumia == badala ya ===",
                  "fix": "== inabadilisha type (5 == '5' ni true). === ni strict (5 === '5' ni false). Tumia === daima."},
                 {"mistake": "Kusahau alama ya backtick (`) kwenye template strings",
-                 "fix": "Template strings zinahitaji backticks (\`), si single au double quotes."},
+                 "fix": "Template strings zinahitaji backticks (`), si single au double quotes."},
                 {"mistake": "Kubadilisha const",
                  "fix": "const haiwezi kubadilishwa baada ya kupewa thamani. Kama unahitaji kubadilisha, tumia let."},
             ],
@@ -1731,7 +1731,7 @@ def _seed_web_design_module3(cur):
             "module_order, lesson_order) "
             "VALUES (?, ?, ?, 'text', ?, ?, 'published', ?, ?, ?, ?, ?, ?, ?, ?)",
             (module_id, lesson["title"], html_fallback, li,
-             lesson["duration"], li,
+             lesson["duration"],
              _json.dumps(lesson["objectives"], ensure_ascii=False),
              _json.dumps(lesson["sections"], ensure_ascii=False),
              _json.dumps(lesson["key_takeaways"], ensure_ascii=False),
