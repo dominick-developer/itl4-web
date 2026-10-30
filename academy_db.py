@@ -228,6 +228,160 @@ def _seed_python_course(cur):
              "<h2>Your First Program</h2><p>Tutaandika programu yetu ya kwanza halisi. Fungua Python (au editor yoyote) na andika:</p><pre><code>print(\"Karibu IT Expert Academy!\")</code></pre><h3>Kile kinachotokea</h3><ol><li><strong>print</strong> â€” ni kazi (function) inayochapisha kitu kwenye skrini</li><li><strong>\"Karibu...\"</strong> â€” ni maandishi (string) tuliyotaka kuchapisha</li><li><strong>(...)</strong> â€” mabano yanaelekeza print kile cha kuchapisha</li></ol><h3>Jaribu</h3><p>Badilisha maandishi ndani ya quotes na uone kinachotokea:</p><pre><code>print(\"Jina langu ni [jina lako]\")</code></pre><p>Hongera! Umeandika programu yako ya kwanza yenye maana.</p>", 20),
             ("Variables and Data Types",
              "<h2>Variables and Data Types</h2><p><strong>Variable</strong> ni chombo cha kuhifadhi taarifa. Fikiria kama sanduku lenye jina:</p><pre><code>jina = \"Amina\"\numri = 25\nurefu = 1.68\namefaulu = True</code></pre><h3>Aina za data kuu</h3><ul><li><strong>String (str)</strong> â€” maandishi: <code>\"Habari\"</code></li><li><strong>Integer (int)</strong> â€” namba nzima: <code>42</code></li><li><strong>Float</strong> â€” namba yenye desimali: <code>3.14</code></li><li><strong>Boolean (bool)</strong> â€” kweli au uongo: <code>True</code> / <code>False</code></li></ul><h3>Kuchapisha variables</h3><pre><code>jina = \"Amina\"\nprint(\"Habari, \" + jina)</code></pre><p>Matokeo: <em>Habari, Amina</em></p><h3>Kumbuka</h3><p>Majina ya variables hayawezi kuwa na nafasi au kuanza na namba. Tumia <code>_</code> badala ya nafasi: <code>jina_langu</code>.</p>", 25),
+                     # LESSON 4
+        {
+            "title": "Semantic HTML: Structure That Means Something",
+            "duration": 25,
+            "objectives": [
+                "Elewa tofauti kati ya <div> na semantic elements",
+                "Tumia <header>, <nav>, <main>, <section>, <article>, <aside>, <footer>",
+                "Jenga ukurasa wenye muundo unaosomeka na screen readers",
+                "Jua kwa nini semantic HTML ni muhimu kwa SEO",
+            ],
+            "sections": [
+                {"type": "text", "title": "Semantic HTML ni nini?",
+                 "body": "Semantic HTML ni kutumia tags zinazoeleza MAANA ya maudhui, si muonekano tu. <div> haisemi kitu — ni chombo tupu. <nav> inasema 'hii ni sehemu ya viungo vya urambazaji'. Hii inasaidia: (1) screen readers kwa watu wasioona, (2) Google kuelewa ukurasa wako, (3) wewe mwenyewe kusoma code yako baadaye."},
+                {"type": "callout", "title": "Fikiria kama gazeti",
+                 "body": "Gazeti lina kichwa (header), sehemu kuu (main), makala kadhaa (article), pembeni matangazo (aside), na chini taarifa za kampuni (footer). HTML semantics ni hivyo hivyo kwa ukurasa wa wavuti."},
+                {"type": "code", "title": "Muundo wa semantic page",
+                 "language": "html",
+                 "body": "Huu ni 'skeleton' ya ukurasa wa kisasa:",
+                 "code": "<!DOCTYPE html>\n<html lang=\"sw\">\n<head>\n  <meta charset=\"UTF-8\">\n  <title>Blog Yangu</title>\n</head>\n<body>\n  <header>\n    <h1>Blog Yangu</h1>\n    <nav>\n      <a href=\"/\">Nyumbani</a>\n      <a href=\"/about\">Kuhusu</a>\n    </nav>\n  </header>\n\n  <main>\n    <article>\n      <h2>Makala ya Kwanza</h2>\n      <p>Maudhui ya makala...</p>\n    </article>\n  </main>\n\n  <aside>\n    <h3>Makala Zinazohusiana</h3>\n    <ul>\n      <li><a href=\"/post2\">Makala 2</a></li>\n    </ul>\n  </aside>\n\n  <footer>\n    <p>&copy; 2026 Blog Yangu</p>\n  </footer>\n</body>\n</html>"},
+                {"type": "text", "title": "Kila tag na kazi yake",
+                 "body": "<header> = kichwa cha ukurasa au sehemu. <nav> = viungo vya urambazaji. <main> = maudhui makuu (MOJA kwa kila ukurasa). <section> = sehemu yenye kichwa chake. <article> = maudhui yanayojitegemea (blog post, habari). <aside> = maudhui ya pembeni (matangazo, viungo). <footer> = sehemu ya chini (copyright, mawasiliano)."},
+                {"type": "callout", "title": "Kanuni moja",
+                 "body": "<main> ni MOJA tu kwa kila ukurasa. <header>, <nav>, <footer> zinaweza kuwa nyingi (mfano: kila <article> inaweza kuwa na <header> yake)."},
+            ],
+            "key_takeaways": [
+                "Semantic HTML inaeleza maana, si muonekano",
+                "<div> ni neutral; tumia pale hakuna semantic element inayofaa",
+                "<main> ni moja kwa kila ukurasa — maudhui makuu",
+                "<article> = inajitegemea; <section> = sehemu yenye kichwa",
+                "Semantic HTML = accessibility + SEO + maintainability",
+            ],
+            "common_mistakes": [
+                {"mistake": "Kutumia <div> kwa kila kitu",
+                 "fix": "Kama kuna semantic element inayofaa (nav, main, article), tumia hiyo kwanza."},
+                {"mistake": "Kutumia <main> zaidi ya moja",
+                 "fix": "<main> ni moja tu — sehemu kuu ya maudhui. Sehemu nyingine ni <section> au <article>."},
+                {"mistake": "Kuweka <nav> kwenye footer kwa viungo vya kawaida",
+                 "fix": "<nav> ni kwa viungo VYA URAMBAZIJI. Viungo vya kawaida (kama copyright) havihitaji <nav>."},
+            ],
+            "exercise_prompt": "Chukua ukurasa wako wa wasifu ('my-bio.html' kutoka somo la 2) na uubadilishe kutumia semantic HTML: <header> yenye <h1> na <nav>, <main> yenye <section> na <h2>, na <footer> yenye copyright.",
+            "exercise_solution": "<!DOCTYPE html>\n<html lang=\"sw\">\n<head>\n  <meta charset=\"UTF-8\">\n  <title>Wasifu Wangu</title>\n</head>\n<body>\n  <header>\n    <h1>Amina Hassan</h1>\n    <nav>\n      <a href=\"#about\">Kuhusu</a>\n      <a href=\"#hobbies\">Mambo Ninayopenda</a>\n    </nav>\n  </header>\n\n  <main>\n    <section id=\"about\">\n      <h2>Kuhusu Mimi</h2>\n      <p>Mimi ni mwanafunzi wa IT Level 4.</p>\n    </section>\n\n    <section id=\"hobbies\">\n      <h2>Mambo Ninayopenda</h2>\n      <ul>\n        <li>Programu</li>\n        <li>Muziki</li>\n        <li>Kusoma</li>\n      </ul>\n    </section>\n  </main>\n\n  <footer>\n    <p>&copy; 2026 Amina Hassan</p>\n  </footer>\n</body>\n</html>",
+        },
+
+        # LESSON 5
+        {
+            "title": "Forms Part 1: Inputs and Labels",
+            "duration": 30,
+            "objectives": [
+                "Unda fomu yenye <input> za aina mbalimbali",
+                "Tumia <label> kuunganisha maandishi na input (accessibility)",
+                "Jua input types 8 muhimu za HTML5",
+                "Tumia required, placeholder, minlength kwa validation",
+            ],
+            "sections": [
+                {"type": "text", "title": "Forms ni nini?",
+                 "body": "Fomu (form) inakusanya taarifa kutoka kwa mtumiaji: jina, email, nenosiri, maoni. Kila kitu kwenye fomu kinaingia kwenye <form>...</form>. Bila form, hakuna login, hakuna usajili, hakuna malipo — hakuna tovuti inayofanya kazi."},
+                {"type": "callout", "title": "Kanuni #1 ya fomu",
+                 "body": "KILA input LAZIMA iwe na <label>. Bila label, watu wasioona hawawezi kujua input ni ya nini, na kubonyeza maandishi ya label hakuweki focus kwenye input."},
+                {"type": "text", "title": "Input types 8 muhimu",
+                 "body": "HTML5 ina input types 20+. Hizi 8 zinatosha kwa 95% ya fomu: text (maandishi ya kawaida), email (barua pepe — ina validate automatically), password (maandishi yaliyofichwa), number (namba), tel (simu), date (tarehe), checkbox (chagua nyingi), radio (chagua moja)."},
+                {"type": "code", "title": "Fomu kamili ya usajili",
+                 "language": "html",
+                 "body": "",
+                 "code": "<form action=\"/signup\" method=\"POST\">\n  <div>\n    <label for=\"full_name\">Jina Kamili</label>\n    <input type=\"text\" id=\"full_name\" name=\"full_name\"\n           required minlength=\"3\" placeholder=\"Mf. Amina Hassan\">\n  </div>\n\n  <div>\n    <label for=\"email\">Barua Pepe</label>\n    <input type=\"email\" id=\"email\" name=\"email\"\n           required placeholder=\"amina@example.com\">\n  </div>\n\n  <div>\n    <label for=\"password\">Nenosiri</label>\n    <input type=\"password\" id=\"password\" name=\"password\"\n           required minlength=\"8\">\n  </div>\n\n  <div>\n    <label for=\"age\">Umri</label>\n    <input type=\"number\" id=\"age\" name=\"age\" min=\"13\" max=\"120\">\n  </div>\n\n  <button type=\"submit\">Sajili</button>\n</form>"},
+                {"type": "text", "title": "for + id — ufunguo wa label",
+                 "body": "<label for=\"full_name\"> na <input id=\"full_name\"> vinahusiana kwa 'for' = 'id'. Bonyeza maandishi 'Jina Kamili' — focus inaruka kwenye input. Hii ni accessibility ya msingi."},
+                {"type": "text", "title": "Attributes muhimu",
+                 "body": "required = lazima ijazwe. minlength/maxlength = urefu wa chini/juu. min/max = thamani ya chini/juu (kwa namba). placeholder = maelezo ya mfano (yanaonekana tupu). name = jina la field kwenye form submission (muhimu kwa server)."},
+                {"type": "callout", "title": "Mstari mmoja",
+                 "body": "Kila input inahitaji: (1) type, (2) id, (3) name, (4) label inayohusiana. Vingine ni bonus."},
+            ],
+            "key_takeaways": [
+                "<form> inakusanya taarifa za mtumiaji",
+                "KILA input ina <label for='...'> inayohusiana na id",
+                "type='email' ina validate automatically",
+                "required inazuia submission mpaka ijazwe",
+                "name attribute ni muhimu kwa server kupokea data",
+            ],
+            "common_mistakes": [
+                {"mistake": "Kutumia placeholder badala ya label",
+                 "fix": "Placeholder inatoweka unapoandika. Label daima inaonekana. Tumia zote mbili."},
+                {"mistake": "Kusahau name attribute kwenye input",
+                 "fix": "Bila name, server HAITAPOKEA thamani. Kila input inahitaji name."},
+                {"mistake": "Kutumia type='text' kwa nenosiri",
+                 "fix": "Tumia type='password' — inaficha maandishi na kuzuia kuibiwa kwa kuangalia."},
+                {"mistake": "id na for hazifanani",
+                 "fix": "<label for='x'> LAZIMA ilingane na <input id='x'>."},
+            ],
+            "exercise_prompt": "Unda fomu ya 'wasiliana nasi' yenye: jina (text), email, simu (tel), ujumbe mfupi (textarea — tutajifunza somo lijalo, kwa sasa tumia input text), na button ya 'Tuma'.",
+            "exercise_solution": "<form action=\"/contact\" method=\"POST\">\n  <div>\n    <label for=\"name\">Jina Lako</label>\n    <input type=\"text\" id=\"name\" name=\"name\" required>\n  </div>\n  <div>\n    <label for=\"email\">Barua Pepe</label>\n    <input type=\"email\" id=\"email\" name=\"email\" required>\n  </div>\n  <div>\n    <label for=\"phone\">Namba ya Simu</label>\n    <input type=\"tel\" id=\"phone\" name=\"phone\" placeholder=\"0712 345 678\">\n  </div>\n  <div>\n    <label for=\"message\">Ujumbe</label>\n    <input type=\"text\" id=\"message\" name=\"message\" required>\n  </div>\n  <button type=\"submit\">Tuma →</button>\n</form>",
+        },
+
+        # LESSON 6
+        {
+            "title": "Forms Part 2: Select, Textarea, and Validation",
+            "duration": 30,
+            "objectives": [
+                "Tumia <textarea> kwa maandishi marefu",
+                "Tumia <select> kwa dropdown",
+                "Tumia checkbox (chagua nyingi) na radio (chagua moja)",
+                "Jua jinsi HTML5 inavyofanya validation papo hapo",
+            ],
+            "sections": [
+                {"type": "text", "title": "Textarea — maandishi marefu",
+                 "body": "Input ya kawaida ni mstari mmoja. <textarea> ni kwa paragraph, maelezo, comments. Ina rows (urefu wa mstari) na cols (upana)." },
+                {"type": "code", "title": "Textarea",
+                 "language": "html",
+                 "body": "",
+                 "code": "<label for=\"feedback\">Maoni yako</label>\n<textarea id=\"feedback\" name=\"feedback\" rows=\"5\"\n          maxlength=\"500\" placeholder=\"Andika maoni hapa (herufi 500 max)\"></textarea>"},
+                {"type": "text", "title": "Select — dropdown",
+                 "body": "<select> inaunda dropdown. Kila chaguo ni <option>. value ni kile kinachotumwa kwa server; maandishi kati ya <option> ni kile mtumiaji anaona."},
+                {"type": "code", "title": "Select dropdown",
+                 "language": "html",
+                 "body": "",
+                 "code": "<label for=\"course\">Chagua Kozi</label>\n<select id=\"course\" name=\"course\" required>\n  <option value=\"\">— Chagua —</option>\n  <option value=\"html\">HTML5</option>\n  <option value=\"css\">CSS3</option>\n  <option value=\"js\">JavaScript</option>\n</select>"},
+                {"type": "text", "title": "Checkbox — chagua nyingi",
+                 "body": "Checkbox inaruhusu mtumiaji kuchagua zaidi ya moja. Kila checkbox ni input TOFAUTI (ina name na id yake)." },
+                {"type": "code", "title": "Checkbox group",
+                 "language": "html",
+                 "body": "",
+                 "code": "<fieldset>\n  <legend>Mambo Unayopenda</legend>\n\n  <input type=\"checkbox\" id=\"music\" name=\"hobby\" value=\"music\">\n  <label for=\"music\">Muziki</label><br>\n\n  <input type=\"checkbox\" id=\"sports\" name=\"hobby\" value=\"sports\">\n  <label for=\"sports\">Michezo</label><br>\n\n  <input type=\"checkbox\" id=\"reading\" name=\"hobby\" value=\"reading\">\n  <label for=\"reading\">Kusoma</label>\n</fieldset>"},
+                {"type": "text", "title": "Radio — chagua MOJA tu",
+                 "body": "Radio ni kama checkbox lakini unachagua MOJA tu. Kila radio inayohusiana LAZIMA iwe na name ILE ILE — hii ndiyo inayowafanya wawe kikundi."},
+                {"type": "code", "title": "Radio group",
+                 "language": "html",
+                 "body": "",
+                 "code": "<fieldset>\n  <legend>Jinsia</legend>\n\n  <input type=\"radio\" id=\"male\" name=\"gender\" value=\"male\">\n  <label for=\"male\">Me</label><br>\n\n  <input type=\"radio\" id=\"female\" name=\"gender\" value=\"female\">\n  <label for=\"female\">Ke</label>\n</fieldset>"},
+                {"type": "callout", "title": "Validation ya HTML5 — bure!",
+                 "body": "Ukiweka required, minlength, maxlength, type='email', pattern — browser inafanya validation AUTOMATICALLY. Mtumiaji hawezi ku-submit fomu yenye kosa. Hii si badala ya server validation (lazima uwe na server-side pia), lakini inaboresha UX sana."},
+                {"type": "code", "title": "Mfano wa validation",
+                 "language": "html",
+                 "body": "Fomu hii haitakubali submission kama: jina ni fupi, email si sahihi, au nenosiri halina herufi 8.",
+                 "code": "<form>\n  <label for=\"u\">Jina (angalau 3)</label>\n  <input type=\"text\" id=\"u\" required minlength=\"3\">\n\n  <label for=\"e\">Email</label>\n  <input type=\"email\" id=\"e\" required>\n\n  <label for=\"p\">Nenosiri (8+)</label>\n  <input type=\"password\" id=\"p\" required minlength=\"8\">\n\n  <button type=\"submit\">Tuma</button>\n</form>"},
+            ],
+            "key_takeaways": [
+                "<textarea> kwa maandishi marefu (paragraph, comments)",
+                "<select> + <option> kwa dropdown",
+                "Checkbox = chagua nyingi; Radio = chagua moja (name ile ile)",
+                "HTML5 inafanya validation papo hapo: required, minlength, type='email'",
+                "LAZIMA uwe na server-side validation pia — HTML5 si kinga kamili",
+            ],
+            "common_mistakes": [
+                {"mistake": "Radio zenye name tofauti",
+                 "fix": "Zote za kikundi kimoja LAZIMA ziwe na name ILE ILE."},
+                {"mistake": "Kutumia <input> kwa maandishi marefu",
+                 "fix": "Tumia <textarea rows='5'> kwa paragraph, maelezo."},
+                {"mistake": "Kutegemea HTML5 validation pekee",
+                 "fix": "HTML5 inaweza kuzimwa. Server LAZIMA ifanye validation upya."},
+                {"mistake": "Kusahau <legend> ndani ya <fieldset>",
+                 "fix": "<fieldset> bila <legend> haisemi kikundi ni cha nini. Ongeza <legend>."},
+            ],
+            "exercise_prompt": "Unda fomu kamili ya 'maoni ya kozi' yenye: jina (text, required), email (email, required), kozi (select: HTML, CSS, JS), kiwango (radio: Beginner, Intermediate, Advanced), mada zinazokuvutia (checkbox 3: design, programming, security), maoni (textarea, maxlength 500), na button 'Tuma Maoni'.",
+            "exercise_solution": "<form action=\"/feedback\" method=\"POST\">\n  <label for=\"name\">Jina</label>\n  <input type=\"text\" id=\"name\" name=\"name\" required>\n\n  <label for=\"email\">Email</label>\n  <input type=\"email\" id=\"email\" name=\"email\" required>\n\n  <label for=\"course\">Kozi</label>\n  <select id=\"course\" name=\"course\" required>\n    <option value=\"\">— Chagua —</option>\n    <option value=\"html\">HTML</option>\n    <option value=\"css\">CSS</option>\n    <option value=\"js\">JavaScript</option>\n  </select>\n\n  <fieldset>\n    <legend>Kiwango</legend>\n    <input type=\"radio\" id=\"b\" name=\"level\" value=\"beginner\">\n    <label for=\"b\">Beginner</label>\n    <input type=\"radio\" id=\"i\" name=\"level\" value=\"intermediate\">\n    <label for=\"i\">Intermediate</label>\n    <input type=\"radio\" id=\"a\" name=\"level\" value=\"advanced\">\n    <label for=\"a\">Advanced</label>\n  </fieldset>\n\n  <fieldset>\n    <legend>Mada</legend>\n    <input type=\"checkbox\" id=\"d\" name=\"topic\" value=\"design\">\n    <label for=\"d\">Design</label>\n    <input type=\"checkbox\" id=\"p\" name=\"topic\" value=\"programming\">\n    <label for=\"p\">Programming</label>\n    <input type=\"checkbox\" id=\"s\" name=\"topic\" value=\"security\">\n    <label for=\"s\">Security</label>\n  </fieldset>\n\n  <label for=\"msg\">Maoni</label>\n  <textarea id=\"msg\" name=\"message\" rows=\"5\" maxlength=\"500\"></textarea>\n\n  <button type=\"submit\">Tuma Maoni →</button>\n</form>",
+        },
         ],
         1: [
             ("if / elif / else",
@@ -671,7 +825,282 @@ def get_attempt_details(attempt_id):
         items.append(d)
 
     return {"attempt": dict(attempt), "responses": items}
+def _seed_web_design_module2(cur):
+    """Seed Module 2: Styling with CSS — 3 lessons + quiz."""
+    import json as _json
 
+    course = cur.execute(
+        "SELECT id FROM academy_courses WHERE slug = 'web-design-development'"
+    ).fetchone()
+    if not course:
+        return
+    course_id = course["id"]
+
+    # Check if module already exists
+    existing = cur.execute(
+        "SELECT id FROM course_modules WHERE course_id = ? AND title LIKE 'Module 2%'",
+        (course_id,)).fetchone()
+
+    if existing:
+        module_id = existing["id"]
+    else:
+        cur.execute(
+            "INSERT INTO course_modules (course_id, title, description, sequence_number) "
+            "VALUES (?, ?, ?, ?)",
+            (course_id, "Module 2: Styling with CSS",
+             "Jifunze kupamba ukurasa wako kwa rangi, typography, box model, na Flexbox — kuunda layouts za kisasa.",
+             2))
+        module_id = cur.lastrowid
+
+    lessons_data = [
+        {
+            "title": "CSS Basics & Selectors",
+            "duration": 25,
+            "objectives": [
+                "Elewa CSS ni nini na kwa nini tunaihitaji",
+                "Jua njia 3 za kuunganisha CSS kwenye HTML",
+                "Tumia selectors: element, class, na id",
+                "Elewa CSS rule anatomy (selector, property, value)",
+            ],
+            "sections": [
+                {"type": "text", "title": "CSS ni nini?",
+                 "body": "CSS (Cascading Style Sheets) ni lugha ya kupamba HTML. Bila CSS, ukurasa wako unaonekana kama hati ya Word ya 1995 — maandishi meusi kwenye background nyeupe, bila mpangilio. CSS inabadilisha rangi, ukubwa, nafasi, font, na kila kitu unachokiona kwenye tovuti za kisasa."},
+                {"type": "callout", "title": "Mfano rahisi",
+                 "body": "HTML = mifupa ya mwili (kichwa, mkono, mguu). CSS = ngozi, nywele, mavazi. Bila CSS, ungekuwa mifupa tu — inafanya kazi lakini haivutii. CSS inafanya ukurasa uwe mzuri na rahisi kutumia."},
+                {"type": "text", "title": "Njia 3 za kuweka CSS",
+                 "body": "Kuna njia 3: (1) Inline — ndani ya tag yenyewe (style='...'), (2) Internal — ndani ya <style> kwenye <head>, (3) External — faili tofauti la .css linalounganishwa na <link>. External ndiyo bora kwa miradi halisi — inaruhusu CSS moja kutumika kwenye kurasa nyingi."},
+                {"type": "code", "title": "Njia 3 kwa mfano",
+                 "language": "html",
+                 "body": "",
+                 "code": "<!-- 1. Inline -->\n<h1 style=\"color: red; font-size: 32px;\">Habari</h1>\n\n<!-- 2. Internal -->\n<head>\n  <style>\n    h1 { color: red; font-size: 32px; }\n  </style>\n</head>\n\n<!-- 3. External (inayopendekezwa) -->\n<head>\n  <link rel=\"stylesheet\" href=\"style.css\">\n</head>\n\n<!-- Kwenye style.css: -->\nh1 { color: red; font-size: 32px; }"},
+                {"type": "text", "title": "Anatomia ya CSS rule",
+                 "body": "Kila CSS rule ina sehemu 3: (1) Selector — kitu unachopamba (h1, .class, #id), (2) Property — kipengele unachobadilisha (color, font-size, margin), (3) Value — thamani mpya (red, 32px, 20px). Mfano: 'h1 { color: red; }' — hapa selector = h1, property = color, value = red."},
+                {"type": "text", "title": "Selectors 3 muhimu",
+                 "body": "Element selector: 'h1 { ... }' — inagusa vichwa VYOTE vya h1 kwenye ukurasa. Class selector: '.card { ... }' — inagusa vitu vyote vyenye class='card' (unaweza kutumia class mara nyingi). ID selector: '#header { ... }' — inagusa KITU KIMOJA tu chenye id='header' (id ni ya kipekee)."},
+                {"type": "code", "title": "Mfano wa selectors",
+                 "language": "css",
+                 "body": "",
+                 "code": "/* Element selector */\np { color: #333; line-height: 1.6; }\n\n/* Class selector (tumia . mwanzoni) */\n.highlight { background: yellow; padding: 4px; }\n\n/* ID selector (tumia # mwanzoni) */\n#main-title { font-size: 48px; color: #0B1F33; }\n\n/* HTML inayotumia: */\n<p>Maandishi ya kawaida</p>\n<p class=\"highlight\">Maandishi yaliyoangaziwa</p>\n<h1 id=\"main-title\">Kichwa Kikuu</h1>"},
+                {"type": "callout", "title": "Class vs ID",
+                 "body": "Tumia class kwa vitu vinavyorudiwa (cards, buttons, links). Tumia ID kwa kitu kimoja tu kwenye ukurasa (mfano: header kuu, form kuu). Class inaweza kutumika mara nyingi; ID mara moja tu kwa kila ukurasa."},
+                {"type": "code", "title": "Rangi na typography za msingi",
+                 "language": "css",
+                 "body": "",
+                 "code": "body {\n  font-family: 'Segoe UI', Arial, sans-serif;\n  color: #333333;\n  background: #f5f7fa;\n  font-size: 16px;\n  line-height: 1.6;\n}\n\nh1 {\n  color: #0B1F33;\n  font-size: 36px;\n  font-weight: 800;\n  margin-bottom: 16px;\n}"},
+            ],
+            "key_takeaways": [
+                "CSS inapamba HTML — bila CSS, ukurasa ni maandishi tupu",
+                "External CSS (faili .css) ndiyo njia bora kwa miradi halisi",
+                "CSS rule = selector + property + value",
+                "Class (.class) kwa vitu vinavyorudiwa; ID (#id) kwa kitu kimoja",
+                "font-family, color, background, font-size ni properties za msingi",
+            ],
+            "common_mistakes": [
+                {"mistake": "Kusahau semicolon (;) mwishoni mwa property",
+                 "fix": "Kila property LAZIMA iishe na ';' — hata ya mwisho. Bila hiyo, CSS inavunjika."},
+                {"mistake": "Kutumia dot (.) kwa ID au hash (#) kwa class",
+                 "fix": "Class = '.class'; ID = '#id'. Kuchanganya = CSS haitafanya kazi."},
+                {"mistake": "Kuweka CSS popote ndani ya <body>",
+                 "fix": "CSS iko kwenye <style> ndani ya <head>, au faili tofauti linalounganishwa na <link> kwenye <head>."},
+                {"mistake": "Kutumia inline style kwa kila kitu",
+                 "fix": "Inline inaweza kwa kesi 1-2, lakini kwa mradi mzima tumia external CSS — ni rahisi kubadilisha na kudumisha."},
+            ],
+            "exercise_prompt": "Unda faili 'style.css' na uunganishe kwenye 'my-bio.html' (kutoka Module 1). Kwenye CSS: (1) weka body background #f5f7fa, font-family Segoe UI, (2) h1 rangi #0B1F33 na font-size 36px, (3) unda class '.highlight' yenye background yellow na padding 4px. Tumia class kwenye neno moja la maelezo yako.",
+            "exercise_solution": "<!-- my-bio.html (head) -->\n<link rel=\"stylesheet\" href=\"style.css\">\n\n<!-- style.css -->\nbody {\n  background: #f5f7fa;\n  font-family: 'Segoe UI', Arial, sans-serif;\n  color: #333;\n  padding: 40px;\n}\n\nh1 {\n  color: #0B1F33;\n  font-size: 36px;\n  margin-bottom: 16px;\n}\n\n.highlight {\n  background: yellow;\n  padding: 4px;\n}\n\n<!-- my-bio.html (body) -->\n<h1>Amina Hassan</h1>\n<p>Mimi ni <span class=\"highlight\">mwanafunzi wa IT Level 4</span> ninayependa teknolojia.</p>",
+        },
+
+        {
+            "title": "Box Model & Colors",
+            "duration": 30,
+            "objectives": [
+                "Elewa box model: content, padding, border, margin",
+                "Tumia box-sizing kudhibiti ukubwa wa elementi",
+                "Jua aina 4 za rangi: jina, hex, rgb, rgba",
+                "Tumia border-radius, box-shadow, na padding kwa ufanisi",
+            ],
+            "sections": [
+                {"type": "text", "title": "Kila elementi ni box",
+                 "body": "Kila kitu kwenye ukurasa wa wavuti ni box (sanduku) la mstatili. Hata kama unaona duara au maandishi — nyuma yake ni box. Box model ina sehemu 4: (1) Content — yaliyomo (maandishi, picha), (2) Padding — nafasi kati ya content na border, (3) Border — mstari unaozunguka padding, (4) Margin — nafasi kati ya box hii na box nyingine."},
+                {"type": "callout", "title": "Mfano wa picha",
+                 "body": "Fikiria fremu ya picha ukutani: picha yenyewe = content. Pengo jeupe kati ya picha na fremu = padding. Fremu ya mbao = border. Ukuta unaozunguka fremu = margin (nafasi kati ya fremu na samani nyingine)."},
+                {"type": "code", "title": "Box model kwa mfano",
+                 "language": "css",
+                 "body": "",
+                 "code": ".card {\n  /* Content (maandishi yaliyomo ndani) */\n  width: 300px;\n  \n  /* Padding: nafasi ndani ya box */\n  padding: 20px;\n  \n  /* Border: mstari unaozunguka */\n  border: 1px solid #e2e8f0;\n  border-radius: 12px;\n  \n  /* Margin: nafasi nje ya box */\n  margin: 16px auto;\n  \n  /* Background */\n  background: white;\n  \n  /* Shadow */\n  box-shadow: 0 4px 12px rgba(0,0,0,0.08);\n}"},
+                {"type": "text", "title": "box-sizing: border-box — muhimu!",
+                 "body": "Kwa default, width=300px inamaanisha CONTENT pekee. Ukiongeza padding 20px, box inakuwa 300 + 20 + 20 = 340px. Hii inasumbua. Suluhisho: weka 'box-sizing: border-box' — sasa width=300px inajumuisha padding na border. Kila mradi wa kisasa unatumia hii."},
+                {"type": "code", "title": "Box-sizing kwenye CSS yote",
+                 "language": "css",
+                 "body": "Weka hii juu ya faili lako la CSS — inaathiri kila elementi:",
+                 "code": "*, *::before, *::after {\n  box-sizing: border-box;\n}"},
+                {"type": "text", "title": "Rangi — njia 4",
+                 "body": "(1) Jina: red, blue, green (rahisi lakini chache). (2) Hex: #FF5733 (6 herufi/namba baada ya #). (3) RGB: rgb(255, 87, 51). (4) RGBA: rgba(255, 87, 51, 0.5) — yenye uwazi (0 = haionekani, 1 = imejaa). RGBA ni muhimu kwa overlays, hover effects, na glass effects."},
+                {"type": "code", "title": "Mifano ya rangi",
+                 "language": "css",
+                 "body": "",
+                 "code": "/* Jina */\nh1 { color: navy; }\n\n/* Hex (inayopendekezwa) */\np { color: #0B1F33; }\n\n/* RGB */\nbutton { background: rgb(244, 119, 33); }\n\n/* RGBA — kwa transparency */\n.overlay {\n  background: rgba(11, 31, 51, 0.7);\n}"},
+                {"type": "callout", "title": "Tip: Jifunze hex",
+                 "body": "Hex ina namba 0-9 na herufi A-F. #FFFFFF = nyeupe, #000000 = nyeusi, #F47721 = orange yetu. Unaweza kutumia color picker (mfano: coolors.co) kupata rangi nzuri."},
+                {"type": "code", "title": "Card kamili ya kisasa",
+                 "language": "css",
+                 "body": "",
+                 "code": ".card {\n  background: white;\n  padding: 24px;\n  border-radius: 12px;\n  border: 1px solid #e2e8f0;\n  box-shadow: 0 1px 3px rgba(0,0,0,0.05);\n  margin-bottom: 16px;\n  transition: box-shadow 0.2s;\n}\n\n.card:hover {\n  box-shadow: 0 8px 24px rgba(0,0,0,0.1);\n}"},
+            ],
+            "key_takeaways": [
+                "Kila elementi ni box: content + padding + border + margin",
+                "Daima weka '* { box-sizing: border-box; }' — inaepusha mahesabu magumu",
+                "RGBA inaruhusu transparency — muhimu kwa overlays",
+                "border-radius inafanya pembe kuwa mviringo",
+                "box-shadow inaunda kivuli — inaongeza kina",
+            ],
+            "common_mistakes": [
+                {"mistake": "Kuchanganya padding na margin",
+                 "fix": "Padding = nafasi NDANI ya box (kati ya content na border). Margin = nafasi NJE ya box (kati ya box hii na nyingine)."},
+                {"mistake": "Kusahau box-sizing: border-box",
+                 "fix": "Weka kwenye CSS yote mwanzoni. Bila hiyo, padding na border zinaongeza ukubwa."},
+                {"mistake": "Kutumia margin kuweka nafasi ndani ya box",
+                 "fix": "Margin haitengenezi nafasi ndani ya box — inasogeza box nzima. Tumia padding kwa nafasi ndani."},
+                {"mistake": "Kutumia rangi nyingi sana",
+                 "fix": "Chagua rangi 2-3 kuu (primary, secondary, neutral) — usizidi 5 kwa mradi mzima."},
+            ],
+            "exercise_prompt": "Unda ukurasa 'products.html' wenye cards 3 za bidhaa. Kila card iwe na: background white, padding 20px, border-radius 12px, border 1px solid #e2e8f0, box-shadow laini. Ndani ya kila card: h3 (jina la bidhaa), p (maelezo), na button ya 'Nunua' yenye rangi ya orange #F47721. Ongeza hover effect inayoinua card.",
+            "exercise_solution": "<!-- products.html -->\n<!DOCTYPE html>\n<html lang=\"sw\">\n<head>\n  <meta charset=\"UTF-8\">\n  <link rel=\"stylesheet\" href=\"style.css\">\n</head>\n<body>\n  <div class=\"products\">\n    <div class=\"card\">\n      <h3>Simu</h3>\n      <p>Simu janja ya kisasa</p>\n      <button>Nunua</button>\n    </div>\n    <div class=\"card\">\n      <h3>Laptop</h3>\n      <p>Kompyuta ya kubebeka</p>\n      <button>Nunua</button>\n    </div>\n    <div class=\"card\">\n      <h3>Headphones</h3>\n      <p>Vichwa vya kusikiliza</p>\n      <button>Nunua</button>\n    </div>\n  </div>\n</body>\n</html>\n\n<!-- style.css -->\n* { box-sizing: border-box; }\n\nbody {\n  font-family: 'Segoe UI', Arial, sans-serif;\n  background: #f5f7fa;\n  padding: 40px;\n}\n\n.products {\n  display: grid;\n  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));\n  gap: 20px;\n}\n\n.card {\n  background: white;\n  padding: 20px;\n  border-radius: 12px;\n  border: 1px solid #e2e8f0;\n  box-shadow: 0 1px 3px rgba(0,0,0,0.05);\n  transition: box-shadow 0.2s, transform 0.2s;\n}\n\n.card:hover {\n  box-shadow: 0 8px 24px rgba(0,0,0,0.1);\n  transform: translateY(-2px);\n}\n\n.card h3 { margin: 0 0 8px; color: #0B1F33; }\n.card p { color: #64748b; margin: 0 0 16px; }\n\n.card button {\n  background: #F47721;\n  color: white;\n  border: none;\n  padding: 10px 20px;\n  border-radius: 8px;\n  font-weight: 700;\n  cursor: pointer;\n}\n\n.card button:hover { background: #e6670f; }",
+        },
+
+        {
+            "title": "Layout with Flexbox",
+            "duration": 30,
+            "objectives": [
+                "Elewa tofauti kati ya flex container na flex items",
+                "Tumia justify-content kuweka vitu kwa usawa",
+                "Tumia align-items kuweka vitu kwa wima",
+                "Unda layout ya navigation bar na card grid",
+            ],
+            "sections": [
+                {"type": "text", "title": "Flexbox ni nini?",
+                 "body": "Flexbox ni mfumo wa CSS wa kupanga vitu kwa mstari au safu. Kabla ya Flexbox, ilikuwa ngumu kupanga vitu kwa usawa — watu walitumia floats, tables, na hacks. Flexbox inafanya iwe rahisi: unaiambia container 'panga watoto wako kwa mstari', na inafanya kazi."},
+                {"type": "callout", "title": "Kanuni moja",
+                 "body": "Kuweka 'display: flex' kwenye container — inageuza watoto WAKE WOTE kuwa flex items na kuwapanga kwa mstari (horizontal kwa default). Ndiyo yote. Rahisi."},
+                {"type": "code", "title": "Flexbox ya msingi",
+                 "language": "css",
+                 "body": "",
+                 "code": ".container {\n  display: flex;\n}\n\n<!-- HTML: -->\n<div class=\"container\">\n  <div>Kitu 1</div>\n  <div>Kitu 2</div>\n  <div>Kitu 3</div>\n</div>\n\n<!-- Matokeo: vitu 3 kwa mstari mmoja (horizontal) -->"},
+                {"type": "text", "title": "justify-content — usawa wa horizontal",
+                 "body": "flex-start (default) = kushoto. flex-end = kulia. center = katikati. space-between = kitu cha kwanza kushoto, cha mwisho kulia, vingine katikati. space-around = nafasi sawa kila upande. space-evenly = nafasi sawa kati ya vitu."},
+                {"type": "code", "title": "justify-content kwa mifano",
+                 "language": "css",
+                 "body": "",
+                 "code": "/* Vitu vikae katikati kwa usawa */\n.header {\n  display: flex;\n  justify-content: center;\n}\n\n/* Logo kushoto, menu kulia */\n.navbar {\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n}"},
+                {"type": "text", "title": "align-items — usawa wa wima",
+                 "body": "flex-start = juu. flex-end = chini. center = katikati (wima). stretch (default) = kunyoosha kujaza container. Hii ni muhimu kwa nav bars — unataka logo na menu viwe katikati kwa wima."},
+                {"type": "text", "title": "gap — nafasi kati ya vitu",
+                 "body": "Kabla ya gap, ilikuwa ngumu kuweka nafasi kati ya flex items. Sasa: 'gap: 16px' inaweka nafasi 16px kati ya kila kitu. Rahisi na safi."},
+                {"type": "code", "title": "Navigation bar kamili",
+                 "language": "css",
+                 "body": "Hii ni nav bar ya kisasa — logo kushoto, menu kulia, kila kitu katikati kwa wima:",
+                 "code": ".navbar {\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n  padding: 16px 24px;\n  background: #0B1F33;\n  color: white;\n}\n\n.nav-links {\n  display: flex;\n  gap: 16px;\n  list-style: none;\n}\n\n.nav-links a {\n  color: white;\n  text-decoration: none;\n  padding: 8px 12px;\n  border-radius: 6px;\n}\n\n.nav-links a:hover {\n  background: rgba(255,255,255,0.1);\n}"},
+                {"type": "callout", "title": "flex-wrap — kama vitu ni vingi",
+                 "body": "Kwa default, flex inajaribu kuweka vitu vyote kwenye mstari mmoja — hata kama vinapungua ukubwa. Ongeza 'flex-wrap: wrap' ili vitu viruke mstari mpya kama hakuna nafasi. Muhimu kwa cards na tags."},
+                {"type": "code", "title": "Flexbox ya hali halisi",
+                 "language": "css",
+                 "body": "",
+                 "code": "/* Card ya bidhaa */\n.product-card {\n  display: flex;\n  gap: 16px;\n  align-items: center;\n  padding: 16px;\n  background: white;\n  border-radius: 12px;\n}\n\n/* Picha upande wa kushoto, maelezo kulia */\n.product-card img {\n  width: 80px;\n  height: 80px;\n  object-fit: cover;\n  border-radius: 8px;\n}\n\n.product-info {\n  flex: 1;\n}\n\n/* Kitufe cha mwisho */\n.product-card button {\n  margin-left: auto;\n}"},
+            ],
+            "key_takeaways": [
+                "display: flex inageuza container kuwa flexbox",
+                "justify-content = usawa wa horizontal (kushoto, katikati, kulia, space-between)",
+                "align-items = usawa wa wima (juu, katikati, chini)",
+                "gap = nafasi kati ya vitu (rahisi kuliko margins)",
+                "flex-wrap: wrap inaruhusu vitu kuruka mstari mpya",
+                "flex: 1 inafanya kitu kujaza nafasi iliyobaki",
+            ],
+            "common_mistakes": [
+                {"mistake": "Kuweka display: flex kwenye kila kitu",
+                 "fix": "Weka display: flex tu kwenye container — watoto wake wanakuwa flex items automatically."},
+                {"mistake": "Kuchanganya justify-content na align-items",
+                 "fix": "justify-content = horizontal (mstari). align-items = wima (kwa mstari mmoja). Kumbuka: 'j' kwa 'ji' (upande), 'a' kwa 'altitude' (wima)."},
+                {"mistake": "Kutumia margin kwa kila kitu kwenye flex",
+                 "fix": "Tumia 'gap' kwa nafasi kati ya vitu — ni rahisi na safi."},
+                {"mistake": "Kusahau flex-wrap kwa vitu vingi",
+                 "fix": "Kama una cards 10, lazima 'flex-wrap: wrap' — vinginevyo vitapungua ukubwa hadi visionekane."},
+            ],
+            "exercise_prompt": "Unda ukurasa 'team.html' wenye: (1) navbar yenye logo kushoto na viungo 3 kulia, (2) sehemu ya 'Timu Yetu' yenye cards 4 za wanachama. Kila card iwe na picha, jina, cheo, na kitufe cha 'Wasiliana'. Tumia Flexbox kwa navbar na grid kwa cards.",
+            "exercise_solution": "<!-- team.html -->\n<!DOCTYPE html>\n<html lang=\"sw\">\n<head>\n  <meta charset=\"UTF-8\">\n  <link rel=\"stylesheet\" href=\"style.css\">\n</head>\n<body>\n  <nav class=\"navbar\">\n    <div class=\"logo\">IT Expert</div>\n    <ul class=\"nav-links\">\n      <li><a href=\"#\">Nyumbani</a></li>\n      <li><a href=\"#\">Kuhusu</a></li>\n      <li><a href=\"#\">Wasiliana</a></li>\n    </ul>\n  </nav>\n\n  <section class=\"team\">\n    <h2>Timu Yetu</h2>\n    <div class=\"team-grid\">\n      <div class=\"member\">\n        <img src=\"https://picsum.photos/80\" alt=\"Mwanachama\">\n        <h3>Amina H.</h3>\n        <p>Mkurugenzi</p>\n        <button>Wasiliana</button>\n      </div>\n      <div class=\"member\">\n        <img src=\"https://picsum.photos/81\" alt=\"Mwanachama\">\n        <h3>John M.</h3>\n        <p>Msanidi</p>\n        <button>Wasiliana</button>\n      </div>\n      <div class=\"member\">\n        <img src=\"https://picsum.photos/82\" alt=\"Mwanachama\">\n        <h3>Grace K.</h3>\n        <p>Mbunifu</p>\n        <button>Wasiliana</button>\n      </div>\n      <div class=\"member\">\n        <img src=\"https://picsum.photos/83\" alt=\"Mwanachama\">\n        <h3>Peter S.</h3>\n        <p>Mhandisi</p>\n        <button>Wasiliana</button>\n      </div>\n    </div>\n  </section>\n</body>\n</html>\n\n<!-- style.css -->\n* { box-sizing: border-box; }\n\nbody {\n  font-family: 'Segoe UI', Arial, sans-serif;\n  background: #f5f7fa;\n  margin: 0;\n}\n\n.navbar {\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n  padding: 16px 24px;\n  background: #0B1F33;\n  color: white;\n}\n\n.logo { font-weight: 800; font-size: 18px; }\n\n.nav-links {\n  display: flex;\n  gap: 16px;\n  list-style: none;\n  margin: 0;\n  padding: 0;\n}\n\n.nav-links a {\n  color: white;\n  text-decoration: none;\n  padding: 8px 12px;\n  border-radius: 6px;\n}\n\n.nav-links a:hover { background: rgba(255,255,255,0.1); }\n\n.team { padding: 60px 24px; max-width: 1100px; margin: 0 auto; }\n.team h2 { text-align: center; color: #0B1F33; font-size: 32px; margin-bottom: 32px; }\n\n.team-grid {\n  display: grid;\n  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));\n  gap: 20px;\n}\n\n.member {\n  background: white;\n  padding: 24px;\n  border-radius: 12px;\n  text-align: center;\n  box-shadow: 0 1px 3px rgba(0,0,0,0.05);\n}\n\n.member img {\n  width: 80px;\n  height: 80px;\n  border-radius: 50%;\n  margin-bottom: 12px;\n}\n\n.member h3 { margin: 0 0 4px; color: #0B1F33; }\n.member p { color: #64748b; margin: 0 0 16px; }\n\n.member button {\n  background: #F47721;\n  color: white;\n  border: none;\n  padding: 8px 16px;\n  border-radius: 6px;\n  cursor: pointer;\n  font-weight: 700;\n}\n\n.member button:hover { background: #e6670f; }",
+        },
+    ]
+
+    for li, lesson in enumerate(lessons_data, 1):
+        existing = cur.execute(
+            "SELECT id FROM lessons WHERE module_id = ? AND title = ?",
+            (module_id, lesson["title"])).fetchone()
+        if existing:
+            continue
+
+        html_fallback = f"<h2>{lesson['title']}</h2>"
+        html_fallback += "<h3>Malengo ya Somo</h3><ul>"
+        for obj in lesson["objectives"]:
+            html_fallback += f"<li>{obj}</li>"
+        html_fallback += "</ul>"
+
+        cur.execute(
+            "INSERT INTO lessons (module_id, title, content, lesson_type, "
+            "sequence_number, estimated_duration_min, status, "
+            "objectives_json, sections_json, key_takeaways_json, "
+            "common_mistakes_json, exercise_prompt, exercise_solution, "
+            "module_order, lesson_order) "
+            "VALUES (?, ?, ?, 'text', ?, ?, 'published', ?, ?, ?, ?, ?, ?, ?, ?)",
+            (module_id, lesson["title"], html_fallback, li,
+             lesson["duration"], li,
+             _json.dumps(lesson["objectives"], ensure_ascii=False),
+             _json.dumps(lesson["sections"], ensure_ascii=False),
+             _json.dumps(lesson["key_takeaways"], ensure_ascii=False),
+             _json.dumps(lesson["common_mistakes"], ensure_ascii=False),
+             lesson["exercise_prompt"],
+             lesson["exercise_solution"],
+             2, li))
+
+    # Quiz 2
+    existing_quiz = cur.execute(
+        "SELECT id FROM assessments WHERE title LIKE 'Module 2%' LIMIT 1"
+    ).fetchone()
+    if not existing_quiz:
+        first_lesson = cur.execute(
+            "SELECT id FROM lessons WHERE module_id = ? ORDER BY sequence_number LIMIT 1",
+            (module_id,)).fetchone()
+        if first_lesson:
+            cur.execute(
+                "INSERT INTO assessments (lesson_id, title, description, passing_score, max_attempts) "
+                "VALUES (?, ?, ?, ?, ?)",
+                (first_lesson["id"], "Module 2 Quiz: Styling with CSS",
+                 "Jaribu uelewa wako wa CSS selectors, box model, na Flexbox.",
+                 70, 3))
+            aid = cur.lastrowid
+            questions = [
+                ("multiple_choice", "CSS inatumika kwa nini?",
+                 ["Kupamba na kupanga muonekano wa HTML", "Kuunda muundo wa HTML",
+                  "Kuendesha server", "Kuhifadhi data"], "0",
+                 "CSS = kupamba. HTML = muundo. JavaScript = tabia.", 10),
+                ("multiple_choice", "Ni selector ipi inagusa class='card'?",
+                 ["card", ".card", "#card", "*card"], "1",
+                 "Class inaanza na '.'. ID inaanza na '#'.", 10),
+                ("multiple_choice", "Nafasi NDANI ya box (kati ya content na border) inaitwa nini?",
+                 ["Margin", "Padding", "Border", "Gap"], "1",
+                 "Padding = ndani. Margin = nje. Border = mstari.", 10),
+                ("true_false", "box-sizing: border-box inafanya width ijumuishe padding na border.",
+                 ["True", "False"], "0",
+                 "Kweli. Bila hii, padding na border zinaongeza ukubwa.", 10),
+                ("multiple_choice", "Ni property ipi inaweka vitu katikati kwa usawa (horizontal)?",
+                 ["align-items: center", "justify-content: center",
+                  "text-align: center", "flex-direction: row"], "1",
+                 "justify-content = horizontal. align-items = wima.", 10),
+            ]
+            for qi, (qtype, qtext, opts, correct, expl, pts) in enumerate(questions, 1):
+                cur.execute(
+                    "INSERT INTO assessment_questions (assessment_id, question_type, "
+                    "question_text, options_json, correct_answer, explanation, "
+                    "points, sequence_number) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                    (aid, qtype, qtext, _json.dumps(opts, ensure_ascii=False),
+                     correct, expl, pts, qi))
 
 # ============================================================
 # AI TUTOR (Phase 4)
@@ -1101,6 +1530,8 @@ def init_career_tables():
 
     conn.commit()
     _seed_career_paths(cur)
+    _seed_web_design_module1(cur)
+    _seed_web_design_module1(cur)
     conn.commit()
     conn.close()
 
@@ -1270,3 +1701,101 @@ def get_user_career_progress(user_id, career_id):
         (career_id, user_id)).fetchone()[0]
     conn.close()
     return completed, total
+
+
+# ============================================================
+# MASTERY GATING (Modification 3)
+# ============================================================
+def is_lesson_unlocked(user_id, lesson):
+    """Check if user has unlocked this lesson (progressive unlock)."""
+    if not lesson:
+        return False
+    if not is_enrolled(user_id, lesson["course_id"]):
+        return False
+
+    conn = get_connection()
+
+    # Get all lessons in same module ordered
+    same_module = conn.execute(
+        "SELECT id, sequence_number FROM lessons "
+        "WHERE module_id = ? AND status = 'published' "
+        "ORDER BY sequence_number",
+        (lesson["module_id"],)).fetchall()
+
+    current_pos = None
+    for i, l in enumerate(same_module):
+        if l["id"] == lesson["id"]:
+            current_pos = i
+            break
+
+    if current_pos is None:
+        conn.close()
+        return False
+
+    # First lesson in module — check previous modules' completion
+    if current_pos == 0:
+        mod = conn.execute(
+            "SELECT course_id, sequence_number FROM course_modules WHERE id = ?",
+            (lesson["module_id"],)).fetchone()
+        prev_modules = conn.execute(
+            "SELECT id FROM course_modules WHERE course_id = ? "
+            "AND sequence_number < ? ORDER BY sequence_number",
+            (mod["course_id"], mod["sequence_number"])).fetchall()
+
+        for pm in prev_modules:
+            incomplete = conn.execute(
+                "SELECT COUNT(*) FROM lessons l "
+                "WHERE l.module_id = ? AND l.status = 'published' "
+                "AND l.id NOT IN (SELECT lesson_id FROM lesson_progress "
+                "WHERE user_id = ? AND status = 'completed')",
+                (pm["id"], user_id)).fetchone()[0]
+            if incomplete > 0:
+                conn.close()
+                return False
+        conn.close()
+        return True
+
+    # Not first — check previous lesson completed
+    prev_id = same_module[current_pos - 1]["id"]
+    prev = conn.execute(
+        "SELECT status FROM lesson_progress WHERE user_id = ? AND lesson_id = ?",
+        (user_id, prev_id)).fetchone()
+    conn.close()
+    return prev is not None and prev["status"] == "completed"
+
+
+def get_lesson_lock_info(user_id, lesson):
+    """Returns dict with lock status + reason for UI."""
+    if is_lesson_unlocked(user_id, lesson):
+        return {"locked": False, "reason": None}
+
+    conn = get_connection()
+    same_module = conn.execute(
+        "SELECT id, title, sequence_number FROM lessons "
+        "WHERE module_id = ? AND status = 'published' "
+        "ORDER BY sequence_number", (lesson["module_id"],)).fetchall()
+
+    for i, l in enumerate(same_module):
+        if l["id"] == lesson["id"] and i > 0:
+            conn.close()
+            return {
+                "locked": True,
+                "reason": f"Maliza somo la awali: '{same_module[i-1]['title']}'",
+            }
+    conn.close()
+    return {"locked": True, "reason": "Maliza masomo ya moduli iliyopita kwanza."}
+
+
+def get_module_progress(user_id, module_id):
+    """Return (completed_count, total_count) for a module."""
+    conn = get_connection()
+    total = conn.execute(
+        "SELECT COUNT(*) FROM lessons WHERE module_id = ? AND status = 'published'",
+        (module_id,)).fetchone()[0]
+    done = conn.execute(
+        "SELECT COUNT(*) FROM lesson_progress lp "
+        "JOIN lessons l ON lp.lesson_id = l.id "
+        "WHERE l.module_id = ? AND lp.user_id = ? AND lp.status = 'completed'",
+        (module_id, user_id)).fetchone()[0]
+    conn.close()
+    return done, total
