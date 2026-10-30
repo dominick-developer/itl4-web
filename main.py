@@ -9,6 +9,7 @@ from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 from datetime import datetime
 import base64
+import push_service
 
 import database as db
 import auth
@@ -31,7 +32,44 @@ def render(name: str, context: dict):
     if request is None:
         raise ValueError("context must include 'request'")
     return templates.TemplateResponse(request, name, context)
+# ============================================================
+# PUSH NOTIFICATIONS
+# ============================================================
+@app.get("/api/push/vapid-public-key")
+def get_vapid_public():
+    return {"publicKey": os.getenv("VAPID_PUBLIC_KEY", "")}
 
+
+@app.post("/api/push/subscribe")
+async def push_subscribe(request: Request):
+    if "user_id" not in request.session:
+        raise HTTPException(401)
+    data = await request.json()
+    if not data or "endpoint" not in data or "keys" not in data:
+        raise HTTPException(400)
+    push_service.save_subscription(request.session["user_id"], data)
+    return {"ok": True}
+
+
+@app.post("/api/push/unsubscribe")
+async def push_unsubscribe(request: Request):
+    if "user_id" not in request.session:
+        raise HTTPException(401)
+    data = await request.json()
+    push_service.remove_subscription(request.session["user_id"], data.get("endpoint", ""))
+    return {"ok": True}
+
+
+@app.get("/api/push/test")
+def push_test(request: Request):
+    if "user_id" not in request.session:
+        raise HTTPException(401)
+    result = push_service.send_push(
+        request.session["user_id"],
+        "🔔 IT Level 4 Connect",
+        "Push notifications zinafanya kazi! Utapokea taarifa za ratiba.",
+        "/timetable")
+    return result
 @app.on_event("startup")
 def startup():
     # 1. Init database (migrations za columns mpya zipo ndani ya init_database)
@@ -532,9 +570,8 @@ def timetable_view(request: Request):
     return render("timetable.html", ctx(request, {
         "grouped": grouped,
         "entries": db.get_all_timetable_entries(),
+        "vapid_public_key": os.getenv("VAPID_PUBLIC_KEY", ""),
     }))
-
-
 @app.get("/timetable/manage", response_class=HTMLResponse)
 def timetable_manage(request: Request):
     require_login(request)
@@ -562,22 +599,17 @@ def timetable_edit(request: Request, entry_id: int):
         "teachers": db.get_all_teachers(),
         "edit_entry": entry,
     }))
-
-
 @app.post("/timetable/add")
 def timetable_add(request: Request, day: str = Form(...),
                   start_time: str = Form(...),
                   end_time: str = Form(""),
-                  module_id: str = Form(""),
-                  teacher_id: str = Form(""),
+                  session_name: str = Form(""),
                   venue: str = Form(""),
                   notes: str = Form("")):
     require_login(request)
     if request.session.get("role") != "CR":
         raise HTTPException(403)
-    mid = int(module_id) if module_id else None
-    tid = int(teacher_id) if teacher_id else None
-    db.add_timetable_entry(day, start_time, end_time, mid, tid, venue, notes)
+    db.add_timetable_entry(day, start_time, end_time, None, None, venue, notes, session_name)
     return RedirectResponse("/timetable/manage", 303)
 
 
@@ -586,19 +618,20 @@ def timetable_update(request: Request, entry_id: int,
                      day: str = Form(...),
                      start_time: str = Form(...),
                      end_time: str = Form(""),
-                     module_id: str = Form(""),
-                     teacher_id: str = Form(""),
+                     session_name: str = Form(""),
                      venue: str = Form(""),
                      notes: str = Form("")):
     require_login(request)
     if request.session.get("role") != "CR":
         raise HTTPException(403)
-    mid = int(module_id) if module_id else None
-    tid = int(teacher_id) if teacher_id else None
-    db.update_timetable_entry(entry_id, day, start_time, end_time, mid, tid, venue, notes)
+    conn = db.get_connection()
+    conn.execute("PRAGMA table_info(timetable)")
+    conn.execute(
+        "UPDATE timetable SET day=?, start_time=?, end_time=?, venue=?, notes=?, session_name=? WHERE id=?",
+        (day, start_time, end_time, venue, notes, session_name, entry_id))
+    conn.commit()
+    conn.close()
     return RedirectResponse("/timetable/manage", 303)
-
-
 @app.post("/timetable/{entry_id}/delete")
 def timetable_delete(request: Request, entry_id: int):
     require_login(request)
@@ -1601,3 +1634,9 @@ def academy_career_detail(request: Request, slug: str):
         "logged_in": user_id is not None,
         "now": datetime.now(),
     })
+@app.get("/internal/send-notifications")
+def trigger_notifications(secret: str = ""):
+    if secret != os.getenv("CRON_SECRET", ""):
+        raise HTTPException(403)
+    import notification_service
+    return notification_service.process_due_notifications()
