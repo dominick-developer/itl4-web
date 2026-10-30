@@ -354,7 +354,22 @@
                 {% for l in m.lessons %}
                 <li class="lesson-item {% if not is_enrolled %}locked{% endif %}">
                     <span class="num">{{ loop.index }}</span>
+            {% for l in m.lessons %}
+            {% set unlocked = is_enrolled and (locks is defined and l.id not in locks) %}
+            <li class="lesson-item {% if not is_enrolled %}locked{% elif locks is defined and l.id in locks %}locked{% endif %}">
+                <span class="num">
                     {% if is_enrolled %}
+                    {% if locks is defined and l.id in locks %}🔒{% else %}{{ loop.index }}{% endif %}
+                    {% else %}{{ loop.index }}{% endif %}
+                </span>
+                {% if is_enrolled and (locks is not defined or l.id not in locks) %}
+                <a href="/academy/lessons/{{ l.id }}" class="title">{{ l.title }}</a>
+                {% else %}
+                <span class="title">{{ l.title }}</span>
+                {% endif %}
+                <span class="dur">{{ l.estimated_duration_min }} min</span>
+            </li>
+            {% endfor %}
                     <a href="/academy/lessons/{{ l.id }}" class="title">{{ l.title }}</a>
                     {% else %}
                     <span class="title">{{ l.title }}</span>

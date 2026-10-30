@@ -1,4 +1,4 @@
-# âœ… IWE HIVI
+﻿# âœ… IWE HIVI
 import os
 RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
 from pathlib import Path
@@ -526,15 +526,86 @@ def delete_topic(request: Request, tid: int):
 # TIMETABLE
 # ============================================================
 @app.get("/timetable", response_class=HTMLResponse)
-def timetable_page(request: Request, q: str = ""):
+def timetable_view(request: Request):
     require_login(request)
-    only_pub = request.session["role"] == "STUDENT"
-    sessions = db.get_timetable_sessions(search=q, only_published=only_pub)
+    grouped = db.get_timetable_grouped_by_day()
     return render("timetable.html", ctx(request, {
-        "sessions": sessions, "query": q,
+        "grouped": grouped,
+        "entries": db.get_all_timetable_entries(),
     }))
 
 
+@app.get("/timetable/manage", response_class=HTMLResponse)
+def timetable_manage(request: Request):
+    require_login(request)
+    if request.session.get("role") != "CR":
+        raise HTTPException(403)
+    return render("timetable_manage.html", ctx(request, {
+        "entries": db.get_all_timetable_entries(),
+        "modules": db.get_all_modules(),
+        "teachers": db.get_all_teachers(),
+        "edit_entry": None,
+    }))
+
+
+@app.get("/timetable/manage/{entry_id}/edit", response_class=HTMLResponse)
+def timetable_edit(request: Request, entry_id: int):
+    require_login(request)
+    if request.session.get("role") != "CR":
+        raise HTTPException(403)
+    entry = db.get_timetable_entry(entry_id)
+    if not entry:
+        raise HTTPException(404)
+    return render("timetable_manage.html", ctx(request, {
+        "entries": db.get_all_timetable_entries(),
+        "modules": db.get_all_modules(),
+        "teachers": db.get_all_teachers(),
+        "edit_entry": entry,
+    }))
+
+
+@app.post("/timetable/add")
+def timetable_add(request: Request, day: str = Form(...),
+                  start_time: str = Form(...),
+                  end_time: str = Form(""),
+                  module_id: str = Form(""),
+                  teacher_id: str = Form(""),
+                  venue: str = Form(""),
+                  notes: str = Form("")):
+    require_login(request)
+    if request.session.get("role") != "CR":
+        raise HTTPException(403)
+    mid = int(module_id) if module_id else None
+    tid = int(teacher_id) if teacher_id else None
+    db.add_timetable_entry(day, start_time, end_time, mid, tid, venue, notes)
+    return RedirectResponse("/timetable/manage", 303)
+
+
+@app.post("/timetable/{entry_id}/update")
+def timetable_update(request: Request, entry_id: int,
+                     day: str = Form(...),
+                     start_time: str = Form(...),
+                     end_time: str = Form(""),
+                     module_id: str = Form(""),
+                     teacher_id: str = Form(""),
+                     venue: str = Form(""),
+                     notes: str = Form("")):
+    require_login(request)
+    if request.session.get("role") != "CR":
+        raise HTTPException(403)
+    mid = int(module_id) if module_id else None
+    tid = int(teacher_id) if teacher_id else None
+    db.update_timetable_entry(entry_id, day, start_time, end_time, mid, tid, venue, notes)
+    return RedirectResponse("/timetable/manage", 303)
+
+
+@app.post("/timetable/{entry_id}/delete")
+def timetable_delete(request: Request, entry_id: int):
+    require_login(request)
+    if request.session.get("role") != "CR":
+        raise HTTPException(403)
+    db.delete_timetable_entry(entry_id)
+    return RedirectResponse("/timetable/manage", 303)
 # ============================================================
 # ASSIGNMENTS
 # ============================================================

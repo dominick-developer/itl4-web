@@ -3000,6 +3000,74 @@ def resend_verification_code(admission_no):
         "full_name": student["full_name"],
     }
     return True, info, "New code sent."
+# ============================================================
+# TIMETABLE (Standalone - CR Managed)
+# ============================================================
+def add_timetable_entry(day, start_time, end_time, module_id, teacher_id, venue, notes=""):
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "INSERT INTO timetable (day, start_time, end_time, module_id, teacher_id, venue, notes) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (day, start_time, end_time, module_id, teacher_id, venue, notes))
+    conn.commit()
+    entry_id = cur.lastrowid
+    conn.close()
+    return entry_id
+
+
+def get_all_timetable_entries():
+    conn = get_connection()
+    rows = conn.execute(
+        "SELECT t.*, m.name AS module_name, m.code AS module_code, "
+        "te.full_name AS teacher_name "
+        "FROM timetable t "
+        "LEFT JOIN modules m ON t.module_id = m.id "
+        "LEFT JOIN teachers te ON t.teacher_id = te.id "
+        "ORDER BY "
+        "CASE t.day "
+        "  WHEN 'Monday' THEN 1 WHEN 'Tuesday' THEN 2 "
+        "  WHEN 'Wednesday' THEN 3 WHEN 'Thursday' THEN 4 "
+        "  WHEN 'Friday' THEN 5 WHEN 'Saturday' THEN 6 "
+        "  WHEN 'Sunday' THEN 7 END, "
+        "t.start_time").fetchall()
+    conn.close()
+    return rows
+
+
+def get_timetable_grouped_by_day():
+    rows = get_all_timetable_entries()
+    days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+    grouped = {d: [] for d in days}
+    for r in rows:
+        if r["day"] in grouped:
+            grouped[r["day"]].append(dict(r))
+    return grouped
+
+
+def get_timetable_entry(entry_id):
+    conn = get_connection()
+    row = conn.execute(
+        "SELECT * FROM timetable WHERE id = ?", (entry_id,)).fetchone()
+    conn.close()
+    return row
+
+
+def update_timetable_entry(entry_id, day, start_time, end_time, module_id, teacher_id, venue, notes=""):
+    conn = get_connection()
+    conn.execute(
+        "UPDATE timetable SET day = ?, start_time = ?, end_time = ?, "
+        "module_id = ?, teacher_id = ?, venue = ?, notes = ? WHERE id = ?",
+        (day, start_time, end_time, module_id, teacher_id, venue, notes, entry_id))
+    conn.commit()
+    conn.close()
+
+
+def delete_timetable_entry(entry_id):
+    conn = get_connection()
+    conn.execute("DELETE FROM timetable WHERE id = ?", (entry_id,))
+    conn.commit()
+    conn.close()
 if __name__ == "__main__":
     init_database()
     print(f"Database: {DB_PATH}")

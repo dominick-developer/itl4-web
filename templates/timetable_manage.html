@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block title %}Manage Timetable{% endblock %}
+{% block page_title %}⚙️ Manage Timetable{% endblock %}
+
+{% block body %}
+<div class="container">
+
+    <div
+        style="background:linear-gradient(135deg,#0B1F33 0%,#1e40af 100%);border-radius:16px;padding:24px;color:white;margin-bottom:22px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+        <div>
+            <h1 style="font-size:22px;font-weight:900;margin:0 0 4px;">⚙️ Manage Timetable</h1>
+            <p style="color:#cbd5e1;margin:0;font-size:14px;">Weka masomo, walimu, na venye kwa kila siku</p>
+        </div>
+        <a href="/timetable" class="btn btn-outline" style="background:white;color:var(--navy);padding:10px 20px;">👁
+            View Timetable</a>
+    </div>
+
+    <!-- ADD / EDIT FORM -->
+    <div class="card" style="margin-bottom:22px;">
+        <h2 style="color:var(--navy);font-size:18px;font-weight:800;margin-bottom:16px;">
+            {% if edit_entry %}✏️ Edit Session{% else %}➕ Add New Session{% endif %}
+        </h2>
+        <form method="post"
+            action="{% if edit_entry %}/timetable/{{ edit_entry.id }}/update{% else %}/timetable/add{% endif %}">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Day *</label>
+                    <select name="day" required>
+                        {% for d in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] %}
+                        <option value="{{ d }}" {% if edit_entry and edit_entry.day==d %}selected{% endif %}>{{ d }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Start Time *</label>
+                    <input type="time" name="start_time" required
+                        value="{{ edit_entry.start_time if edit_entry else '' }}">
+                </div>
+                <div class="form-group">
+                    <label>End Time</label>
+                    <input type="time" name="end_time" value="{{ edit_entry.end_time if edit_entry else '' }}">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Module</label>
+                    <select name="module_id">
+                        <option value="">— Chagua Module —</option>
+                        {% for m in modules %}
+                        <option value="{{ m.id }}" {% if edit_entry and edit_entry.module_id==m.id %}selected{% endif
+                            %}>{{ m.name }}{% if m.code %} ({{ m.code }}){% endif %}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Teacher</label>
+                    <select name="teacher_id">
+                        <option value="">— Chagua Teacher —</option>
+                        {% for t in teachers %}
+                        <option value="{{ t.id }}" {% if edit_entry and edit_entry.teacher_id==t.id %}selected{% endif
+                            %}>{{ t.full_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Venue (Room)</label>
+                    <input type="text" name="venue" value="{{ edit_entry.venue if edit_entry else '' }}"
+                        placeholder="e.g. Room 203">
+                </div>
+                <div class="form-group">
+                    <label>Notes</label>
+                    <input type="text" name="notes" value="{{ edit_entry.notes if edit_entry else '' }}"
+                        placeholder="Optional">
+                </div>
+            </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                <button type="submit" class="btn btn-primary">{% if edit_entry %}Save Changes{% else %}Add Session{%
+                    endif %}</button>
+                {% if edit_entry %}
+                <a href="/timetable/manage" class="btn btn-outline">Cancel</a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+
+    <!-- EXISTING ENTRIES -->
+    <h2 style="font-size:18px;font-weight:800;color:var(--navy);margin:22px 0 12px;">📅 Current Timetable ({{
+        entries|length }})</h2>
+
+    {% if entries %}
+    <div style="display:grid;gap:10px;">
+        {% for e in entries %}
+        <div class="card" style="padding:14px 18px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;">
+            <div
+                style="background:var(--navy);color:white;padding:6px 12px;border-radius:8px;font-size:12px;font-weight:800;min-width:80px;text-align:center;">
+                {{ e.day[:3] }}
+            </div>
+            <div style="font-weight:800;color:var(--orange);min-width:110px;font-size:14px;">
+                {{ e.start_time }}{% if e.end_time %} – {{ e.end_time }}{% endif %}
+            </div>
+            <div style="flex:1;min-width:180px;">
+                <div style="font-weight:800;color:var(--navy);font-size:15px;">{{ e.module_name or '—' }}</div>
+                {% if e.teacher_name %}<div style="font-size:12px;color:var(--muted);">👨‍🏫 {{ e.teacher_name }}</div>
+                {% endif %}
+            </div>
+            {% if e.venue %}<div style="font-size:13px;color:var(--muted);font-weight:600;">📍 {{ e.venue }}</div>{%
+            endif %}
+            <div style="display:flex;gap:6px;">
+                <a href="/timetable/manage/{{ e.id }}/edit" class="btn btn-outline"
+                    style="padding:6px 14px;font-size:13px;">Edit</a>
+                <form method="post" action="/timetable/{{ e.id }}/delete"
+                    onsubmit="return confirm('Delete this session?');" style="display:inline;">
+                    <button type="submit" class="btn btn-danger"
+                        style="padding:6px 14px;font-size:13px;">Delete</button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="card" style="text-align:center;padding:40px 20px;color:var(--muted);">
+        <div style="font-size:36px;margin-bottom:8px;">📅</div>
+        <p>Timetable haijawekwa bado. Ongeza session ya kwanza hapo juu.</p>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

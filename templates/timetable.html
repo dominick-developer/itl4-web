@@ -1,38 +1,85 @@
 {% extends "base.html" %}
+{% block title %}Timetable{% endblock %}
+{% block page_title %}📅 Timetable{% endblock %}
+
 {% block body %}
 <div class="container">
-    <h1 style="color:var(--navy);margin-bottom:20px;">📋 Timetable</h1>
-    <form method="get" style="margin-bottom:16px;display:flex;gap:8px;">
-        <input type="text" name="q" value="{{ query }}" placeholder="Search module, topic or venue..." style="flex:1;">
-        <button class="btn btn-secondary">Search</button>
-    </form>
-    {% if sessions %}
-    <table>
-        <thead>
-            <tr>
-                <th>Date</th>
-                <th>Time</th>
-                <th>Module</th>
-                <th>Topic</th>
-                <th>Venue</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for s in sessions %}
-            <tr>
-                <td>{{ s.planned_date }}</td>
-                <td>{{ s.start_time or '—' }} - {{ s.end_time or '—' }}</td>
-                <td><strong>{{ s.module_name }}</strong></td>
-                <td>{{ s.topic_title }}</td>
-                <td>{{ s.venue or '—' }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    {% else %}
-    <div class="card empty">
-        <p>No sessions scheduled.</p>
+
+    <div style="background:linear-gradient(135deg,#0B1F33 0%,#1e40af 100%);border-radius:16px;padding:28px;color:white;margin-bottom:22px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;">
+        <div>
+            <h1 style="font-size:24px;font-weight:900;margin:0 0 6px;">📅 Weekly Timetable</h1>
+            <p style="color:#cbd5e1;margin:0;font-size:14px;">Ratiba ya wiki kwa IT Level 4</p>
+        </div>
+        {% if role == 'CR' %}
+        <a href="/timetable/manage" class="btn btn-primary" style="padding:12px 24px;">⚙️ Manage Timetable</a>
+        {% endif %}
     </div>
+
+    {% set day_names = {'Monday': 'Jumatatu', 'Tuesday': 'Jumanne', 'Wednesday': 'Jumatano', 'Thursday': 'Alhamisi', 'Friday': 'Ijumaa', 'Saturday': 'Jumamosi', 'Sunday': 'Jumapili'} %}
+    {% set has_any = false %}
+    {% for d in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] %}
+        {% if grouped[d]|length > 0 %}
+            {% set has_any = true %}
+        {% endif %}
+    {% endfor %}
+
+    {% if not has_any %}
+    <div class="card" style="text-align:center;padding:60px 20px;">
+        <div style="font-size:48px;margin-bottom:12px;">📅</div>
+        <h3 style="color:var(--navy);font-size:20px;font-weight:800;margin-bottom:8px;">Timetable bado haijawekwa</h3>
+        <p style="color:var(--muted);margin-bottom:20px;">
+            {% if role == 'CR' %}
+            Bonyeza "Manage Timetable" kuweka ratiba.
+            {% else %}
+            CR bado hajaweka ratiba ya wiki. Tafadhali angalia baadaye.
+            {% endif %}
+        </p>
+        {% if role == 'CR' %}
+        <a href="/timetable/manage" class="btn btn-primary">⚙️ Manage Timetable</a>
+        {% endif %}
+    </div>
+    {% else %}
+
+    <div style="display:grid;gap:14px;">
+        {% for d in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] %}
+            {% if grouped[d]|length > 0 %}
+            <div class="card" style="padding:0;overflow:hidden;">
+                <div style="background:var(--navy);color:white;padding:14px 20px;font-weight:800;font-size:16px;display:flex;align-items:center;gap:10px;">
+                    <span>📆</span>
+                    <span>{{ day_names[d] }} · {{ d }}</span>
+                    <span style="margin-left:auto;font-size:13px;font-weight:600;opacity:.8;">{{ grouped[d]|length }} session{% if grouped[d]|length != 1 %}s{% endif %}</span>
+                </div>
+                <div style="padding:8px 0;">
+                    {% for e in grouped[d] %}
+                    <div style="padding:14px 20px;border-bottom:1px solid var(--border);display:flex;gap:16px;align-items:center;flex-wrap:wrap;">
+                        <div style="min-width:130px;font-weight:800;color:var(--orange);font-size:15px;">
+                            {{ e.start_time }}{% if e.end_time %} – {{ e.end_time }}{% endif %}
+                        </div>
+                        <div style="flex:1;min-width:200px;">
+                            <div style="font-weight:800;color:var(--navy);font-size:16px;">
+                                {{ e.module_name or 'Session' }}
+                                {% if e.module_code %}<span style="color:var(--muted);font-size:13px;font-weight:600;"> ({{ e.module_code }})</span>{% endif %}
+                            </div>
+                            {% if e.teacher_name %}
+                            <div style="font-size:13px;color:var(--muted);margin-top:2px;">👨‍🏫 {{ e.teacher_name }}</div>
+                            {% endif %}
+                        </div>
+                        {% if e.venue %}
+                        <div style="font-size:13px;color:var(--muted);font-weight:600;padding:4px 10px;background:#f1f5f9;border-radius:6px;">
+                            📍 {{ e.venue }}
+                        </div>
+                        {% endif %}
+                        {% if e.notes %}
+                        <div style="width:100%;font-size:13px;color:var(--muted);padding-left:146px;font-style:italic;">{{ e.notes }}</div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+
     {% endif %}
 </div>
 {% endblock %}

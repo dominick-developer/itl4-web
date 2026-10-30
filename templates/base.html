@@ -637,9 +637,14 @@
                 <a href="/modules" class="sb-item {% if request.url.path.startswith('/modules') %}active{% endif %}">
                     <span class="sb-icon">📚</span> Modules
                 </a>
-                <a href="/timetable" class="sb-item {% if request.url.path == '/timetable' %}active{% endif %}">
-                    <span class="sb-icon">📋</span> Timetable
-                </a>
+<a href="/timetable" class="sb-item {% if request.url.path == '/timetable' %}active{% endif %}">
+    <span class="sb-icon">📋</span> Timetable
+</a>
+{% if role == 'CR' %}
+<a href="/timetable/manage" class="sb-item {% if request.url.path.startswith('/timetable/manage') %}active{% endif %}">
+    <span class="sb-icon">⚙️</span> Manage Timetable
+</a>
+{% endif %}
                 <a href="/assignments"
                     class="sb-item {% if request.url.path.startswith('/assignments') %}active{% endif %}">
                     <span class="sb-icon">📝</span> Assignments
