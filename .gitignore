@@ -22,4 +22,5 @@ uploads/
 Thumbs.db
 
 # Logs
-*.log
+*.log*.bak_*
+*.py.bak*
