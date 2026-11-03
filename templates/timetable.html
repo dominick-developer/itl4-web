@@ -3,251 +3,6 @@
 {% block page_title %}📅 Timetable{% endblock %}
 
 {% block body %}
-
-<!-- PUSH NOTIFICATIONS CARD v2 -->
-<div id="pushCard" style="background:white;border:2px solid #E2E8F0;border-radius:12px;padding:18px 22px;margin-bottom:22px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
-    <div id="pushIcon" style="font-size:36px;flex-shrink:0;">🔔</div>
-    <div style="flex:1;min-width:200px;">
-        <div id="pushTitle" style="font-weight:800;color:#0B1F33;font-size:16px;margin-bottom:4px;">Push Notifications</div>
-        <div id="pushStatus" style="font-size:13px;color:#64748B;line-height:1.5;">Inaangalia hali...</div>
-    </div>
-    <div id="pushActions" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
-</div>
-
-<script>
-(function() {
-    var VAPID_PUBLIC_KEY = '{{ vapid_public_key or "" }}';
-    var card = document.getElementById('pushCard');
-    var icon = document.getElementById('pushIcon');
-    var title = document.getElementById('pushTitle');
-    var status = document.getElementById('pushStatus');
-    var actions = document.getElementById('pushActions');
-
-    if (!VAPID_PUBLIC_KEY) { card.style.display = 'none'; return; }
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-        setState('unsupported');
-        return;
-    }
-
-    function setState(state, msg) {
-        actions.innerHTML = '';
-        if (state === 'enabled') {
-            card.style.background = '#f0fdf4';
-            card.style.borderColor = '#86efac';
-            icon.textContent = '✅';
-            title.textContent = 'Push Notifications: Enabled';
-            title.style.color = '#16A34A';
-            status.textContent = 'Utapokea taarifa za ratiba kwenye kifaa chako.';
-            actions.innerHTML = '<button onclick="disablePush()" class="btn btn-outline" style="padding:8px 16px;font-size:13px;">Disable</button>' +
-                               '<button onclick="sendTest()" class="btn btn-primary" style="padding:8px 16px;font-size:13px;">Send Test</button>';
-        } else if (state === 'disabled') {
-            card.style.background = '#fff7ed';
-            card.style.borderColor = '#F47721';
-            icon.textContent = '🔔';
-            title.textContent = 'Push Notifications: Disabled';
-            title.style.color = '#0B1F33';
-            status.textContent = 'Bonyeza "Enable" ili upate taarifa za ratiba kwenye simu yako.';
-            actions.innerHTML = '<button onclick="enablePush()" class="btn btn-primary" style="padding:10px 22px;font-size:14px;">Enable Notifications</button>';
-        } else if (state === 'blocked') {
-            card.style.background = '#fef2f2';
-            card.style.borderColor = '#fca5a5';
-            icon.textContent = '🚫';
-            title.textContent = 'Push Notifications: Blocked';
-            title.style.color = '#DC2626';
-            status.textContent = 'Browser imezuia. Fungua 🔒 kwenye URL bar → Site settings → Notifications → Allow.';
-            actions.innerHTML = '<button onclick="checkStatus()" class="btn btn-outline" style="padding:8px 16px;font-size:13px;">Retry</button>';
-        } else if (state === 'unsupported') {
-            card.style.background = '#f1f5f9';
-            card.style.borderColor = '#cbd5e1';
-            icon.textContent = '⚠️';
-            title.textContent = 'Push Notifications: Not Supported';
-            title.style.color = '#64748B';
-            status.textContent = 'Tumia Chrome au Edge.';
-            actions.innerHTML = '';
-        } else if (state === 'error') {
-            card.style.background = '#fef2f2';
-            card.style.borderColor = '#fca5a5';
-            icon.textContent = '❌';
-            title.textContent = 'Hitilafu';
-            title.style.color = '#DC2626';
-            status.textContent = msg || 'Jaribu tena.';
-            actions.innerHTML = '<button onclick="enablePush()" class="btn btn-primary" style="padding:8px 16px;font-size:13px;">Jaribu Tena</button>';
-        }
-    }
-
-    function urlBase64ToUint8Array(b64) {
-        var pad = '='.repeat((4 - b64.length % 4) % 4);
-        var s = (b64 + pad).replace(/\-/g, '+').replace(/_/g, '/');
-        var raw = window.atob(s);
-        var arr = new Uint8Array(raw.length);
-        for (var i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
-        return arr;
-    }
-
-    // INSTANT status — based on Notification.permission only (no waiting)
-    window.checkStatus = function() {
-        if (Notification.permission === 'denied') {
-            setState('blocked'); return;
-        }
-        if (Notification.permission === 'granted') {
-            setState('enabled');  // ← INSTANT: show enabled
-            // Background verify (silent — no UI if it fails)
-            verifyBackground();
-            return;
-        }
-        setState('disabled');
-    };
-
-    async function verifyBackground() {
-        try {
-            var reg = await Promise.race([
-                navigator.serviceWorker.ready,
-                new Promise(function(_, rej) { setTimeout(function() { rej(new Error('skip')); }, 3000); })
-            ]);
-            var sub = await reg.pushManager.getSubscription();
-            if (!sub) {
-                console.log('[Push] Permission granted but no subscription — showing disabled');
-                setState('disabled');
-            } else {
-                console.log('[Push] Verified: subscription exists');
-                // Silent re-sync with server (if server lost it)
-                fetch('/api/push/subscribe', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(sub.toJSON())
-                }).catch(function(){});
-            }
-        } catch (e) {
-            // Silent — keep optimistic "enabled"
-            console.log('[Push] Verify skipped:', e.message);
-        }
-    }
-
-    // INSTANT enable — show enabled, then do work in background
-    window.enablePush = function() {
-        setState('enabled');  // ← INSTANT: user clicks, sees enabled immediately
-        doEnableInBackground();
-    };
-
-    async function doEnableInBackground() {
-        try {
-            // 1. Permission
-            setState('loading', 'Inaomba ruhusa...');
-            var perm = await Notification.requestPermission();
-            if (perm !== 'granted') {
-                setState('blocked');
-                return;
-            }
-            
-            // 2. Get SW with explicit register fallback
-            setState('loading', 'Inasajili service worker...');
-            var reg;
-            try {
-                reg = await Promise.race([
-                    navigator.serviceWorker.ready,
-                    new Promise(function(_, rej) {
-                        setTimeout(function() { rej(new Error('timeout')); }, 5000);
-                    })
-                ]);
-            } catch (e) {
-                console.log('[Push] SW ready timeout — explicit register');
-                await navigator.serviceWorker.register('/static/sw.js');
-                reg = await navigator.serviceWorker.ready;
-            }
-            
-            // 3. Subscribe (Browser)
-            setState('loading', 'Inasajili subscription...');
-            var sub = await reg.pushManager.subscribe({
-                userVisibleOnly: true,
-                applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
-            });
-            console.log('[Push] Browser subscription created:', sub.endpoint.substring(0, 50));
-            
-            // 4. Save to server
-            setState('loading', 'Inahifadhi kwenye database...');
-            var res = await fetch('/api/push/subscribe', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(sub.toJSON())
-            });
-            var data = await res.json().catch(function() { return {}; });
-            console.log('[Push] Save result:', data);
-            
-            if (!res.ok || data.ok === false) {
-                try { await sub.unsubscribe(); } catch(e) {}
-                setState('error', 'DB save failed: ' + (data.error || data.debug || 'Unknown'));
-                return;
-            }
-            
-            // VERIFY: Server has it
-            var verify = await fetch('/api/push/status');
-            var vdata = await verify.json();
-            console.log('[Push] Verify status:', vdata);
-            
-            if (!vdata.subscribed) {
-                setState('error', 'Server haina subscription (count=0). Jaribu tena.');
-                return;
-            }
-            
-            // SUCCESS — only now show "Enabled"
-            console.log('[Push] Fully enabled! count:', vdata.count);
-            setState('enabled');
-            
-            // Auto-test
-            setTimeout(function() {
-                fetch('/api/push/test').then(function(r) { return r.json(); }).then(function(d) {
-                    console.log('[Push] Test result:', d);
-                }).catch(function(e) {});
-            }, 2000);
-            
-        } catch (err) {
-            console.error('[Push] Enable failed:', err);
-            setState('error', err.message || 'Imeshindwa');
-        }
-    }
-
-    window.disablePush = function() {
-        if (!confirm('Zima push notifications?')) return;
-        setState('disabled');  // ← INSTANT
-        doDisableInBackground();
-    };
-
-    async function doDisableInBackground() {
-        try {
-            var reg = await navigator.serviceWorker.ready;
-            var sub = await reg.pushManager.getSubscription();
-            if (sub) {
-                fetch('/api/push/unsubscribe', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ endpoint: sub.endpoint })
-                }).catch(function(){});
-                await sub.unsubscribe();
-            }
-        } catch (e) {
-            console.warn('[Push] Disable error:', e);
-        }
-    }
-
-    window.sendTest = async function() {
-        try {
-            var res = await fetch('/api/push/test');
-            var data = await res.json();
-            if (data.ok) {
-                alert('✅ Test notification imetumwa! Angalia notification bar.');
-            } else {
-                alert('❌ ' + (data.error || 'Imeshindwa'));
-            }
-        } catch (e) {
-            alert('❌ ' + e.message);
-        }
-    };
-
-    // Run INSTANTLY on page load
-    checkStatus();
-})();
-</script>
-
 <div class="container">
 
     <div style="background:linear-gradient(135deg,#0B1F33 0%,#1e40af 100%);border-radius:16px;padding:28px;color:white;margin-bottom:22px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;">
@@ -256,27 +11,29 @@
             <p style="color:#cbd5e1;margin:0;font-size:14px;">Ratiba ya wiki kwa IT Level 4</p>
         </div>
         {% if role == 'CR' %}
-        <a href="/timetable/manage" class="btn btn-primary" style="padding:12px 24px;">⚙️ Manage Timetable</a>
+        <a href="/timetable/manage" class="btn btn-primary" style="padding:12px 24px;background:#F47721;color:white;">⚙️ Manage</a>
         {% endif %}
     </div>
 
     {% set day_names = {'Monday': 'Jumatatu', 'Tuesday': 'Jumanne', 'Wednesday': 'Jumatano', 'Thursday': 'Alhamisi', 'Friday': 'Ijumaa', 'Saturday': 'Jumamosi', 'Sunday': 'Jumapili'} %}
-    {% set has_any = false %}
-    {% for d in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] %}
-        {% if grouped[d]|length > 0 %}
-            {% set has_any = true %}
+    {% set day_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] %}
+
+    {% set ns = namespace(has_any=false) %}
+    {% for d in day_order %}
+        {% if grouped and grouped[d] and grouped[d]|length > 0 %}
+            {% set ns.has_any = true %}
         {% endif %}
     {% endfor %}
 
-    {% if not has_any %}
+    {% if not ns.has_any %}
     <div class="card" style="text-align:center;padding:60px 20px;">
         <div style="font-size:48px;margin-bottom:12px;">📅</div>
         <h3 style="color:var(--navy);font-size:20px;font-weight:800;margin-bottom:8px;">Timetable bado haijawekwa</h3>
         <p style="color:var(--muted);margin-bottom:20px;">
             {% if role == 'CR' %}
-            Bonyeza "Manage Timetable" kuweka ratiba.
+            Bonyeza "Manage" kuweka ratiba.
             {% else %}
-            CR bado hajaweka ratiba ya wiki. Tafadhali angalia baadaye.
+            CR bado hajaweka ratiba ya wiki.
             {% endif %}
         </p>
         {% if role == 'CR' %}
@@ -286,8 +43,8 @@
     {% else %}
 
     <div style="display:grid;gap:14px;">
-        {% for d in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] %}
-            {% if grouped[d]|length > 0 %}
+        {% for d in day_order %}
+            {% if grouped and grouped[d] and grouped[d]|length > 0 %}
             <div class="card" style="padding:0;overflow:hidden;">
                 <div style="background:var(--navy);color:white;padding:14px 20px;font-weight:800;font-size:16px;display:flex;align-items:center;gap:10px;">
                     <span>📆</span>
@@ -296,26 +53,35 @@
                 </div>
                 <div style="padding:8px 0;">
                     {% for e in grouped[d] %}
-                    <div style="padding:14px 20px;border-bottom:1px solid var(--border);display:flex;gap:16px;align-items:center;flex-wrap:wrap;">
+                    {% set st = e.status if e.status else 'scheduled' %}
+                    <div style="padding:14px 20px;border-bottom:1px solid var(--border);display:flex;gap:16px;align-items:center;flex-wrap:wrap;{% if st == 'cancelled' %}opacity:0.6;{% endif %}">
                         <div style="min-width:130px;font-weight:800;color:var(--orange);font-size:15px;">
                             {{ e.start_time }}{% if e.end_time %} – {{ e.end_time }}{% endif %}
                         </div>
                         <div style="flex:1;min-width:200px;">
                             <div style="font-weight:800;color:var(--navy);font-size:16px;">
-                                {{ e.module_name or 'Session' }}
+                                {{ e.session_name or e.module_name or 'Session' }}
                                 {% if e.module_code %}<span style="color:var(--muted);font-size:13px;font-weight:600;"> ({{ e.module_code }})</span>{% endif %}
+                                {% if st == 'postponed' %}
+                                <span style="background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:8px;font-size:10px;font-weight:700;margin-left:6px;">⏸ POSTPONED</span>
+                                {% elif st == 'cancelled' %}
+                                <span style="background:#fee2e2;color:#DC2626;padding:2px 8px;border-radius:8px;font-size:10px;font-weight:700;margin-left:6px;">✗ CANCELLED</span>
+                                {% endif %}
                             </div>
                             {% if e.teacher_name %}
                             <div style="font-size:13px;color:var(--muted);margin-top:2px;">👨‍🏫 {{ e.teacher_name }}</div>
+                            {% endif %}
+                            {% if st == 'postponed' and e.postponed_to %}
+                            <div style="margin-top:8px;padding:8px 12px;background:#fffbeb;border-radius:6px;font-size:12px;">
+                                <strong style="color:#92400e;">⏸ Mpya:</strong> <span style="color:#78350f;">{{ e.postponed_to }}</span>
+                                {% if e.postponed_reason %}<div style="color:#78350f;margin-top:2px;font-style:italic;">{{ e.postponed_reason }}</div>{% endif %}
+                            </div>
                             {% endif %}
                         </div>
                         {% if e.venue %}
                         <div style="font-size:13px;color:var(--muted);font-weight:600;padding:4px 10px;background:#f1f5f9;border-radius:6px;">
                             📍 {{ e.venue }}
                         </div>
-                        {% endif %}
-                        {% if e.notes %}
-                        <div style="width:100%;font-size:13px;color:var(--muted);padding-left:146px;font-style:italic;">{{ e.notes }}</div>
                         {% endif %}
                     </div>
                     {% endfor %}
@@ -326,5 +92,22 @@
     </div>
 
     {% endif %}
+
+    <!-- PUSH NOTIFICATIONS CARD (existing) -->
+    {% if true %}
+    <div id="pushCard" style="background:white;border:2px solid #E2E8F0;border-radius:12px;padding:18px 22px;margin-top:22px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+        <div id="pushIcon" style="font-size:36px;flex-shrink:0;">🔔</div>
+        <div style="flex:1;min-width:200px;">
+            <div id="pushTitle" style="font-weight:800;color:#0B1F33;font-size:16px;margin-bottom:4px;">Push Notifications</div>
+            <div id="pushStatus" style="font-size:13px;color:#64748B;line-height:1.5;">Bonyeza "Enable" kuanza.</div>
+        </div>
+        <div id="pushActions" style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button onclick="enablePush()" class="btn btn-primary" style="padding:10px 22px;font-size:14px;background:#F47721;color:white;" id="enableBtn">Enable Notifications</button>
+        </div>
+    </div>
+    {% endif %}
+
 </div>
+
+{% include "timetable_push_script.html" ignore missing %}
 {% endblock %}
