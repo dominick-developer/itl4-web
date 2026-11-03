@@ -23,17 +23,15 @@
     var status = document.getElementById('pushStatus');
     var actions = document.getElementById('pushActions');
 
-    function setState(state, extra) {
-        // Reset
+    function setState(state, msg) {
         actions.innerHTML = '';
-        
         if (state === 'checking') {
             card.style.background = '#f8fafc';
             card.style.borderColor = '#E2E8F0';
             icon.textContent = '⏳';
             title.textContent = 'Push Notifications';
             title.style.color = '#0B1F33';
-            status.textContent = 'Inaangalia hali...';
+            status.textContent = msg || 'Inaangalia hali...';
         } else if (state === 'enabled') {
             card.style.background = '#f0fdf4';
             card.style.borderColor = '#86efac';
@@ -57,15 +55,15 @@
             icon.textContent = '🚫';
             title.textContent = 'Push Notifications: Blocked';
             title.style.color = '#DC2626';
-            status.textContent = 'Browser imezuia notifications. Fungua settings: 🔒 → Site settings → Notifications → Allow.';
-            actions.innerHTML = '';
+            status.textContent = 'Browser imezuia. Fungua 🔒 kwenye URL bar → Site settings → Notifications → Allow.';
+            actions.innerHTML = '<button onclick="checkStatus()" class="btn btn-outline" style="padding:8px 16px;font-size:13px;">Jaribu Tena</button>';
         } else if (state === 'unsupported') {
             card.style.background = '#f1f5f9';
             card.style.borderColor = '#cbd5e1';
             icon.textContent = '⚠️';
             title.textContent = 'Push Notifications: Not Supported';
             title.style.color = '#64748B';
-            status.textContent = 'Browser hii haiungi mkono push. Tumia Chrome au Edge.';
+            status.textContent = msg || 'Browser hii haiungi mkono push. Tumia Chrome au Edge.';
             actions.innerHTML = '';
         } else if (state === 'loading') {
             card.style.background = '#eff6ff';
@@ -73,7 +71,7 @@
             icon.textContent = '⏳';
             title.textContent = 'Inafanya kazi...';
             title.style.color = '#2563EB';
-            status.textContent = extra || 'Tafadhali subiri...';
+            status.textContent = msg || 'Tafadhali subiri...';
             actions.innerHTML = '';
         } else if (state === 'error') {
             card.style.background = '#fef2f2';
@@ -81,18 +79,10 @@
             icon.textContent = '❌';
             title.textContent = 'Hitilafu';
             title.style.color = '#DC2626';
-            status.textContent = extra || 'Kuna hitilafu. Jaribu tena.';
-            actions.innerHTML = '<button onclick="enablePush()" class="btn btn-primary" style="padding:10px 22px;font-size:14px;">Jaribu Tena</button>';
+            status.textContent = msg || 'Kuna hitilafu.';
+            actions.innerHTML = '<button onclick="checkStatus()" class="btn btn-outline" style="padding:8px 16px;font-size:13px;">Jaribu Tena</button>' +
+                               '<button onclick="enablePush()" class="btn btn-primary" style="padding:8px 16px;font-size:13px;">Enable</button>';
         }
-    }
-
-    function withTimeout(promise, ms) {
-        return Promise.race([
-            promise,
-            new Promise(function(_, rej) {
-                setTimeout(function() { rej(new Error('Timeout')); }, ms);
-            })
-        ]);
     }
 
     function urlBase64ToUint8Array(base64String) {
@@ -104,10 +94,29 @@
         return outputArray;
     }
 
-    async function checkStatus() {
+    // Register SW if not registered — this is the KEY fix
+    async function ensureSW() {
+        if (!('serviceWorker' in navigator)) {
+            throw new Error('Service worker haipatikani');
+        }
+        var regs = await navigator.serviceWorker.getRegistrations();
+        if (regs.length === 0) {
+            console.log('[Push] No SW registered — registering now');
+            await navigator.serviceWorker.register('/static/sw.js');
+        }
+        // Wait for it to be ready (15s, not 5s)
+        var reg = await Promise.race([
+            navigator.serviceWorker.ready,
+            new Promise(function(_, rej) {
+                setTimeout(function() { rej(new Error('Service worker haijajiandaa (15s)')); }, 15000);
+            })
+        ]);
+        return reg;
+    }
+
+    window.checkStatus = async function() {
         if (!VAPID_PUBLIC_KEY) {
             card.style.display = 'none';
-            console.log('[Push] No VAPID key - card hidden');
             return;
         }
         if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
@@ -119,15 +128,16 @@
             return;
         }
         
-        setState('checking');
+        setState('checking', 'Inaangalia service worker...');
         
         try {
-            var reg = await withTimeout(navigator.serviceWorker.ready, 5000);
+            var reg = await ensureSW();
+            setState('checking', 'Inaangalia subscription...');
+            
             var sub = await reg.pushManager.getSubscription();
             
             if (sub) {
-                console.log('[Push] Browser has subscription, syncing with server...');
-                // Sync with server (in case DB is missing)
+                console.log('[Push] Browser has subscription, syncing with server');
                 try {
                     var res = await fetch('/api/push/subscribe', {
                         method: 'POST',
@@ -135,25 +145,24 @@
                         body: JSON.stringify(sub.toJSON())
                     });
                     var data = await res.json().catch(function() { return {}; });
-                    if (!res.ok || data.ok === false) {
-                        console.warn('[Push] Sync failed:', data.error);
-                    }
+                    console.log('[Push] Sync result:', data);
                 } catch (e) {
                     console.warn('[Push] Sync error:', e);
                 }
                 setState('enabled');
             } else {
+                console.log('[Push] No browser subscription');
                 setState('disabled');
             }
         } catch (err) {
             console.error('[Push] Check error:', err);
-            setState('disabled');
+            setState('error', err.message || 'Haijaweza kuangalia');
         }
-    }
+    };
 
     window.enablePush = async function() {
         if (!VAPID_PUBLIC_KEY) {
-            setState('error', 'VAPID key haipo. Wasiliana na msimamizi.');
+            setState('error', 'VAPID key haipo');
             return;
         }
         
@@ -161,18 +170,21 @@
         
         try {
             var perm = await Notification.requestPermission();
+            console.log('[Push] Permission:', perm);
             if (perm !== 'granted') {
                 setState('blocked');
                 return;
             }
             
-            setState('loading', 'Inasajili subscription...');
+            setState('loading', 'Inasajili service worker...');
+            var reg = await ensureSW();
             
-            var reg = await withTimeout(navigator.serviceWorker.ready, 10000);
+            setState('loading', 'Inasajili subscription...');
             var sub = await reg.pushManager.subscribe({
                 userVisibleOnly: true,
                 applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
             });
+            console.log('[Push] Browser subscription created');
             
             setState('loading', 'Inahifadhi kwenye server...');
             
@@ -182,23 +194,22 @@
                 body: JSON.stringify(sub.toJSON())
             });
             var data = await res.json().catch(function() { return {}; });
+            console.log('[Push] Subscribe result:', data);
             
             if (!res.ok || data.ok === false) {
-                // Rollback browser subscription
                 try { await sub.unsubscribe(); } catch (e) {}
-                setState('error', (data.error || 'Imeshindwa kuhifadhi.') + (data.count !== undefined ? ' (count: ' + data.count + ')' : ''));
+                setState('error', (data.error || 'Imeshindwa kuhifadhi'));
                 return;
             }
             
-            console.log('[Push] Subscribe success, count:', data.count);
             setState('enabled');
             
-            // Auto-send test after 2 seconds
+            // Auto-test after 2s
             setTimeout(function() {
                 fetch('/api/push/test').then(function(r) { return r.json(); }).then(function(d) {
-                    console.log('[Push] Test result:', d);
+                    console.log('[Push] Auto-test:', d);
                 }).catch(function(e) {
-                    console.warn('[Push] Test error:', e);
+                    console.warn('[Push] Auto-test error:', e);
                 });
             }, 2000);
             
@@ -210,13 +221,10 @@
 
     window.disablePush = async function() {
         if (!confirm('Zima push notifications?')) return;
-        
         setState('loading', 'Inazima...');
-        
         try {
             var reg = await navigator.serviceWorker.ready;
             var sub = await reg.pushManager.getSubscription();
-            
             if (sub) {
                 await fetch('/api/push/unsubscribe', {
                     method: 'POST',
@@ -225,19 +233,18 @@
                 });
                 await sub.unsubscribe();
             }
-            
             setState('disabled');
         } catch (err) {
-            console.error('[Push] Disable error:', err);
             setState('error', err.message);
         }
     };
 
     window.sendTest = async function() {
-        setState('loading', 'Inatuma test notification...');
+        setState('loading', 'Inatuma test...');
         try {
             var res = await fetch('/api/push/test');
             var data = await res.json();
+            console.log('[Push] Test:', data);
             if (data.ok) {
                 setState('enabled');
                 alert('✅ Test notification imetumwa! Angalia notification bar.');
@@ -249,7 +256,7 @@
         }
     };
 
-    // Run check on load
+    // Run check on page load
     checkStatus();
 })();
 </script>
