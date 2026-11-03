@@ -3,67 +3,100 @@
 {% block page_title %}📅 Timetable{% endblock %}
 
 {% block body %}
-<!-- PUSH NOTIFICATIONS BANNER -->
-<div id="notifBanner"
-    style="display:none;background:#fff7ed;border:2px solid #F47721;border-radius:12px;padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
-    <span style="font-size:32px;">🔔</span>
-    <div style="flex:1;min-width:220px;">
-        <div style="font-weight:800;color:var(--navy);font-size:15px;margin-bottom:2px;">Enable Push Notifications</div>
-        <div style="font-size:13px;color:var(--muted);">Pata taarifa za ratiba kwenye simu yako — kesho, dakika 30
-            kabla, na dakika 10 kabla.</div>
+
+<!-- PUSH NOTIFICATIONS STATUS CARD -->
+<div id="pushCard" style="background:white;border:2px solid #E2E8F0;border-radius:12px;padding:18px 22px;margin-bottom:22px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+    <div id="pushIcon" style="font-size:36px;flex-shrink:0;">🔔</div>
+    <div style="flex:1;min-width:200px;">
+        <div id="pushTitle" style="font-weight:800;color:#0B1F33;font-size:16px;margin-bottom:4px;">Push Notifications</div>
+        <div id="pushStatus" style="font-size:13px;color:#64748B;line-height:1.5;">Inaangalia hali...</div>
     </div>
-    <button onclick="enablePush()" class="btn btn-primary" style="padding:10px 22px;font-size:14px;"
-        id="enableBtn">Enable Notifications</button>
+    <div id="pushActions" style="display:flex;gap:8px;flex-wrap:wrap;">
+    </div>
 </div>
 
 <script>
-    (function () {
-        var VAPID_PUBLIC_KEY = '{{ vapid_public_key or "" }}';
+(function() {
+    var VAPID_PUBLIC_KEY = '{{ vapid_public_key or "" }}';
+    var card = document.getElementById('pushCard');
+    var icon = document.getElementById('pushIcon');
+    var title = document.getElementById('pushTitle');
+    var status = document.getElementById('pushStatus');
+    var actions = document.getElementById('pushActions');
+
+    function showEnabled() {
+        card.style.background = '#f0fdf4';
+        card.style.borderColor = '#86efac';
+        icon.textContent = '✅';
+        title.textContent = 'Push Notifications: Enabled';
+        title.style.color = '#16A34A';
+        status.textContent = 'Utapokea taarifa za ratiba kwenye simu yako moja kwa moja.';
+        actions.innerHTML = '<button onclick="disablePush()" class="btn btn-outline" style="padding:8px 16px;font-size:13px;">Disable</button>' +
+                           '<a href="/api/push/test" target="_blank" class="btn btn-primary" style="padding:8px 16px;font-size:13px;">Send Test</a>';
+    }
+
+    function showDisabled() {
+        card.style.background = '#fff7ed';
+        card.style.borderColor = '#F47721';
+        icon.textContent = '🔔';
+        title.textContent = 'Push Notifications: Disabled';
+        title.style.color = '#0B1F33';
+        status.textContent = 'Washa ili upate taarifa za ratiba kwenye simu yako.';
+        actions.innerHTML = '<button onclick="enablePush()" class="btn btn-primary" style="padding:10px 22px;font-size:14px;">Enable Notifications</button>';
+    }
+
+    function showUnsupported() {
+        card.style.background = '#f1f5f9';
+        card.style.borderColor = '#cbd5e1';
+        icon.textContent = '⚠️';
+        title.textContent = 'Push Notifications: Not Supported';
+        title.style.color = '#64748B';
+        status.textContent = 'Browser yako haiungi mkono push. Tumia Chrome au Edge.';
+        actions.innerHTML = '';
+    }
+
+    function showBlocked() {
+        card.style.background = '#fef2f2';
+        card.style.borderColor = '#fca5a5';
+        icon.textContent = '🚫';
+        title.textContent = 'Push Notifications: Blocked';
+        title.style.color = '#DC2626';
+        status.textContent = 'Notification permission imezuiwa. Fungua settings za browser kutoa ruhusa.';
+        actions.innerHTML = '';
+    }
+
+    function checkStatus() {
         if (!VAPID_PUBLIC_KEY) {
-            console.log('[Push] No VAPID public key — banner hidden');
+            card.style.display = 'none';
             return;
         }
         if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-            console.log('[Push] Not supported in this browser');
+            showUnsupported();
             return;
         }
-        // Show banner if not yet subscribed
-        navigator.serviceWorker.ready.then(function (reg) {
-            reg.pushManager.getSubscription().then(function (sub) {
-                if (!sub) {
-                    document.getElementById('notifBanner').style.display = 'flex';
-                }
-            }).catch(function (e) {
-                console.log('[Push] Subscription check failed:', e);
-                document.getElementById('notifBanner').style.display = 'flex';
+        if (Notification.permission === 'denied') {
+            showBlocked();
+            return;
+        }
+        navigator.serviceWorker.ready.then(function(reg) {
+            reg.pushManager.getSubscription().then(function(sub) {
+                if (sub) { showEnabled(); }
+                else { showDisabled(); }
+            }).catch(function() {
+                showDisabled();
             });
+        }).catch(function() {
+            showDisabled();
         });
-    })();
-
-    function urlBase64ToUint8Array(base64String) {
-        var padding = '='.repeat((4 - base64String.length % 4) % 4);
-        var base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
-        var rawData = window.atob(base64);
-        var outputArray = new Uint8Array(rawData.length);
-        for (var i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
-        return outputArray;
     }
 
-    async function enablePush() {
-        var VAPID_PUBLIC_KEY = '{{ vapid_public_key or "" }}';
-        if (!VAPID_PUBLIC_KEY) {
-            alert('Push notifications hazijasanidiwa bado. Wasiliana na msimamizi.');
-            return;
-        }
-        var btn = document.getElementById('enableBtn');
-        btn.disabled = true;
-        btn.textContent = 'Inaandaa...';
+    window.enablePush = async function() {
+        if (!VAPID_PUBLIC_KEY) { alert('Push notifications hazijasanidiwa.'); return; }
         try {
             var perm = await Notification.requestPermission();
             if (perm !== 'granted') {
-                alert('Notification permission imekataliwa. Tafadhali ruhusu kwenye settings za browser.');
-                btn.disabled = false;
-                btn.textContent = 'Enable Notifications';
+                alert('Notification permission imekataliwa.');
+                checkStatus();
                 return;
             }
             var reg = await navigator.serviceWorker.ready;
@@ -77,83 +110,54 @@
                 body: JSON.stringify(sub.toJSON())
             });
             if (res.ok) {
-                document.getElementById('notifBanner').style.display = 'none';
-                alert('✅ Notifications zimewashwa! Utapokea taarifa za ratiba.');
+                showEnabled();
+                setTimeout(function() {
+                    fetch('/api/push/test').catch(function(){});
+                }, 1500);
             } else {
-                var err = await res.json().catch(function () { return {}; });
+                var err = await res.json().catch(function(){ return {}; });
                 alert('Hitilafu: ' + (err.error || 'Imeshindwa kusajili'));
-                btn.disabled = false;
-                btn.textContent = 'Enable Notifications';
+                checkStatus();
             }
         } catch (err) {
             alert('Hitilafu: ' + err.message);
-            btn.disabled = false;
-            btn.textContent = 'Enable Notifications';
         }
-    }
-</script>
-<div class="container">
-<div id="notifBanner"
-    style="display:none;background:#fff7ed;border:1px solid #F47721;border-radius:10px;padding:14px 18px;margin-bottom:18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-    <span style="font-size:24px;">🔔</span>
-    <div style="flex:1;min-width:200px;">
-        <div style="font-weight:800;color:var(--navy);font-size:14px;">Enable Push Notifications</div>
-        <div style="font-size:13px;color:var(--muted);">Pata taarifa za ratiba kwenye simu yako.</div>
-    </div>
-    <button onclick="enablePush()" class="btn btn-primary" style="padding:10px 20px;font-size:13px;"
-        id="enableBtn">Enable</button>
-</div>
+    };
 
-<script>
-    const VAPID_PUBLIC_KEY = '{{ vapid_public_key or "" }}';
+    window.disablePush = async function() {
+        if (!confirm('Zima push notifications?')) return;
+        try {
+            var reg = await navigator.serviceWorker.ready;
+            var sub = await reg.pushManager.getSubscription();
+            if (sub) {
+                await fetch('/api/push/unsubscribe', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ endpoint: sub.endpoint })
+                });
+                await sub.unsubscribe();
+            }
+            showDisabled();
+        } catch (err) {
+            alert('Hitilafu: ' + err.message);
+        }
+    };
 
     function urlBase64ToUint8Array(base64String) {
-        const padding = '='.repeat((4 - base64String.length % 4) % 4);
-        const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
-        const rawData = window.atob(base64);
-        const outputArray = new Uint8Array(rawData.length);
-        for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
+        var padding = '='.repeat((4 - base64String.length % 4) % 4);
+        var base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+        var rawData = window.atob(base64);
+        var outputArray = new Uint8Array(rawData.length);
+        for (var i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
         return outputArray;
     }
 
-    async function enablePush() {
-        if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-            alert('Push notifications hazitumiki kwenye browser hii.');
-            return;
-        }
-        try {
-            const perm = await Notification.requestPermission();
-            if (perm !== 'granted') {
-                alert('Notification permission imekataliwa.');
-                return;
-            }
-            const reg = await navigator.serviceWorker.ready;
-            const sub = await reg.pushManager.subscribe({
-                userVisibleOnly: true,
-                applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
-            });
-            await fetch('/api/push/subscribe', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(sub.toJSON())
-            });
-            document.getElementById('notifBanner').style.display = 'none';
-            alert('✅ Notifications zimewashwa! Utapokea taarifa za ratiba.');
-        } catch (err) {
-            alert('Hitilafu: ' + err.message);
-        }
-    }
-
-    (async () => {
-        if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
-        if (!VAPID_PUBLIC_KEY) return;
-        const reg = await navigator.serviceWorker.ready;
-        const sub = await reg.pushManager.getSubscription();
-        if (!sub) {
-            document.getElementById('notifBanner').style.display = 'flex';
-        }
-    })();
+    checkStatus();
+})();
 </script>
+
+<div class="container">
+
     <div style="background:linear-gradient(135deg,#0B1F33 0%,#1e40af 100%);border-radius:16px;padding:28px;color:white;margin-bottom:22px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;">
         <div>
             <h1 style="font-size:24px;font-weight:900;margin:0 0 6px;">📅 Weekly Timetable</h1>
