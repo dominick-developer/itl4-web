@@ -132,54 +132,72 @@
     async function doEnableInBackground() {
         try {
             // 1. Permission
+            setState('loading', 'Inaomba ruhusa...');
             var perm = await Notification.requestPermission();
             if (perm !== 'granted') {
                 setState('blocked');
                 return;
             }
             
-            // 2. Get SW (try ready first, fallback to register)
+            // 2. Get SW with explicit register fallback
+            setState('loading', 'Inasajili service worker...');
             var reg;
             try {
                 reg = await Promise.race([
                     navigator.serviceWorker.ready,
                     new Promise(function(_, rej) {
-                        setTimeout(function() { rej(new Error('timeout')); }, 8000);
+                        setTimeout(function() { rej(new Error('timeout')); }, 5000);
                     })
                 ]);
             } catch (e) {
-                console.log('[Push] SW ready timeout — trying explicit register');
-                reg = await navigator.serviceWorker.register('/static/sw.js');
-                // Wait for activation
+                console.log('[Push] SW ready timeout — explicit register');
+                await navigator.serviceWorker.register('/static/sw.js');
                 reg = await navigator.serviceWorker.ready;
             }
             
-            // 3. Subscribe
+            // 3. Subscribe (Browser)
+            setState('loading', 'Inasajili subscription...');
             var sub = await reg.pushManager.subscribe({
                 userVisibleOnly: true,
                 applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
             });
+            console.log('[Push] Browser subscription created:', sub.endpoint.substring(0, 50));
             
             // 4. Save to server
+            setState('loading', 'Inahifadhi kwenye database...');
             var res = await fetch('/api/push/subscribe', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(sub.toJSON())
             });
             var data = await res.json().catch(function() { return {}; });
+            console.log('[Push] Save result:', data);
             
             if (!res.ok || data.ok === false) {
                 try { await sub.unsubscribe(); } catch(e) {}
-                setState('error', data.error || 'Server imeshindwa');
+                setState('error', 'DB save failed: ' + (data.error || data.debug || 'Unknown'));
                 return;
             }
             
-            console.log('[Push] Enabled successfully');
-            // Already showing "enabled" — no state change needed
+            // VERIFY: Server has it
+            var verify = await fetch('/api/push/status');
+            var vdata = await verify.json();
+            console.log('[Push] Verify status:', vdata);
             
-            // Auto-test after 2s
+            if (!vdata.subscribed) {
+                setState('error', 'Server haina subscription (count=0). Jaribu tena.');
+                return;
+            }
+            
+            // SUCCESS — only now show "Enabled"
+            console.log('[Push] Fully enabled! count:', vdata.count);
+            setState('enabled');
+            
+            // Auto-test
             setTimeout(function() {
-                fetch('/api/push/test').catch(function(){});
+                fetch('/api/push/test').then(function(r) { return r.json(); }).then(function(d) {
+                    console.log('[Push] Test result:', d);
+                }).catch(function(e) {});
             }, 2000);
             
         } catch (err) {
