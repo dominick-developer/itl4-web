@@ -1697,14 +1697,6 @@ def academy_career_detail(request: Request, slug: str):
         "logged_in": user_id is not None,
         "now": datetime.now(),
     })
-@app.get("/internal/send-notifications")
-def trigger_notifications(secret: str = ""):
-    if secret != os.getenv("CRON_SECRET", ""):
-        raise HTTPException(403)
-    import notification_service
-    return notification_service.process_due_notifications()
-
-
 # ============================================================
 # PUSH NOTIFICATIONS ENDPOINTS
 # ============================================================
@@ -1762,19 +1754,6 @@ def push_test(request: Request):
 # ============================================================
 # CRON ENDPOINT (Kwa cron-job.org)
 # ============================================================
-@app.get("/internal/send-notifications")
-def trigger_notifications(secret: str = ""):
-    if secret != os.getenv("CRON_SECRET", ""):
-        raise HTTPException(403)
-    try:
-        import notification_service
-        return notification_service.process_due_notifications()
-    except ImportError:
-        return {"error": "notification_service not found", "daily": 0}
-    except Exception as e:
-        return {"error": str(e), "daily": 0}
-
-
 # ============================================================
 # LEGAL & PRIVACY
 # ============================================================
@@ -1905,14 +1884,3 @@ def push_test(request: Request):
 # ============================================================
 # CRON ENDPOINT (Kwa cron-job.org)
 # ============================================================
-@app.get("/internal/send-notifications")
-def trigger_notifications(secret: str = ""):
-    if secret != os.getenv("CRON_SECRET", ""):
-        raise HTTPException(403)
-    try:
-        import notification_service
-        return notification_service.process_due_notifications()
-    except ImportError:
-        return {"error": "notification_service not found", "daily": 0}
-    except Exception as e:
-        return {"error": str(e), "daily": 0}
