@@ -3,6 +3,95 @@
 {% block page_title %}📅 Timetable{% endblock %}
 
 {% block body %}
+<!-- PUSH NOTIFICATIONS BANNER -->
+<div id="notifBanner"
+    style="display:none;background:#fff7ed;border:2px solid #F47721;border-radius:12px;padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+    <span style="font-size:32px;">🔔</span>
+    <div style="flex:1;min-width:220px;">
+        <div style="font-weight:800;color:var(--navy);font-size:15px;margin-bottom:2px;">Enable Push Notifications</div>
+        <div style="font-size:13px;color:var(--muted);">Pata taarifa za ratiba kwenye simu yako — kesho, dakika 30
+            kabla, na dakika 10 kabla.</div>
+    </div>
+    <button onclick="enablePush()" class="btn btn-primary" style="padding:10px 22px;font-size:14px;"
+        id="enableBtn">Enable Notifications</button>
+</div>
+
+<script>
+    (function () {
+        var VAPID_PUBLIC_KEY = '{{ vapid_public_key or "" }}';
+        if (!VAPID_PUBLIC_KEY) {
+            console.log('[Push] No VAPID public key — banner hidden');
+            return;
+        }
+        if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+            console.log('[Push] Not supported in this browser');
+            return;
+        }
+        // Show banner if not yet subscribed
+        navigator.serviceWorker.ready.then(function (reg) {
+            reg.pushManager.getSubscription().then(function (sub) {
+                if (!sub) {
+                    document.getElementById('notifBanner').style.display = 'flex';
+                }
+            }).catch(function (e) {
+                console.log('[Push] Subscription check failed:', e);
+                document.getElementById('notifBanner').style.display = 'flex';
+            });
+        });
+    })();
+
+    function urlBase64ToUint8Array(base64String) {
+        var padding = '='.repeat((4 - base64String.length % 4) % 4);
+        var base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+        var rawData = window.atob(base64);
+        var outputArray = new Uint8Array(rawData.length);
+        for (var i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
+        return outputArray;
+    }
+
+    async function enablePush() {
+        var VAPID_PUBLIC_KEY = '{{ vapid_public_key or "" }}';
+        if (!VAPID_PUBLIC_KEY) {
+            alert('Push notifications hazijasanidiwa bado. Wasiliana na msimamizi.');
+            return;
+        }
+        var btn = document.getElementById('enableBtn');
+        btn.disabled = true;
+        btn.textContent = 'Inaandaa...';
+        try {
+            var perm = await Notification.requestPermission();
+            if (perm !== 'granted') {
+                alert('Notification permission imekataliwa. Tafadhali ruhusu kwenye settings za browser.');
+                btn.disabled = false;
+                btn.textContent = 'Enable Notifications';
+                return;
+            }
+            var reg = await navigator.serviceWorker.ready;
+            var sub = await reg.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+            });
+            var res = await fetch('/api/push/subscribe', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(sub.toJSON())
+            });
+            if (res.ok) {
+                document.getElementById('notifBanner').style.display = 'none';
+                alert('✅ Notifications zimewashwa! Utapokea taarifa za ratiba.');
+            } else {
+                var err = await res.json().catch(function () { return {}; });
+                alert('Hitilafu: ' + (err.error || 'Imeshindwa kusajili'));
+                btn.disabled = false;
+                btn.textContent = 'Enable Notifications';
+            }
+        } catch (err) {
+            alert('Hitilafu: ' + err.message);
+            btn.disabled = false;
+            btn.textContent = 'Enable Notifications';
+        }
+    }
+</script>
 <div class="container">
 <div id="notifBanner"
     style="display:none;background:#fff7ed;border:1px solid #F47721;border-radius:10px;padding:14px 18px;margin-bottom:18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">

@@ -1,4 +1,4 @@
-﻿# âœ… IWE HIVI
+# âœ… IWE HIVI
 import os
 RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
 from pathlib import Path
@@ -1708,11 +1708,6 @@ def trigger_notifications(secret: str = ""):
 # ============================================================
 # PUSH NOTIFICATIONS ENDPOINTS
 # ============================================================
-@app.get("/api/push/vapid-public-key")
-def get_vapid_public():
-    return {"publicKey": os.getenv("VAPID_PUBLIC_KEY", "")}
-
-
 @app.post("/api/push/subscribe")
 async def push_subscribe(request: Request):
     if "user_id" not in request.session:
@@ -1856,11 +1851,6 @@ async def legal_accept_post(request: Request):
 # ============================================================
 # PUSH NOTIFICATIONS ENDPOINTS
 # ============================================================
-@app.get("/api/push/vapid-public-key")
-def get_vapid_public():
-    return {"publicKey": os.getenv("VAPID_PUBLIC_KEY", "")}
-
-
 @app.post("/api/push/subscribe")
 async def push_subscribe(request: Request):
     if "user_id" not in request.session:

@@ -1,4 +1,5 @@
-const CACHE_NAME = 'itl4-v3';
+// IT Level 4 Connect - Service Worker with Push Notifications
+const CACHE_NAME = 'itl4-v4';
 
 self.addEventListener('install', (event) => {
     self.skipWaiting();
@@ -20,37 +21,56 @@ self.addEventListener('fetch', (event) => {
             .then((response) => {
                 if (response && response.status === 200) {
                     const clone = response.clone();
-                    caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+                    caches.open(CACHE_NAME).then((cache) => {
+                        cache.put(event.request, clone);
+                    });
                 }
                 return response;
             })
-            .catch(() => caches.match(event.request))
+            .catch(() => {
+                return caches.match(event.request);
+            })
     );
 });
 
 self.addEventListener('push', (event) => {
+    console.log('[SW] Push received');
     let data = {};
-    try { data = event.data ? event.data.json() : {}; } catch (e) {}
+    try {
+        if (event.data) {
+            data = event.data.json();
+        }
+    } catch (e) {
+        data = { title: 'IT Level 4 Connect', body: 'New notification' };
+    }
     const title = data.title || 'IT Level 4 Connect';
     const options = {
-        body: data.body || '',
-        icon: '/static/icon-192.png',
-        badge: '/static/icon-192.png',
-        tag: data.tag || 'timetable',
+        body: data.body || 'You have a new notification',
+        icon: data.icon || '/static/icon-192.png',
+        badge: data.badge || '/static/icon-192.png',
+        tag: data.tag || 'itl4-default',
         data: { url: data.url || '/timetable' },
         vibrate: [200, 100, 200],
-        requireInteraction: false,
+        requireInteraction: false
     };
     event.waitUntil(self.registration.showNotification(title, options));
 });
 
 self.addEventListener('notificationclick', (event) => {
     event.notification.close();
-    const url = event.notification.data.url || '/';
-    event.waitUntil(clients.matchAll({ type: 'window' }).then((cs) => {
-        for (const c of cs) {
-            if (c.url.includes(url) && 'focus' in c) return c.focus();
-        }
-        if (clients.openWindow) return clients.openWindow(url);
-    }));
+    const targetUrl = (event.notification.data && event.notification.data.url)
+                      ? event.notification.data.url : '/';
+    event.waitUntil(
+        clients.matchAll({ type: 'window', includeUncontrolled: true })
+            .then((clientList) => {
+                for (const client of clientList) {
+                    if (client.url.includes(targetUrl) && 'focus' in client) {
+                        return client.focus();
+                    }
+                }
+                if (clients.openWindow) {
+                    return clients.openWindow(targetUrl);
+                }
+            })
+    );
 });
