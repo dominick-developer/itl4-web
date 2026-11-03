@@ -84,7 +84,13 @@ def startup():
         print(f"⚠️ Legal init failed: {_e}")
     academy.init_ai_tables()
     academy.init_coding_tables()
-    print("âœ… Academy ready")
+    try:
+        import push_service
+        push_service.init_push_table()
+        print("✅ Push tables ready")
+    except Exception as _e:
+        print(f"⚠️ Push init failed: {_e}")
+    print("✅ Academy ready")
 
     # PHASE 1: Career + Web Design modules seeds
     try:
