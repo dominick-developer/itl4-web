@@ -68,6 +68,14 @@ def startup():
         print(f"⚠️ Attendance migration: {_e}")
     print("âœ… Database ready")
     academy.init_academy()
+    
+    # Clean up unused sample modules
+    try:
+        _del, _kept = db.cleanup_unused_seed_modules()
+        if _del > 0:
+            print(f"✅ Cleaned up {_del} unused sample module(s) ({_kept} kept)")
+    except Exception as _e:
+        print(f"⚠️ Seed cleanup failed: {_e}")
     try:
         legal.init_legal_tables()
         print("✅ Legal tables ready")
@@ -2367,3 +2375,18 @@ def timetable_cancel(request: Request, entry_id: int,
         raise HTTPException(403)
     db.cancel_timetable_entry(entry_id, reason)
     return RedirectResponse("/timetable/manage?success=Kipindi+kimefutwa", 303)
+
+
+@app.post("/modules/cleanup-samples")
+def modules_cleanup_samples(request: Request):
+    require_login(request)
+    if request.session.get("role") != "CR":
+        raise HTTPException(403)
+    try:
+        deleted, kept = db.cleanup_unused_seed_modules()
+        from urllib.parse import quote
+        msg = f"Sample modules zimefutwa: {deleted} (zilizotumika: {kept})"
+        return RedirectResponse(f"/modules?success={quote(msg)}", 303)
+    except Exception as e:
+        from urllib.parse import quote
+        return RedirectResponse(f"/modules?error={quote(str(e))}", 303)

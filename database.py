@@ -662,7 +662,7 @@ def init_database():
             pass
 
     # ================= SEED =================
-    _seed_modules(cur)
+    # _seed_modules(cur)  # DISABLED — user adds own modules
     _seed_positions(cur)
     _seed_streams(cur)
     _seed_users(cur)
@@ -3585,3 +3585,52 @@ def get_all_modules_for_timetable():
         "ORDER BY m.name").fetchall()
     conn.close()
     return rows
+
+
+# ============================================================
+# SEED MODULE CLEANUP (remove unused samples)
+# ============================================================
+SEED_MODULE_NAMES = [
+    "Programming in Java",
+    "Programming in Python",
+    "Database Management Systems",
+    "Computer Networking",
+    "Web Technologies",
+    "Computer Hardware",
+    "Software Engineering",
+    "System Analysis & Design",
+    "ICT Ethics & Law",
+    "Mathematics for ICT",
+    "Business Communication",
+    "Final Year Project",
+]
+
+
+def cleanup_unused_seed_modules():
+    """Delete seed modules that have NO offerings. Returns (deleted_count, kept_count)."""
+    conn = get_connection()
+    deleted = 0
+    kept = 0
+    try:
+        for name in SEED_MODULE_NAMES:
+            row = conn.execute(
+                "SELECT id FROM modules WHERE name = ?", (name,)).fetchone()
+            if not row:
+                continue
+            mid = row["id"]
+            # Check if used by any offering
+            usage = conn.execute(
+                "SELECT COUNT(*) as n FROM module_offerings WHERE module_id = ?",
+                (mid,)).fetchone()
+            count = usage["n"] if usage else 0
+            if count == 0:
+                conn.execute("DELETE FROM modules WHERE id = ?", (mid,))
+                deleted += 1
+                print(f"🗑 Deleted unused seed: {name}")
+            else:
+                kept += 1
+                print(f"✓ Kept (in use): {name} ({count} offering(s))")
+        conn.commit()
+    finally:
+        conn.close()
+    return deleted, kept
