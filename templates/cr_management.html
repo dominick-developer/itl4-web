@@ -7,47 +7,81 @@
 
     <div style="background:linear-gradient(135deg,#0B1F33 0%,#1e40af 100%);border-radius:16px;padding:24px;color:white;margin-bottom:22px;">
         <h1 style="font-size:22px;font-weight:900;margin:0 0 6px;">👑 Manage Class Representatives</h1>
-        <p style="color:#cbd5e1;margin:0;font-size:14px;">Ongeza, angalia, na futa CRs</p>
+        <p style="color:#cbd5e1;margin:0;font-size:14px;">Promote wanafunzi kuwa CR · Wanaendelea kuwa wanafunzi</p>
     </div>
 
-    {% if error %}
-    <div style="background:#fee2e2;color:#DC2626;padding:14px;border-radius:8px;margin-bottom:16px;">⚠️ {{ error }}</div>
-    {% endif %}
-    {% if success %}
-    <div style="background:#dcfce7;color:#16A34A;padding:14px;border-radius:8px;margin-bottom:16px;">✓ {{ success }}</div>
-    {% endif %}
+    {% if error %}<div style="background:#fee2e2;color:#DC2626;padding:14px;border-radius:8px;margin-bottom:16px;">⚠️ {{ error }}</div>{% endif %}
+    {% if success %}<div style="background:#dcfce7;color:#16A34A;padding:14px;border-radius:8px;margin-bottom:16px;">✓ {{ success }}</div>{% endif %}
 
-    <div class="card" style="margin-bottom:22px;">
-        <h2 style="font-size:18px;font-weight:800;color:var(--navy);margin-bottom:14px;">➕ Add New CR</h2>
-        <form method="post" action="/cr-management/create">
+    <!-- PROMOTE STUDENT -->
+    <div class="card" style="margin-bottom:22px;border-left:4px solid #16A34A;">
+        <h2 style="font-size:18px;font-weight:800;color:var(--navy);margin-bottom:6px;">⬆️ Promote Student to CR</h2>
+        <p style="color:var(--muted);font-size:13px;margin:0 0 14px;">Chagua mwanafunzi aliyethibitishwa. Atapata hadhi ya CR — anaendelea kuwa mwanafunzi (attendance, assignments).</p>
+        
+        {% if eligible_students %}
+        <form method="post" action="/cr-management/promote/0" id="promoteForm">
             <div class="form-row">
-                <div class="form-group">
-                    <label>Username *</label>
-                    <input type="text" name="username" required placeholder="e.g. cr_amina" minlength="3">
-                </div>
-                <div class="form-group">
-                    <label>Password *</label>
-                    <input type="password" name="password" required placeholder="Angalau herufi 6" minlength="6">
-                </div>
-            </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Full Name *</label>
-                    <input type="text" name="full_name" required placeholder="e.g. Amina Hassan">
-                </div>
-                <div class="form-group">
-                    <label>Phone *</label>
-                    <input type="text" name="phone" required placeholder="e.g. 0712345678">
+                <div class="form-group" style="grid-column: 1 / -1;">
+                    <label>Chagua Mwanafunzi *</label>
+                    <select name="student_id" id="studentSelect" required style="padding:12px 14px;">
+                        <option value="">— Chagua Mwanafunzi —</option>
+                        {% for s in eligible_students %}
+                        <option value="{{ s.student_id }}">{{ s.full_name }} ({{ s.reg_number or s.username }})</option>
+                        {% endfor %}
+                    </select>
                 </div>
             </div>
-            <div class="form-group">
-                <label>Email (optional)</label>
-                <input type="email" name="email" placeholder="e.g. amina@example.com">
-            </div>
-            <button type="submit" class="btn btn-primary">Create CR →</button>
+            <button type="submit" class="btn btn-success" style="padding:12px 24px;background:#16A34A;color:white;">⬆️ Promote to CR</button>
         </form>
+        <script>
+        document.getElementById('promoteForm').addEventListener('submit', function(e) {
+            var sid = document.getElementById('studentSelect').value;
+            if (!sid) { e.preventDefault(); return; }
+            this.action = '/cr-management/promote/' + sid;
+        });
+        </script>
+        {% else %}
+        <p style="color:var(--muted);text-align:center;padding:20px;">Hakuna wanafunzi wanaoweza kupandishwa (wote ni CRs au hawajathibitishwa).</p>
+        {% endif %}
     </div>
 
+    <!-- CREATE BRAND NEW CR (rare) -->
+    <div class="card" style="margin-bottom:22px;border-left:4px solid #64748B;">
+        <h2 style="font-size:16px;font-weight:800;color:var(--navy);margin-bottom:6px;">➕ Create Brand New CR Account</h2>
+        <p style="color:var(--muted);font-size:12px;margin:0 0 14px;">Hii inaunda CR mpya kabisa (si kutoka kwa mwanafunzi). Tumia kwa nadra tu.</p>
+        <details>
+            <summary style="cursor:pointer;color:var(--orange);font-weight:700;font-size:14px;">Fungua fomu →</summary>
+            <form method="post" action="/cr-management/create" style="margin-top:14px;">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Username *</label>
+                        <input type="text" name="username" required placeholder="e.g. cr_amina" minlength="3">
+                    </div>
+                    <div class="form-group">
+                        <label>Password *</label>
+                        <input type="password" name="password" required placeholder="Angalau herufi 6" minlength="6">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Full Name *</label>
+                        <input type="text" name="full_name" required placeholder="e.g. Amina Hassan">
+                    </div>
+                    <div class="form-group">
+                        <label>Phone *</label>
+                        <input type="text" name="phone" required placeholder="e.g. 0712345678">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Email (optional)</label>
+                    <input type="email" name="email" placeholder="e.g. amina@example.com">
+                </div>
+                <button type="submit" class="btn btn-primary">Create CR →</button>
+            </form>
+        </details>
+    </div>
+
+    <!-- ALL CRs -->
     <h2 style="font-size:18px;font-weight:800;color:var(--navy);margin-bottom:12px;">📋 All CRs ({{ crs|length }})</h2>
 
     {% if crs %}
@@ -55,7 +89,7 @@
         {% for c in crs %}
         <div class="card" style="padding:16px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;">
             <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#F47721,#0E8F78);display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:16px;flex-shrink:0;">
-                {{ c.full_name[:1].upper() if c.full_name else 'C' }}
+                {{ c.full_name[:1].upper() if c.full_name else c.username[:1].upper() }}
             </div>
             <div style="flex:1;min-width:200px;">
                 <div style="font-weight:800;color:var(--navy);font-size:15px;">
@@ -63,22 +97,25 @@
                     {% if c.username == 'cr' %}
                     <span style="background:#fff7ed;color:#F47721;padding:2px 8px;border-radius:8px;font-size:10px;font-weight:700;margin-left:6px;">PRIMARY</span>
                     {% endif %}
+                    {% if c.student_id %}
+                    <span style="background:#dbeafe;color:#2563EB;padding:2px 8px;border-radius:8px;font-size:10px;font-weight:700;margin-left:6px;">🎓 STUDENT</span>
+                    {% endif %}
                 </div>
                 <div style="font-size:12px;color:var(--muted);">
                     <strong>{{ c.username }}</strong>
+                    {% if c.reg_number %} · {{ c.reg_number }}{% endif %}
                     {% if c.phone %} · 📞 {{ c.phone }}{% endif %}
-                    {% if c.email %} · ✉️ {{ c.email }}{% endif %}
                 </div>
-                {% if c.date_joined %}<div style="font-size:11px;color:var(--muted);margin-top:2px;">Joined {{ c.date_joined }}</div>{% endif %}
             </div>
-            <div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
                 {% if c.username != 'cr' %}
-                <form method="post" action="/cr-management/{{ c.id }}/delete" onsubmit="return confirm('Delete CR {{ c.username }}? Hii haiwezi kurudishwa.');" style="display:inline;">
-                    <button type="submit" class="btn btn-danger" style="padding:8px 16px;font-size:13px;">Delete</button>
+                <form method="post" action="/cr-management/{{ c.user_id }}/demote" onsubmit="return confirm('Rudisha {{ c.username }} kuwa STUDENT? Atapoteza hadhi ya CR lakini anaendelea kuwa mwanafunzi.');" style="display:inline;">
+                    <button type="submit" class="btn btn-outline" style="padding:6px 14px;font-size:13px;color:#92400e;border-color:#F59E0B;">⬇️ Demote</button>
                 </form>
-                {% else %}
-                <span style="color:var(--muted);font-size:12px;font-style:italic;">Cannot delete</span>
                 {% endif %}
+                <form method="post" action="/cr-management/{{ c.user_id }}/delete-v2" onsubmit="return confirm('Delete CR {{ c.username }}? Hii inafuta account kabisa.');" style="display:inline;">
+                    <button type="submit" class="btn btn-danger" style="padding:6px 14px;font-size:13px;">🗑️ Delete</button>
+                </form>
             </div>
         </div>
         {% endfor %}

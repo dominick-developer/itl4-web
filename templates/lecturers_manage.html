@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Manage Lecturers{% endblock %}
+{% block page_title %}👨‍🏫 Manage Lecturers{% endblock %}
+
+{% block body %}
+<div class="container">
+
+    <div style="background:linear-gradient(135deg,#0B1F33 0%,#1e40af 100%);border-radius:16px;padding:24px;color:white;margin-bottom:22px;">
+        <h1 style="font-size:22px;font-weight:900;margin:0 0 6px;">👨‍🏫 Manage Lecturers</h1>
+        <p style="color:#cbd5e1;margin:0;font-size:14px;">Ongeza, hariri, na futa walimu</p>
+    </div>
+
+    {% if error %}<div style="background:#fee2e2;color:#DC2626;padding:14px;border-radius:8px;margin-bottom:16px;">⚠️ {{ error }}</div>{% endif %}
+    {% if success %}<div style="background:#dcfce7;color:#16A34A;padding:14px;border-radius:8px;margin-bottom:16px;">✓ {{ success }}</div>{% endif %}
+
+    <div class="card" style="margin-bottom:22px;">
+        <h2 style="font-size:18px;font-weight:800;color:var(--navy);margin-bottom:14px;">
+            {% if edit_teacher %}✏️ Edit Lecturer{% else %}➕ Add New Lecturer{% endif %}
+        </h2>
+        <form method="post" action="{% if edit_teacher %}/lecturers/{{ edit_teacher.id }}/update{% else %}/lecturers/add{% endif %}">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Full Name *</label>
+                    <input type="text" name="full_name" required value="{{ edit_teacher.full_name if edit_teacher else '' }}" placeholder="e.g. Mr. John Mwakyusa">
+                </div>
+                <div class="form-group">
+                    <label>Phone</label>
+                    <input type="text" name="phone" value="{{ edit_teacher.phone if edit_teacher else '' }}" placeholder="e.g. 0712345678">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" name="email" value="{{ edit_teacher.email if edit_teacher else '' }}" placeholder="e.g. teacher@college.ac.tz">
+                </div>
+                <div class="form-group">
+                    <label>Notes</label>
+                    <input type="text" name="notes" value="{{ edit_teacher.notes if edit_teacher else '' }}" placeholder="Optional">
+                </div>
+            </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                <button type="submit" class="btn btn-primary">{% if edit_teacher %}Save Changes{% else %}Add Lecturer{% endif %}</button>
+                {% if edit_teacher %}<a href="/lecturers/manage" class="btn btn-outline">Cancel</a>{% endif %}
+            </div>
+        </form>
+    </div>
+
+    <h2 style="font-size:18px;font-weight:800;color:var(--navy);margin-bottom:12px;">📋 All Lecturers ({{ teachers|length }})</h2>
+
+    {% if teachers %}
+    <div style="display:grid;gap:10px;">
+        {% for t in teachers %}
+        <div class="card" style="padding:16px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;">
+            <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#F47721,#0E8F78);display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:16px;">
+                {{ t.full_name[:1].upper() }}
+            </div>
+            <div style="flex:1;min-width:200px;">
+                <div style="font-weight:800;color:var(--navy);font-size:15px;">{{ t.full_name }}</div>
+                <div style="font-size:12px;color:var(--muted);">
+                    {% if t.phone %}📞 {{ t.phone }}{% endif %}
+                    {% if t.email %} · ✉️ {{ t.email }}{% endif %}
+                </div>
+            </div>
+            <div style="display:flex;gap:6px;">
+                <a href="/lecturers/{{ t.id }}/edit" class="btn btn-outline" style="padding:6px 14px;font-size:13px;">Edit</a>
+                <form method="post" action="/lecturers/{{ t.id }}/delete" onsubmit="return confirm('Delete {{ t.full_name }}?');" style="display:inline;">
+                    <button type="submit" class="btn btn-danger" style="padding:6px 14px;font-size:13px;">Delete</button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="card" style="text-align:center;padding:40px;color:var(--muted);">
+        <p>Hakuna walimu bado. Ongeza wa kwanza hapo juu.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

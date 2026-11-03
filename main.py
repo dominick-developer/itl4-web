@@ -2097,8 +2097,20 @@ def cr_management_get(request: Request):
     require_login(request)
     if request.session.get("role") != "CR":
         raise HTTPException(403)
+    crs = []
+    try:
+        crs = db.get_all_crs_with_student_info()
+    except Exception as _e:
+        print(f"⚠️ get_all_crs_with_student_info failed: {_e}, falling back")
+        crs = db.get_all_crs()
+    try:
+        eligible = db.get_students_eligible_for_cr()
+    except Exception as _e:
+        print(f"⚠️ get_students_eligible_for_cr failed: {_e}")
+        eligible = []
     return render("cr_management.html", ctx(request, {
-        "crs": db.get_all_crs(),
+        "crs": crs,
+        "eligible_students": eligible,
         "error": request.query_params.get("error"),
         "success": request.query_params.get("success"),
     }))
@@ -2126,6 +2138,42 @@ def cr_management_delete(request: Request, uid: int):
     if request.session.get("role") != "CR":
         raise HTTPException(403)
     ok, msg = db.delete_cr_user(uid)
+    from urllib.parse import quote
+    key = "success" if ok else "error"
+    return RedirectResponse(f"/cr-management?{key}={quote(msg)}", 303)
+
+
+# ============================================================
+# CR PROMOTION ROUTES
+# ============================================================
+@app.post("/cr-management/promote/{student_id}")
+def cr_promote(request: Request, student_id: int):
+    require_login(request)
+    if request.session.get("role") != "CR":
+        raise HTTPException(403)
+    ok, msg = db.promote_student_to_cr(student_id)
+    from urllib.parse import quote
+    key = "success" if ok else "error"
+    return RedirectResponse(f"/cr-management?{key}={quote(msg)}", 303)
+
+
+@app.post("/cr-management/{uid}/demote")
+def cr_demote(request: Request, uid: int):
+    require_login(request)
+    if request.session.get("role") != "CR":
+        raise HTTPException(403)
+    ok, msg = db.demote_cr_to_student(uid)
+    from urllib.parse import quote
+    key = "success" if ok else "error"
+    return RedirectResponse(f"/cr-management?{key}={quote(msg)}", 303)
+
+
+@app.post("/cr-management/{uid}/delete-v2")
+def cr_delete_v2(request: Request, uid: int):
+    require_login(request)
+    if request.session.get("role") != "CR":
+        raise HTTPException(403)
+    ok, msg = db.delete_cr_with_safety(uid)
     from urllib.parse import quote
     key = "success" if ok else "error"
     return RedirectResponse(f"/cr-management?{key}={quote(msg)}", 303)

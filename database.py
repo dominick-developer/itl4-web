@@ -3189,35 +3189,6 @@ if __name__ == "__main__":
 # ============================================================
 # LECTURER MANAGEMENT (CR)
 # ============================================================
-def get_teacher(teacher_id):
-    conn = get_connection()
-    row = conn.execute("SELECT * FROM teachers WHERE id = ?", (teacher_id,)).fetchone()
-    conn.close()
-    return row
-
-
-def update_teacher(teacher_id, full_name, phone="", email="", notes=""):
-    conn = get_connection()
-    conn.execute(
-        "UPDATE teachers SET full_name = ?, phone = ?, email = ?, notes = ? WHERE id = ?",
-        (full_name, phone, email, notes, teacher_id))
-    conn.commit()
-    conn.close()
-
-
-def delete_teacher(teacher_id):
-    conn = get_connection()
-    row = conn.execute(
-        "SELECT COUNT(*) as n FROM modules WHERE teacher_id = ?", (teacher_id,)).fetchone()
-    if row and row["n"] > 0:
-        conn.close()
-        return False, f"Teacher ana modules {row['n']}. Reassign kwanza."
-    conn.execute("DELETE FROM teachers WHERE id = ?", (teacher_id,))
-    conn.commit()
-    conn.close()
-    return True, "Deleted"
-
-
 # ============================================================
 # SESSION ATTENDANCE MIGRATION
 # ============================================================
@@ -3417,3 +3388,129 @@ def delete_cr_user(user_id):
     conn.commit()
     conn.close()
     return True, "CR deleted."
+
+
+# ============================================================
+# LECTURER MANAGEMENT (verify + add if missing)
+# ============================================================
+def get_teacher(teacher_id):
+    conn = get_connection()
+    row = conn.execute("SELECT * FROM teachers WHERE id = ?", (teacher_id,)).fetchone()
+    conn.close()
+    return row
+
+
+def update_teacher(teacher_id, full_name, phone="", email="", notes=""):
+    conn = get_connection()
+    conn.execute(
+        "UPDATE teachers SET full_name = ?, phone = ?, email = ?, notes = ? WHERE id = ?",
+        (full_name, phone, email, notes, teacher_id))
+    conn.commit()
+    conn.close()
+
+
+def delete_teacher(teacher_id):
+    conn = get_connection()
+    row = conn.execute(
+        "SELECT COUNT(*) as n FROM modules WHERE teacher_id = ?", (teacher_id,)).fetchone()
+    if row and row["n"] > 0:
+        conn.close()
+        return False, f"Teacher ana modules {row['n']}. Reassign kwanza."
+    conn.execute("DELETE FROM teachers WHERE id = ?", (teacher_id,))
+    conn.commit()
+    conn.close()
+    return True, "Deleted"
+
+
+# ============================================================
+# CR PROMOTION (promote students to CR, demote back)
+# ============================================================
+def promote_student_to_cr(student_id):
+    """Promote an existing approved student to CR. Returns (ok, message)."""
+    conn = get_connection()
+    student = conn.execute(
+        "SELECT s.id, s.full_name, s.reg_number, u.id AS user_id, u.role "
+        "FROM students s JOIN users u ON u.student_id = s.id "
+        "WHERE s.id = ?", (student_id,)).fetchone()
+    if not student:
+        conn.close()
+        return False, "Student hana account ya user."
+    if student["role"] == "CR":
+        conn.close()
+        return False, f"{student['full_name']} ni CR tayari."
+    if student["role"] != "STUDENT":
+        conn.close()
+        return False, f"Role ya {student['full_name']} si STUDENT."
+    conn.execute("UPDATE users SET role = 'CR', is_admin = 1 WHERE id = ?",
+                 (student["user_id"],))
+    conn.commit()
+    conn.close()
+    return True, f"{student['full_name']} amepandishwa kuwa CR (anaweza kuingia kwa student credentials zake)."
+
+
+def demote_cr_to_student(user_id):
+    """Demote CR back to student. Returns (ok, message)."""
+    conn = get_connection()
+    row = conn.execute(
+        "SELECT username, student_id FROM users WHERE id = ? AND role = 'CR'",
+        (user_id,)).fetchone()
+    if not row:
+        conn.close()
+        return False, "CR haipo."
+    if row["username"] == "cr":
+        conn.close()
+        return False, "Primary 'cr' haipaswi ku-demote. Tumia 'Delete' (kama kuna CR mwingine)."
+    conn.execute("UPDATE users SET role = 'STUDENT', is_admin = 0 WHERE id = ?", (user_id,))
+    conn.commit()
+    conn.close()
+    return True, "CR imerudishwa kuwa student (anaendelea kusoma)."
+
+
+def get_students_eligible_for_cr():
+    """Students approved, with account, not CRs yet."""
+    conn = get_connection()
+    rows = conn.execute(
+        "SELECT s.id AS student_id, s.full_name, s.reg_number, s.phone, "
+        "s.email, u.username "
+        "FROM students s JOIN users u ON u.student_id = s.id "
+        "WHERE u.role = 'STUDENT' AND s.is_active = 1 "
+        "AND s.membership_status = 'approved' "
+        "ORDER BY s.full_name").fetchall()
+    conn.close()
+    return rows
+
+
+def get_all_crs_with_student_info():
+    """All CRs with their linked student info (they are students too)."""
+    conn = get_connection()
+    rows = conn.execute(
+        "SELECT u.id AS user_id, u.username, "
+        "s.id AS student_id, s.full_name, s.reg_number, s.phone, s.email, "
+        "s.membership_status, s.date_joined "
+        "FROM users u LEFT JOIN students s ON u.student_id = s.id "
+        "WHERE u.role = 'CR' ORDER BY (u.username = 'cr') DESC, u.username").fetchall()
+    conn.close()
+    return rows
+
+
+def delete_cr_with_safety(user_id):
+    """Delete CR. If primary 'cr', require another CR exists."""
+    conn = get_connection()
+    row = conn.execute(
+        "SELECT username, student_id FROM users WHERE id = ? AND role = 'CR'",
+        (user_id,)).fetchone()
+    if not row:
+        conn.close()
+        return False, "CR haipo."
+    if row["username"] == "cr":
+        # Must have at least 2 CRs (one other besides primary)
+        count = conn.execute("SELECT COUNT(*) FROM users WHERE role = 'CR'").fetchone()[0]
+        if count < 2:
+            conn.close()
+            return False, "Huwezi kufuta 'cr' ukiwa CR pekee. Promote student kuwa CR kwanza."
+    conn.execute("DELETE FROM users WHERE id = ?", (user_id,))
+    if row["student_id"]:
+        conn.execute("DELETE FROM students WHERE id = ?", (row["student_id"],))
+    conn.commit()
+    conn.close()
+    return True, f"CR '{row['username']}' imefutwa."
