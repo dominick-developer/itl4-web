@@ -9,3 +9,5 @@ anthropic
 pywebpush
 py-vapidpywebpush
 py-vapid
+turso-serverlessturso-serverless
+python-dotenv

@@ -8,16 +8,57 @@ import shutil
 import time
 from pathlib import Path
 from datetime import datetime
+
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
+try:
+    import turso_serverless
+except ImportError:
+    turso_serverless = None
+
 DB_PATH = Path(__file__).parent / "itl4.db"
+
+TURSO_DATABASE_URL = os.getenv("TURSO_DATABASE_URL", "")
+TURSO_AUTH_TOKEN = os.getenv("TURSO_AUTH_TOKEN", "")
+USE_TURSO = bool(TURSO_DATABASE_URL and TURSO_AUTH_TOKEN and turso_serverless)
+
+if USE_TURSO:
+    print(f"✅ Using Turso: {TURSO_DATABASE_URL[:40]}...")
+else:
+    print(f"⚠️  Using local SQLite: {DB_PATH}")
 
 
 def get_connection():
+    if USE_TURSO:
+        conn = turso_serverless.connect(
+            TURSO_DATABASE_URL,
+            auth_token=TURSO_AUTH_TOKEN,
+        )
+        try:
+            conn.row_factory = turso_serverless.Row
+        except Exception:
+            pass
+        return conn
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
     return conn
-
-
+def get_connection():
+    # Kama Turso ipo, tumia Turso (data inabaki salama)
+    if TURSO_DATABASE_URL and TURSO_AUTH_TOKEN and turso_serverless:
+        return turso_serverless.connect(
+            TURSO_DATABASE_URL,
+            auth_token=TURSO_AUTH_TOKEN,
+        )
+    # Local fallback (kwa maendeleo kwenye PC)
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA foreign_keys = ON")
+    return conn
 # ============================================================
 # INIT DATABASE
 # ============================================================
