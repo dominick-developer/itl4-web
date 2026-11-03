@@ -59,6 +59,13 @@ def startup():
         print("✅ Attendance migration ready")
     except Exception as _e:
         print(f"⚠️ Attendance migration: {_e}")
+        db.migrate_timetable_status()
+        print("✅ Timetable status migration ready")
+    except Exception as _e:
+        print(f"⚠️ Timetable migration: {_e}")
+        print("✅ Attendance migration ready")
+    except Exception as _e:
+        print(f"⚠️ Attendance migration: {_e}")
     print("âœ… Database ready")
     academy.init_academy()
     try:
@@ -494,6 +501,7 @@ def attendance_page(request: Request):
     return render("attendance.html", ctx(request, {
         "students": db.get_approved_students(),
         "modules": db.get_all_modules(),
+        "modules_for_dropdown": db.get_all_modules_for_timetable(),
         "sessions": db.get_class_sessions(10),
     }))
 
@@ -775,6 +783,7 @@ def timetable_manage(request: Request):
     return render("timetable_manage.html", ctx(request, {
         "entries": db.get_all_timetable_entries(),
         "modules": db.get_all_modules(),
+        "modules_for_dropdown": db.get_all_modules_for_timetable(),
         "teachers": db.get_all_teachers(),
         "edit_entry": None,
     }))
@@ -791,6 +800,7 @@ def timetable_edit(request: Request, entry_id: int):
     return render("timetable_manage.html", ctx(request, {
         "entries": db.get_all_timetable_entries(),
         "modules": db.get_all_modules(),
+        "modules_for_dropdown": db.get_all_modules_for_timetable(),
         "teachers": db.get_all_teachers(),
         "edit_entry": entry,
     }))
@@ -2319,3 +2329,41 @@ def cr_delete_v2(request: Request, uid: int):
     from urllib.parse import quote
     key = "success" if ok else "error"
     return RedirectResponse(f"/cr-management?{key}={quote(msg)}", 303)
+
+
+# ============================================================
+# TIMETABLE POSTPONE/CANCEL ROUTES
+# ============================================================
+
+
+# ============================================================
+# TIMETABLE POSTPONE/CANCEL ROUTES
+# ============================================================
+@app.post("/timetable/{entry_id}/postpone")
+def timetable_postpone(request: Request, entry_id: int,
+                        postponed_to: str = Form(...),
+                        reason: str = Form("")):
+    require_login(request)
+    if request.session.get("role") != "CR":
+        raise HTTPException(403)
+    db.postpone_timetable_entry(entry_id, postponed_to, reason)
+    return RedirectResponse("/timetable/manage?success=Ratiba+imeahirishwa", 303)
+
+
+@app.post("/timetable/{entry_id}/restore")
+def timetable_restore(request: Request, entry_id: int):
+    require_login(request)
+    if request.session.get("role") != "CR":
+        raise HTTPException(403)
+    db.restore_timetable_entry(entry_id)
+    return RedirectResponse("/timetable/manage?success=Ratiba+imerudishwa", 303)
+
+
+@app.post("/timetable/{entry_id}/cancel")
+def timetable_cancel(request: Request, entry_id: int,
+                      reason: str = Form("")):
+    require_login(request)
+    if request.session.get("role") != "CR":
+        raise HTTPException(403)
+    db.cancel_timetable_entry(entry_id, reason)
+    return RedirectResponse("/timetable/manage?success=Kipindi+kimefutwa", 303)

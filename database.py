@@ -3514,3 +3514,74 @@ def delete_cr_with_safety(user_id):
     conn.commit()
     conn.close()
     return True, f"CR '{row['username']}' imefutwa."
+
+
+# ============================================================
+# TIMETABLE: Postpone/Cancel support
+# ============================================================
+def migrate_timetable_status():
+    """Add status, postponed_to, postponed_reason, postponed_at to timetable."""
+    conn = get_connection()
+    cur = conn.cursor()
+    cols = [r[1] for r in cur.execute("PRAGMA table_info(timetable)").fetchall()]
+    
+    for col_name, col_type in [
+        ("status", "TEXT DEFAULT 'scheduled'"),
+        ("postponed_to", "TEXT"),
+        ("postponed_reason", "TEXT"),
+        ("postponed_at", "TEXT"),
+    ]:
+        if col_name not in cols:
+            try:
+                cur.execute(f"ALTER TABLE timetable ADD COLUMN {col_name} {col_type}")
+                print(f"✅ timetable.{col_name} added")
+            except Exception as e:
+                print(f"⚠️ {col_name}: {e}")
+    
+    conn.commit()
+    conn.close()
+
+
+def postpone_timetable_entry(entry_id, postponed_to, reason=""):
+    """Mark timetable entry as postponed with new date/time suggestion."""
+    from datetime import datetime
+    conn = get_connection()
+    conn.execute(
+        "UPDATE timetable SET status = 'postponed', postponed_to = ?, "
+        "postponed_reason = ?, postponed_at = datetime('now','localtime') WHERE id = ?",
+        (postponed_to, reason, entry_id))
+    conn.commit()
+    conn.close()
+
+
+def restore_timetable_entry(entry_id):
+    """Restore postponed/cancelled timetable entry back to scheduled."""
+    conn = get_connection()
+    conn.execute(
+        "UPDATE timetable SET status = 'scheduled', postponed_to = NULL, "
+        "postponed_reason = NULL, postponed_at = NULL WHERE id = ?", (entry_id,))
+    conn.commit()
+    conn.close()
+
+
+def cancel_timetable_entry(entry_id, reason=""):
+    """Mark timetable entry as cancelled."""
+    conn = get_connection()
+    conn.execute(
+        "UPDATE timetable SET status = 'cancelled', postponed_reason = ?, "
+        "postponed_at = datetime('now','localtime') WHERE id = ?",
+        (reason, entry_id))
+    conn.commit()
+    conn.close()
+
+
+def get_all_modules_for_timetable():
+    """All modules with teacher info for dropdown."""
+    conn = get_connection()
+    rows = conn.execute(
+        "SELECT m.id, m.name, m.code, m.teacher_id, "
+        "t.full_name AS teacher_name, t.phone AS teacher_phone "
+        "FROM modules m LEFT JOIN teachers t ON m.teacher_id = t.id "
+        "ORDER BY m.name").fetchall()
+    conn.close()
+    return rows
