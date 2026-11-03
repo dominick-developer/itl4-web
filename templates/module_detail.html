@@ -36,4 +36,14 @@
     </div>
     {% endif %}
 </div>
+
+{% if role == 'CR' %}
+<!-- Floating Edit Module Button (CR only) -->
+<a href="/modules/{{ offering.id }}/edit" 
+   style="position:fixed;bottom:24px;right:24px;background:linear-gradient(135deg,#F47721,#e6670f);color:white;padding:14px 24px;border-radius:50px;font-weight:800;font-size:15px;box-shadow:0 8px 24px rgba(244,119,33,.4), 0 2px 8px rgba(0,0,0,.15);text-decoration:none;z-index:9999;display:flex;align-items:center;gap:8px;transition:transform .15s;"
+   onmouseover="this.style.transform='translateY(-2px)'"
+   onmouseout="this.style.transform=''">
+    ✏️ Edit Module
+</a>
+{% endif %}
 {% endblock %}

@@ -554,11 +554,55 @@ def module_create_post(request: Request,
     require_login(request)
     if request.session["role"] != "CR":
         raise HTTPException(403)
-    ok, module_id, msg = db.add_module(name, code, description)
-    if not ok:
-        raise HTTPException(500, detail=msg)
+    
+    name = name.strip()
+    if not name:
+        return render("module_form.html", ctx(request, {
+            "teachers": db.get_all_teachers(),
+            "error": "Jina la module linahitajika.",
+            "form_data": {"name": name, "code": code, "description": description,
+                         "teacher_id": teacher_id, "academic_year": academic_year,
+                         "semester": semester},
+        }))
+    
+    # Check if module with same name exists
+    existing = None
+    try:
+        conn = db.get_connection()
+        existing = conn.execute(
+            "SELECT id FROM modules WHERE LOWER(name) = LOWER(?)",
+            (name,)).fetchone()
+        conn.close()
+    except Exception as _e:
+        print(f"⚠️ Module lookup failed: {_e}")
+    
+    if existing:
+        module_id = existing["id"]
+        print(f"✅ Reusing existing module '{name}' (id={module_id})")
+    else:
+        ok, module_id, msg = db.add_module(name, code, description)
+        if not ok:
+            return render("module_form.html", ctx(request, {
+                "teachers": db.get_all_teachers(),
+                "error": msg,
+                "form_data": {"name": name, "code": code, "description": description,
+                             "teacher_id": teacher_id, "academic_year": academic_year,
+                             "semester": semester},
+            }))
+    
+    # Create offering
     tid = int(teacher_id) if teacher_id else None
-    db.create_offering(module_id, "IT Level 4", academic_year, semester, tid)
+    try:
+        db.create_offering(module_id, "IT Level 4", academic_year, semester, tid)
+    except Exception as _e:
+        return render("module_form.html", ctx(request, {
+            "teachers": db.get_all_teachers(),
+            "error": f"Imeshindwa kuunda offering: {_e}",
+            "form_data": {"name": name, "code": code, "description": description,
+                         "teacher_id": teacher_id, "academic_year": academic_year,
+                         "semester": semester},
+        }))
+    
     return RedirectResponse("/modules", 303)
 
 
@@ -571,6 +615,104 @@ def module_detail(request: Request, oid: int):
     return render("module_detail.html", ctx(request, {
         "offering": o, "topics": db.get_topics(oid),
     }))
+
+
+# ============================================================
+# MODULE EDIT (CR only — works even after publish)
+# ============================================================
+@app.get("/modules/{oid}/edit", response_class=HTMLResponse)
+def module_edit_get(request: Request, oid: int):
+    require_login(request)
+    if request.session.get("role") != "CR":
+        raise HTTPException(403)
+    o = db.get_offering(oid)
+    if not o:
+        raise HTTPException(404)
+    return render("module_form.html", ctx(request, {
+        "teachers": db.get_all_teachers(),
+        "offering": o,
+        "is_edit": True,
+        "form_data": {
+            "name": o["module_name"] or "",
+            "code": o["module_code"] or "",
+            "description": o["module_desc"] or "",
+            "academic_year": o["academic_year"] or "2024/2025",
+            "semester": o["semester"] or "Semester 1",
+            "teacher_id": str(o["teacher_id"]) if o["teacher_id"] else "",
+        },
+    }))
+
+
+@app.post("/modules/{oid}/edit")
+def module_edit_post(request: Request, oid: int,
+                     name: str = Form(...),
+                     code: str = Form(""),
+                     description: str = Form(""),
+                     academic_year: str = Form("2024/2025"),
+                     semester: str = Form("Semester 1"),
+                     teacher_id: str = Form("")):
+    require_login(request)
+    if request.session.get("role") != "CR":
+        raise HTTPException(403)
+    o = db.get_offering(oid)
+    if not o:
+        raise HTTPException(404)
+    
+    name = name.strip()
+    if not name:
+        return render("module_form.html", ctx(request, {
+            "teachers": db.get_all_teachers(),
+            "offering": o, "is_edit": True,
+            "error": "Jina la module linahitajika.",
+            "form_data": {"name": name, "code": code, "description": description,
+                         "teacher_id": teacher_id, "academic_year": academic_year,
+                         "semester": semester},
+        }))
+    
+    # Check duplicate name (excluding this module)
+    dup = None
+    try:
+        conn = db.get_connection()
+        dup = conn.execute(
+            "SELECT id FROM modules WHERE LOWER(name) = LOWER(?) AND id != ?",
+            (name, o["module_id"])).fetchone()
+        conn.close()
+    except Exception as _e:
+        print(f"⚠️ Dup check failed: {_e}")
+    
+    if dup:
+        return render("module_form.html", ctx(request, {
+            "teachers": db.get_all_teachers(),
+            "offering": o, "is_edit": True,
+            "error": f"Module nyingine inaitwa '{name}'. Chagua jina lingine.",
+            "form_data": {"name": name, "code": code, "description": description,
+                         "teacher_id": teacher_id, "academic_year": academic_year,
+                         "semester": semester},
+        }))
+    
+    ok, msg = db.update_module(o["module_id"], name, code, description)
+    if not ok:
+        return render("module_form.html", ctx(request, {
+            "teachers": db.get_all_teachers(),
+            "offering": o, "is_edit": True, "error": msg,
+            "form_data": {"name": name, "code": code, "description": description,
+                         "teacher_id": teacher_id, "academic_year": academic_year,
+                         "semester": semester},
+        }))
+    
+    # Update offering fields
+    tid = int(teacher_id) if teacher_id else None
+    try:
+        conn = db.get_connection()
+        conn.execute(
+            "UPDATE module_offerings SET teacher_id = ?, academic_year = ?, semester = ? WHERE id = ?",
+            (tid, academic_year, semester, oid))
+        conn.commit()
+        conn.close()
+    except Exception as _e:
+        print(f"⚠️ Offering update failed: {_e}")
+    
+    return RedirectResponse(f"/modules/{oid}", 303)
 
 
 @app.post("/modules/{oid}/delete")
