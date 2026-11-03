@@ -41,17 +41,6 @@ def get_vapid_public():
     return {"publicKey": os.getenv("VAPID_PUBLIC_KEY", "")}
 
 
-@app.post("/api/push/subscribe")
-async def push_subscribe(request: Request):
-    if "user_id" not in request.session:
-        raise HTTPException(401)
-    data = await request.json()
-    if not data or "endpoint" not in data or "keys" not in data:
-        raise HTTPException(400)
-    push_service.save_subscription(request.session["user_id"], data)
-    return {"ok": True}
-
-
 @app.post("/api/push/unsubscribe")
 async def push_unsubscribe(request: Request):
     if "user_id" not in request.session:
@@ -1706,24 +1695,6 @@ def academy_career_detail(request: Request, slug: str):
 # ============================================================
 # PUSH NOTIFICATIONS ENDPOINTS
 # ============================================================
-@app.post("/api/push/subscribe")
-async def push_subscribe(request: Request):
-    if "user_id" not in request.session:
-        raise HTTPException(401)
-    try:
-        data = await request.json()
-    except Exception:
-        raise HTTPException(400, detail="Invalid JSON")
-    if not data or "endpoint" not in data or "keys" not in data:
-        raise HTTPException(400, detail="Missing endpoint or keys")
-    try:
-        import push_service
-        push_service.save_subscription(request.session["user_id"], data)
-        return {"ok": True}
-    except Exception as e:
-        return {"ok": False, "error": str(e)}
-
-
 @app.post("/api/push/unsubscribe")
 async def push_unsubscribe(request: Request):
     if "user_id" not in request.session:
@@ -1878,24 +1849,6 @@ async def legal_accept_post(request: Request):
 # ============================================================
 # PUSH NOTIFICATIONS ENDPOINTS
 # ============================================================
-@app.post("/api/push/subscribe")
-async def push_subscribe(request: Request):
-    if "user_id" not in request.session:
-        raise HTTPException(401)
-    try:
-        data = await request.json()
-    except Exception:
-        raise HTTPException(400, detail="Invalid JSON")
-    if not data or "endpoint" not in data or "keys" not in data:
-        raise HTTPException(400, detail="Missing endpoint or keys")
-    try:
-        import push_service
-        push_service.save_subscription(request.session["user_id"], data)
-        return {"ok": True}
-    except Exception as e:
-        return {"ok": False, "error": str(e)}
-
-
 @app.post("/api/push/unsubscribe")
 async def push_unsubscribe(request: Request):
     if "user_id" not in request.session:
@@ -1948,3 +1901,78 @@ def trigger_notifications(secret: str = ""):
         return {"error": "notification_service not found", "daily": 0}
     except Exception as e:
         return {"error": str(e), "daily": 0}
+
+
+# ============================================================
+# PUSH: Subscribe (robust)
+# ============================================================
+@app.post("/api/push/subscribe")
+async def push_subscribe(request: Request):
+    if "user_id" not in request.session:
+        return {"ok": False, "error": "Not logged in"}
+    try:
+        data = await request.json()
+    except Exception as e:
+        return {"ok": False, "error": f"Invalid JSON: {e}"}
+    if not data or "endpoint" not in data or "keys" not in data:
+        return {"ok": False, "error": "Missing endpoint or keys"}
+    
+    user_id = request.session["user_id"]
+    try:
+        import push_service
+        push_service.save_subscription(user_id, data)
+        # Verify
+        from database import get_connection
+        conn = get_connection()
+        row = conn.execute(
+            "SELECT COUNT(*) as n FROM push_subscriptions WHERE user_id = ?",
+            (user_id,)).fetchone()
+        conn.close()
+        count = row["n"] if row else 0
+        if count == 0:
+            return {"ok": False, "error": "DB insert failed - 0 rows"}
+        return {"ok": True, "count": count}
+    except Exception as e:
+        import traceback
+        return {"ok": False, "error": str(e), "traceback": traceback.format_exc()[-500:]}
+
+
+# ============================================================
+# PUSH: Server-side status check
+# ============================================================
+@app.get("/api/push/status")
+def push_status(request: Request):
+    if "user_id" not in request.session:
+        return {"subscribed": False, "reason": "not_logged_in"}
+    user_id = request.session["user_id"]
+    try:
+        from database import get_connection
+        conn = get_connection()
+        row = conn.execute(
+            "SELECT COUNT(*) as n FROM push_subscriptions WHERE user_id = ?",
+            (user_id,)).fetchone()
+        conn.close()
+        count = row["n"] if row else 0
+        return {"subscribed": count > 0, "count": count}
+    except Exception as e:
+        return {"subscribed": False, "error": str(e)}
+
+
+# ============================================================
+# PUSH: Unsubscribe
+# ============================================================
+@app.post("/api/push/unsubscribe")
+async def push_unsubscribe(request: Request):
+    if "user_id" not in request.session:
+        return {"ok": False, "error": "Not logged in"}
+    try:
+        data = await request.json()
+    except Exception:
+        return {"ok": False, "error": "Invalid JSON"}
+    try:
+        import push_service
+        push_service.remove_subscription(
+            request.session["user_id"], data.get("endpoint", ""))
+        return {"ok": True}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}

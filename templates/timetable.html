@@ -4,16 +4,14 @@
 
 {% block body %}
 
-<!-- PUSH NOTIFICATIONS STATUS CARD -->
+<!-- PUSH NOTIFICATIONS CARD v2 -->
 <div id="pushCard" style="background:white;border:2px solid #E2E8F0;border-radius:12px;padding:18px 22px;margin-bottom:22px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
     <div id="pushIcon" style="font-size:36px;flex-shrink:0;">🔔</div>
     <div style="flex:1;min-width:200px;">
         <div id="pushTitle" style="font-weight:800;color:#0B1F33;font-size:16px;margin-bottom:4px;">Push Notifications</div>
-        <div id="pushStatus" style="font-size:13px;color:#64748B;line-height:1.5;">Bonyeza "Enable" kuanza.</div>
+        <div id="pushStatus" style="font-size:13px;color:#64748B;line-height:1.5;">Inaangalia hali...</div>
     </div>
-    <div id="pushActions" style="display:flex;gap:8px;flex-wrap:wrap;">
-        <button onclick="enablePush()" class="btn btn-primary" style="padding:10px 22px;font-size:14px;" id="enableBtn">Enable Notifications</button>
-    </div>
+    <div id="pushActions" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
 </div>
 
 <script>
@@ -24,33 +22,42 @@
     var title = document.getElementById('pushTitle');
     var status = document.getElementById('pushStatus');
     var actions = document.getElementById('pushActions');
-    var checking = false;
 
-    function setState(state) {
-        if (state === 'enabled') {
+    function setState(state, extra) {
+        // Reset
+        actions.innerHTML = '';
+        
+        if (state === 'checking') {
+            card.style.background = '#f8fafc';
+            card.style.borderColor = '#E2E8F0';
+            icon.textContent = '⏳';
+            title.textContent = 'Push Notifications';
+            title.style.color = '#0B1F33';
+            status.textContent = 'Inaangalia hali...';
+        } else if (state === 'enabled') {
             card.style.background = '#f0fdf4';
             card.style.borderColor = '#86efac';
             icon.textContent = '✅';
             title.textContent = 'Push Notifications: Enabled';
             title.style.color = '#16A34A';
-            status.textContent = 'Utapokea taarifa za ratiba kwenye simu yako moja kwa moja.';
+            status.textContent = 'Utapokea taarifa za ratiba kwenye kifaa chako.';
             actions.innerHTML = '<button onclick="disablePush()" class="btn btn-outline" style="padding:8px 16px;font-size:13px;">Disable</button>' +
-                               '<a href="/api/push/test" target="_blank" class="btn btn-primary" style="padding:8px 16px;font-size:13px;">Send Test</a>';
+                               '<button onclick="sendTest()" class="btn btn-primary" style="padding:8px 16px;font-size:13px;">Send Test</button>';
         } else if (state === 'disabled') {
             card.style.background = '#fff7ed';
             card.style.borderColor = '#F47721';
             icon.textContent = '🔔';
             title.textContent = 'Push Notifications: Disabled';
             title.style.color = '#0B1F33';
-            status.textContent = 'Washa ili upate taarifa za ratiba kwenye simu yako.';
-            actions.innerHTML = '<button onclick="enablePush()" class="btn btn-primary" style="padding:10px 22px;font-size:14px;" id="enableBtn">Enable Notifications</button>';
+            status.textContent = 'Bonyeza "Enable" ili upate taarifa za ratiba.';
+            actions.innerHTML = '<button onclick="enablePush()" class="btn btn-primary" style="padding:10px 22px;font-size:14px;">Enable Notifications</button>';
         } else if (state === 'blocked') {
             card.style.background = '#fef2f2';
             card.style.borderColor = '#fca5a5';
             icon.textContent = '🚫';
             title.textContent = 'Push Notifications: Blocked';
             title.style.color = '#DC2626';
-            status.textContent = 'Notification permission imezuiwa kwenye browser. Fungua settings → Site settings → Notifications → Allow.';
+            status.textContent = 'Browser imezuia notifications. Fungua settings: 🔒 → Site settings → Notifications → Allow.';
             actions.innerHTML = '';
         } else if (state === 'unsupported') {
             card.style.background = '#f1f5f9';
@@ -58,130 +65,35 @@
             icon.textContent = '⚠️';
             title.textContent = 'Push Notifications: Not Supported';
             title.style.color = '#64748B';
-            status.textContent = 'Browser yako haiungi mkono push. Tumia Chrome au Edge.';
+            status.textContent = 'Browser hii haiungi mkono push. Tumia Chrome au Edge.';
             actions.innerHTML = '';
+        } else if (state === 'loading') {
+            card.style.background = '#eff6ff';
+            card.style.borderColor = '#93c5fd';
+            icon.textContent = '⏳';
+            title.textContent = 'Inafanya kazi...';
+            title.style.color = '#2563EB';
+            status.textContent = extra || 'Tafadhali subiri...';
+            actions.innerHTML = '';
+        } else if (state === 'error') {
+            card.style.background = '#fef2f2';
+            card.style.borderColor = '#fca5a5';
+            icon.textContent = '❌';
+            title.textContent = 'Hitilafu';
+            title.style.color = '#DC2626';
+            status.textContent = extra || 'Kuna hitilafu. Jaribu tena.';
+            actions.innerHTML = '<button onclick="enablePush()" class="btn btn-primary" style="padding:10px 22px;font-size:14px;">Jaribu Tena</button>';
         }
     }
 
-    // Check 1: VAPID key
-    if (!VAPID_PUBLIC_KEY) {
-        card.style.display = 'none';
-        return;
+    function withTimeout(promise, ms) {
+        return Promise.race([
+            promise,
+            new Promise(function(_, rej) {
+                setTimeout(function() { rej(new Error('Timeout')); }, ms);
+            })
+        ]);
     }
-
-    // Check 2: Browser support
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-        setState('unsupported');
-        return;
-    }
-
-    // Check 3: Permission — show immediately based on this
-    if (Notification.permission === 'denied') {
-        setState('blocked');
-        return;
-    }
-
-    // Check 4: Quick default state (before SW ready)
-    if (Notification.permission === 'granted') {
-        // Likely already enabled — show optimistic state, verify below
-        setState('enabled');
-    } else {
-        setState('disabled');
-    }
-
-    // Check 5: Verify with SW (with timeout)
-    function verifySubscription() {
-        if (checking) return;
-        checking = true;
-
-        var timeout = setTimeout(function() {
-            // SW ready inachukua muda mrefu — acha status ya awali
-            checking = false;
-        }, 3000);
-
-        navigator.serviceWorker.ready.then(function(reg) {
-            clearTimeout(timeout);
-            reg.pushManager.getSubscription().then(function(sub) {
-                if (sub) {
-                    setState('enabled');
-                } else {
-                    setState('disabled');
-                }
-                checking = false;
-            }).catch(function() {
-                checking = false;
-            });
-        }).catch(function() {
-            clearTimeout(timeout);
-            checking = false;
-        });
-    }
-
-    // Wait for SW to be ready in background
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.ready.then(verifySubscription).catch(function(){});
-    }
-
-    // Enable push
-    window.enablePush = async function() {
-        if (!VAPID_PUBLIC_KEY) { alert('Push notifications hazijasanidiwa.'); return; }
-        var btn = document.getElementById('enableBtn');
-        if (btn) { btn.disabled = true; btn.textContent = 'Inaandaa...'; }
-        try {
-            var perm = await Notification.requestPermission();
-            if (perm !== 'granted') {
-                alert('Notification permission imekataliwa.');
-                setState('blocked');
-                return;
-            }
-            // Wait for SW with timeout
-            var reg = await Promise.race([
-                navigator.serviceWorker.ready,
-                new Promise(function(_, reject) {
-                    setTimeout(function() { reject(new Error('Service worker timeout')); }, 10000);
-                })
-            ]);
-            var sub = await reg.pushManager.subscribe({
-                userVisibleOnly: true,
-                applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
-            });
-            var res = await fetch('/api/push/subscribe', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(sub.toJSON())
-            });
-            if (res.ok) {
-                setState('enabled');
-                setTimeout(function() { fetch('/api/push/test').catch(function(){}); }, 1500);
-            } else {
-                var err = await res.json().catch(function(){ return {}; });
-                alert('Hitilafu: ' + (err.error || 'Imeshindwa kusajili'));
-                setState('disabled');
-            }
-        } catch (err) {
-            alert('Hitilafu: ' + err.message);
-            setState('disabled');
-        }
-    };
-
-    window.disablePush = async function() {
-        if (!confirm('Zima push notifications?')) return;
-        try {
-            var reg = await navigator.serviceWorker.ready;
-            var sub = await reg.pushManager.getSubscription();
-            if (sub) {
-                await fetch('/api/push/unsubscribe', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ endpoint: sub.endpoint })
-                });
-                await sub.unsubscribe();
-            }
-            setState('disabled');
-        } catch (err) {
-            alert('Hitilafu: ' + err.message);
-        }
-    };
 
     function urlBase64ToUint8Array(base64String) {
         var padding = '='.repeat((4 - base64String.length % 4) % 4);
@@ -191,6 +103,154 @@
         for (var i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
         return outputArray;
     }
+
+    async function checkStatus() {
+        if (!VAPID_PUBLIC_KEY) {
+            card.style.display = 'none';
+            console.log('[Push] No VAPID key - card hidden');
+            return;
+        }
+        if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+            setState('unsupported');
+            return;
+        }
+        if (Notification.permission === 'denied') {
+            setState('blocked');
+            return;
+        }
+        
+        setState('checking');
+        
+        try {
+            var reg = await withTimeout(navigator.serviceWorker.ready, 5000);
+            var sub = await reg.pushManager.getSubscription();
+            
+            if (sub) {
+                console.log('[Push] Browser has subscription, syncing with server...');
+                // Sync with server (in case DB is missing)
+                try {
+                    var res = await fetch('/api/push/subscribe', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(sub.toJSON())
+                    });
+                    var data = await res.json().catch(function() { return {}; });
+                    if (!res.ok || data.ok === false) {
+                        console.warn('[Push] Sync failed:', data.error);
+                    }
+                } catch (e) {
+                    console.warn('[Push] Sync error:', e);
+                }
+                setState('enabled');
+            } else {
+                setState('disabled');
+            }
+        } catch (err) {
+            console.error('[Push] Check error:', err);
+            setState('disabled');
+        }
+    }
+
+    window.enablePush = async function() {
+        if (!VAPID_PUBLIC_KEY) {
+            setState('error', 'VAPID key haipo. Wasiliana na msimamizi.');
+            return;
+        }
+        
+        setState('loading', 'Inaomba ruhusa...');
+        
+        try {
+            var perm = await Notification.requestPermission();
+            if (perm !== 'granted') {
+                setState('blocked');
+                return;
+            }
+            
+            setState('loading', 'Inasajili subscription...');
+            
+            var reg = await withTimeout(navigator.serviceWorker.ready, 10000);
+            var sub = await reg.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+            });
+            
+            setState('loading', 'Inahifadhi kwenye server...');
+            
+            var res = await fetch('/api/push/subscribe', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(sub.toJSON())
+            });
+            var data = await res.json().catch(function() { return {}; });
+            
+            if (!res.ok || data.ok === false) {
+                // Rollback browser subscription
+                try { await sub.unsubscribe(); } catch (e) {}
+                setState('error', (data.error || 'Imeshindwa kuhifadhi.') + (data.count !== undefined ? ' (count: ' + data.count + ')' : ''));
+                return;
+            }
+            
+            console.log('[Push] Subscribe success, count:', data.count);
+            setState('enabled');
+            
+            // Auto-send test after 2 seconds
+            setTimeout(function() {
+                fetch('/api/push/test').then(function(r) { return r.json(); }).then(function(d) {
+                    console.log('[Push] Test result:', d);
+                }).catch(function(e) {
+                    console.warn('[Push] Test error:', e);
+                });
+            }, 2000);
+            
+        } catch (err) {
+            console.error('[Push] Enable error:', err);
+            setState('error', err.message || 'Imeshindwa');
+        }
+    };
+
+    window.disablePush = async function() {
+        if (!confirm('Zima push notifications?')) return;
+        
+        setState('loading', 'Inazima...');
+        
+        try {
+            var reg = await navigator.serviceWorker.ready;
+            var sub = await reg.pushManager.getSubscription();
+            
+            if (sub) {
+                await fetch('/api/push/unsubscribe', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ endpoint: sub.endpoint })
+                });
+                await sub.unsubscribe();
+            }
+            
+            setState('disabled');
+        } catch (err) {
+            console.error('[Push] Disable error:', err);
+            setState('error', err.message);
+        }
+    };
+
+    window.sendTest = async function() {
+        setState('loading', 'Inatuma test notification...');
+        try {
+            var res = await fetch('/api/push/test');
+            var data = await res.json();
+            if (data.ok) {
+                setState('enabled');
+                alert('✅ Test notification imetumwa! Angalia notification bar.');
+            } else {
+                setState('error', data.error || 'Imeshindwa kutuma');
+            }
+        } catch (err) {
+            setState('error', err.message);
+        }
+    };
+
+    // Run check on load
+    checkStatus();
 })();
 </script>
 
