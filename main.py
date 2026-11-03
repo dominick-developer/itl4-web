@@ -2390,3 +2390,79 @@ def modules_cleanup_samples(request: Request):
     except Exception as e:
         from urllib.parse import quote
         return RedirectResponse(f"/modules?error={quote(str(e))}", 303)
+
+
+# ============================================================
+# ATTENDANCE SUMMARY VIEW (with names)
+# ============================================================
+@app.get("/attendance/session/{session_id}/view", response_class=HTMLResponse)
+def attendance_view_summary(request: Request, session_id: int):
+    require_login(request)
+    if request.session.get("role") not in ("CR", "LECTURER"):
+        raise HTTPException(403)
+    data = db.get_session_attendance_summary(session_id)
+    if not data:
+        raise HTTPException(404)
+    return render("attendance_summary.html", ctx(request, {
+        "session": data["session"],
+        "present": data["present"],
+        "absent": data["absent"],
+        "late": data["late"],
+        "excused": data["excused"],
+        "total": data["total"],
+        "present_count": len(data["present"]) + len(data["late"]),
+        "absent_count": len(data["absent"]),
+        "late_count": len(data["late"]),
+        "excused_count": len(data["excused"]),
+    }))
+
+
+# ============================================================
+# MODULE NOTES + TOPIC STATUS
+# ============================================================
+@app.post("/topics/{tid}/update_notes")
+def topic_update_notes(request: Request, tid: int, description: str = Form("")):
+    require_login(request)
+    if request.session.get("role") not in ("CR", "LECTURER"):
+        raise HTTPException(403)
+    try:
+        conn = db.get_connection()
+        conn.execute("UPDATE topics SET description = ? WHERE id = ?",
+                     (description, tid))
+        conn.commit()
+        conn.close()
+        return RedirectResponse(
+            request.headers.get("referer", "/modules"), 303)
+    except Exception as e:
+        raise HTTPException(500, detail=str(e))
+
+
+@app.post("/topics/{tid}/toggle_status")
+def topic_toggle_status(request: Request, tid: int):
+    require_login(request)
+    if request.session.get("role") not in ("CR", "LECTURER"):
+        raise HTTPException(403)
+    try:
+        conn = db.get_connection()
+        row = conn.execute("SELECT status FROM topics WHERE id = ?",
+                           (tid,)).fetchone()
+        if not row:
+            conn.close()
+            raise HTTPException(404)
+        current = row["status"] or "not_started"
+        if current == "not_started":
+            new_status = "in_progress"
+        elif current == "in_progress":
+            new_status = "completed"
+        else:
+            new_status = "not_started"
+        conn.execute("UPDATE topics SET status = ? WHERE id = ?",
+                     (new_status, tid))
+        conn.commit()
+        conn.close()
+        return RedirectResponse(
+            request.headers.get("referer", "/modules"), 303)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(500, detail=str(e))

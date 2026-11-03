@@ -5,6 +5,7 @@
 {% block body %}
 <div class="container">
 
+    <!-- Module Header -->
     <div style="background:linear-gradient(135deg,#0B1F33 0%,#1e40af 100%);border-radius:16px;padding:28px;color:white;margin-bottom:22px;">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap;">
             <div style="flex:1;min-width:200px;">
@@ -17,6 +18,11 @@
                 {% endif %}
             </div>
             <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                {% if not offering.is_published and role == 'CR' %}
+                <form method="post" action="/modules/{{ offering.id }}/publish" style="display:inline;">
+                    <button type="submit" class="btn btn-success" style="padding:10px 20px;background:#16A34A;color:white;">Publish</button>
+                </form>
+                {% endif %}
                 {% if role == 'CR' %}
                 <a href="/modules/{{ offering.id }}/edit" class="btn" style="background:#F47721;color:white;padding:10px 20px;font-size:14px;">✏️ Edit</a>
                 {% endif %}
@@ -24,87 +30,231 @@
         </div>
     </div>
 
-    <!-- FULL DESCRIPTION -->
+    <!-- Full Description -->
     {% if offering.module_desc %}
-    <div class="card" style="margin-bottom:18px;">
+    <div class="card" style="margin-bottom:22px;">
         <h2 style="font-size:16px;font-weight:800;color:var(--navy);margin-bottom:10px;">📝 Maelezo</h2>
         <div style="color:#334155;line-height:1.7;white-space:pre-wrap;font-size:15px;">{{ offering.module_desc }}</div>
     </div>
     {% endif %}
 
-    <!-- STATUS -->
-    <div class="card" style="margin-bottom:18px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;">
-        <div style="flex:1;">
-            <span style="font-weight:800;color:var(--navy);">Status:</span>
-            {% if offering.is_published %}
-            <span style="background:#dcfce7;color:#16A34A;padding:4px 12px;border-radius:10px;font-size:12px;font-weight:700;">✓ Published</span>
-            {% else %}
-            <span style="background:#fef3c7;color:#92400e;padding:4px 12px;border-radius:10px;font-size:12px;font-weight:700;">⏳ Draft</span>
-            {% endif %}
+    <!-- TABS -->
+    <div style="background:white;border-radius:12px;padding:6px;display:flex;gap:6px;margin-bottom:22px;box-shadow:0 1px 3px rgba(0,0,0,.05);">
+        <button onclick="switchTab('notes')" id="tab-notes" class="module-tab module-tab-active" style="flex:1;padding:14px 20px;border:none;border-radius:8px;font-weight:800;font-size:15px;cursor:pointer;font-family:inherit;transition:all .15s;">
+            📖 Studying Notes
+        </button>
+        <button onclick="switchTab('subenabling')" id="tab-subenabling" class="module-tab" style="flex:1;padding:14px 20px;border:none;border-radius:8px;font-weight:800;font-size:15px;cursor:pointer;font-family:inherit;transition:all .15s;">
+            ⚙️ Module Sub Enabling
+        </button>
+    </div>
+
+    <!-- TAB 1: STUDYING NOTES -->
+    <div id="pane-notes" class="module-pane">
+        <div class="card" style="margin-bottom:16px;">
+            <h2 style="font-size:18px;font-weight:800;color:var(--navy);margin-bottom:6px;">📖 Studying Notes</h2>
+            <p style="color:var(--muted);font-size:13px;margin:0;">Maelezo, notes, na materials za kusoma kwa module hii</p>
         </div>
-        {% if not offering.is_published and role == 'CR' %}
-        <form method="post" action="/modules/{{ offering.id }}/publish" style="display:inline;">
-            <button type="submit" class="btn btn-success" style="padding:10px 20px;background:#16A34A;color:white;">Publish</button>
-        </form>
-        {% endif %}
-        <form method="post" action="/modules/{{ offering.id }}/delete" onsubmit="return confirm('Delete module?');" style="display:inline;">
-            <button type="submit" class="btn btn-danger" style="padding:10px 20px;">Delete</button>
-        </form>
-    </div>
 
-    <!-- TOPICS -->
-    <div style="display:flex;justify-content:space-between;align-items:center;margin:22px 0 12px;">
-        <h2 style="font-size:18px;font-weight:800;color:var(--navy);margin:0;">📖 Topics ({{ topics|length }})</h2>
-    </div>
-
-    {% if topics %}
-    <div style="display:grid;gap:10px;">
-        {% for t in topics %}
-        <div class="card" style="padding:14px 18px;">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
-                <div style="flex:1;min-width:200px;">
-                    <div style="font-weight:800;color:var(--navy);font-size:15px;">{{ loop.index }}. {{ t.title }}</div>
-                    {% if t.description %}<div style="color:var(--muted);font-size:13px;margin-top:4px;">{{ t.description }}</div>{% endif %}
+        {% if topics %}
+        <div style="display:grid;gap:12px;">
+            {% for t in topics %}
+            <div class="card" style="padding:18px 20px;border-left:4px solid #2563EB;">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap;margin-bottom:10px;">
+                    <div style="flex:1;min-width:200px;">
+                        <div style="font-size:12px;color:#2563EB;font-weight:800;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">
+                            Topic {{ loop.index }}
+                        </div>
+                        <h3 style="font-size:17px;font-weight:800;color:var(--navy);margin:0;">{{ t.title }}</h3>
+                    </div>
+                    {% if t.duration_hrs %}
+                    <div style="background:#EFF6FF;color:#2563EB;padding:4px 12px;border-radius:10px;font-size:12px;font-weight:700;">
+                        ⏱ {{ t.duration_hrs }}h
+                    </div>
+                    {% endif %}
                 </div>
-                <div style="display:flex;gap:6px;">
+
+                {% if t.description %}
+                <div style="background:#f8fafc;padding:14px 16px;border-radius:8px;font-size:14px;color:#334155;line-height:1.7;white-space:pre-wrap;margin-bottom:12px;">
+                    {{ t.description }}
+                </div>
+                {% endif %}
+
+                {% if t.notes %}
+                <div style="background:#fffbeb;padding:12px 16px;border-radius:8px;font-size:13px;color:#78350f;line-height:1.6;white-space:pre-wrap;margin-bottom:12px;border-left:3px solid #F59E0B;">
+                    <strong>📌 Notes:</strong> {{ t.notes }}
+                </div>
+                {% endif %}
+
+                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+                    <button onclick="openNotesEditor({{ t.id }}, '{{ t.title|e }}', `{{ (t.description or '')|replace('`', '\\`') }}`)" class="btn btn-outline" style="padding:8px 16px;font-size:13px;">
+                        ✏️ Edit Notes
+                    </button>
                     {% if role == 'CR' %}
-                    <form method="post" action="/topics/{{ t.id }}/delete" onsubmit="return confirm('Delete topic?');" style="display:inline;">
-                        <button type="submit" class="btn btn-danger" style="padding:6px 12px;font-size:12px;">Delete</button>
+                    <form method="post" action="/topics/{{ t.id }}/delete" onsubmit="return confirm('Delete topic {{ t.title }}?');" style="display:inline;">
+                        <button type="submit" class="btn btn-danger" style="padding:8px 16px;font-size:13px;">🗑 Delete Topic</button>
                     </form>
                     {% endif %}
                 </div>
             </div>
+            {% endfor %}
         </div>
-        {% endfor %}
+        {% else %}
+        <div class="card" style="text-align:center;padding:40px;color:var(--muted);">
+            <div style="font-size:44px;margin-bottom:12px;">📖</div>
+            <h3 style="color:var(--navy);font-size:17px;font-weight:800;margin-bottom:6px;">Hakuna notes bado</h3>
+            <p>CR anaweza kuongeza topics kwenye tab ya "Module Sub Enabling".</p>
+        </div>
+        {% endif %}
     </div>
-    {% else %}
-    <div class="card" style="text-align:center;padding:40px;color:var(--muted);">
-        <p>Hakuna topics bado. Ongeza topic ya kwanza.</p>
-    </div>
-    {% endif %}
 
-    {% if role == 'CR' %}
-    <div class="card" style="margin-top:18px;">
-        <h3 style="font-size:15px;font-weight:800;color:var(--navy);margin-bottom:12px;">➕ Add Topic</h3>
-        <form method="post" action="/modules/{{ offering.id }}/add_topic">
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Topic Title *</label>
-                    <input type="text" name="title" required placeholder="e.g. Introduction to Java">
+    <!-- TAB 2: MODULE SUB ENABLING -->
+    <div id="pane-subenabling" class="module-pane" style="display:none;">
+        <div class="card" style="margin-bottom:16px;background:#fffbeb;border:2px solid #F59E0B;">
+            <h2 style="font-size:18px;font-weight:800;color:var(--navy);margin-bottom:6px;">⚙️ Module Sub Enabling</h2>
+            <p style="color:#78350f;font-size:13px;margin:0;">Washa / zima topics ndogo (sub-enabling) na uongeze topics mpya</p>
+        </div>
+
+        {% if role == 'CR' %}
+        <!-- Add Topic Form -->
+        <div class="card" style="margin-bottom:18px;border-left:4px solid #16A34A;">
+            <h3 style="font-size:16px;font-weight:800;color:var(--navy);margin-bottom:14px;">➕ Add New Topic (Sub-Enabling)</h3>
+            <form method="post" action="/modules/{{ offering.id }}/add_topic">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Topic Title *</label>
+                        <input type="text" name="title" required placeholder="e.g. Introduction to Variables">
+                    </div>
+                    <div class="form-group">
+                        <label>Duration (hours)</label>
+                        <input type="number" name="duration" step="0.5" value="0" placeholder="e.g. 2">
+                    </div>
                 </div>
                 <div class="form-group">
-                    <label>Duration (hrs)</label>
-                    <input type="number" name="duration" step="0.5" value="0">
+                    <label>Description / Notes</label>
+                    <textarea name="description" rows="3" placeholder="Maelezo ya topic..."></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary" style="padding:12px 24px;">Add Topic</button>
+            </form>
+        </div>
+        {% endif %}
+
+        <h3 style="font-size:16px;font-weight:800;color:var(--navy);margin:22px 0 12px;">📋 Sub-Topics ({{ topics|length }})</h3>
+
+        {% if topics %}
+        <div style="display:grid;gap:10px;">
+            {% for t in topics %}
+            <div class="card" style="padding:16px 18px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;">
+                <div style="width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,#0B1F33,#1e40af);color:white;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:15px;flex-shrink:0;">
+                    {{ loop.index }}
+                </div>
+                <div style="flex:1;min-width:200px;">
+                    <div style="font-weight:800;color:var(--navy);font-size:15px;">{{ t.title }}</div>
+                    <div style="font-size:12px;color:var(--muted);margin-top:2px;">
+                        Status: 
+                        {% if t.status == 'completed' %}
+                        <span style="color:#16A34A;font-weight:700;">✓ Completed</span>
+                        {% elif t.status == 'in_progress' %}
+                        <span style="color:#F59E0B;font-weight:700;">⏳ In Progress</span>
+                        {% else %}
+                        <span style="color:#64748B;font-weight:700;">○ Not Started</span>
+                        {% endif %}
+                        {% if t.duration_hrs %} · ⏱ {{ t.duration_hrs }}h{% endif %}
+                    </div>
+                </div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                    {% if role == 'CR' %}
+                    <form method="post" action="/topics/{{ t.id }}/toggle_status" style="display:inline;">
+                        <button type="submit" class="btn" style="padding:6px 14px;font-size:12px;background:#2563EB;color:white;">
+                            {% if t.status == 'completed' %}↺ Reopen{% elif t.status == 'in_progress' %}✓ Complete{% else %}▶ Start{% endif %}
+                        </button>
+                    </form>
+                    <form method="post" action="/topics/{{ t.id }}/delete" onsubmit="return confirm('Delete topic {{ t.title }}?');" style="display:inline;">
+                        <button type="submit" class="btn btn-danger" style="padding:6px 14px;font-size:12px;">🗑</button>
+                    </form>
+                    {% endif %}
                 </div>
             </div>
-            <div class="form-group">
-                <label>Description</label>
-                <textarea name="description" rows="2"></textarea>
-            </div>
-            <button type="submit" class="btn btn-primary">Add Topic</button>
-        </form>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="card" style="text-align:center;padding:40px;color:var(--muted);">
+            <p>Hakuna sub-topics bado. Ongeza topic ya kwanza hapo juu.</p>
+        </div>
+        {% endif %}
     </div>
-    {% endif %}
 
 </div>
+
+<!-- Notes Editor Modal -->
+<div id="notesModal" style="display:none;position:fixed;inset:0;background:rgba(11,31,51,.75);z-index:99999;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);" onclick="if(event.target===this)closeNotesEditor();">
+    <div style="background:white;border-radius:16px;max-width:600px;width:100%;max-height:90vh;overflow-y:auto;">
+        <div style="background:linear-gradient(135deg,#0B1F33,#1e40af);color:white;padding:20px 24px;border-radius:16px 16px 0 0;display:flex;justify-content:space-between;align-items:flex-start;gap:14px;">
+            <div>
+                <div style="font-size:12px;color:#cbd5e1;text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:4px;">Edit Notes</div>
+                <h3 id="notesModalTitle" style="font-size:18px;font-weight:900;margin:0;"></h3>
+            </div>
+            <button onclick="closeNotesEditor()" style="background:rgba(255,255,255,.15);color:white;border:none;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:16px;">✕</button>
+        </div>
+        <form method="post" id="notesForm" action="">
+            <div style="padding:24px;">
+                <div class="form-group">
+                    <label>Notes / Description</label>
+                    <textarea name="description" id="notesTextarea" rows="10" style="font-family:inherit;font-size:14px;line-height:1.6;" placeholder="Andika notes hapa..."></textarea>
+                </div>
+            </div>
+            <div style="padding:16px 24px;background:#f8fafc;border-radius:0 0 16px 16px;border-top:1px solid #E2E8F0;display:flex;gap:10px;justify-content:flex-end;">
+                <button type="button" onclick="closeNotesEditor()" class="btn btn-outline" style="padding:10px 20px;">Cancel</button>
+                <button type="submit" class="btn btn-primary" style="padding:10px 24px;">💾 Save Notes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.module-tab {
+    background: transparent;
+    color: #64748B;
+}
+.module-tab:hover {
+    background: #f1f5f9;
+    color: #0B1F33;
+}
+.module-tab-active {
+    background: linear-gradient(135deg, #F47721, #e6670f) !important;
+    color: white !important;
+}
+@media (max-width: 640px) {
+    .module-tab {
+        font-size: 13px !important;
+        padding: 12px 10px !important;
+    }
+}
+</style>
+
+<script>
+function switchTab(tab) {
+    // Hide all panes
+    document.querySelectorAll('.module-pane').forEach(p => p.style.display = 'none');
+    // Deactivate all tabs
+    document.querySelectorAll('.module-tab').forEach(t => t.classList.remove('module-tab-active'));
+    // Show selected
+    document.getElementById('pane-' + tab).style.display = 'block';
+    document.getElementById('tab-' + tab).classList.add('module-tab-active');
+}
+
+function openNotesEditor(topicId, title, currentNotes) {
+    document.getElementById('notesModalTitle').textContent = title;
+    document.getElementById('notesTextarea').value = currentNotes || '';
+    document.getElementById('notesForm').action = '/topics/' + topicId + '/update_notes';
+    document.getElementById('notesModal').style.display = 'flex';
+}
+
+function closeNotesEditor() {
+    document.getElementById('notesModal').style.display = 'none';
+}
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeNotesEditor();
+});
+</script>
 {% endblock %}
