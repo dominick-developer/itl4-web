@@ -2,7 +2,7 @@
 import os
 RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
 from pathlib import Path
-from fastapi import FastAPI, Request, Form, HTTPException
+from fastapi import FastAPI, Request, Form, HTTPException, UploadFile, File
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -68,6 +68,12 @@ def startup():
         print(f"⚠️ Attendance migration: {_e}")
     print("âœ… Database ready")
     academy.init_academy()
+    
+    try:
+        db.init_materials_table()
+        print("✅ Materials table ready")
+    except Exception as _e:
+        print(f"⚠️ Materials init: {_e}")
     
     # Clean up unused sample modules
     try:
@@ -628,8 +634,21 @@ def module_detail(request: Request, oid: int):
     o = db.get_offering(oid)
     if not o:
         raise HTTPException(404)
+    try:
+        materials = db.get_materials_for_offering(oid)
+    except Exception:
+        materials = []
+    try:
+        mat_stats = db.get_material_stats(oid)
+    except Exception:
+        mat_stats = {"count": 0, "size": 0}
     return render("module_detail.html", ctx(request, {
-        "offering": o, "topics": db.get_topics(oid),
+        "offering": o,
+        "topics": db.get_topics(oid),
+        "materials": materials,
+        "mat_stats": mat_stats,
+        "success": request.query_params.get("success"),
+        "error": request.query_params.get("error"),
     }))
 
 
@@ -2466,3 +2485,102 @@ def topic_toggle_status(request: Request, tid: int):
         raise
     except Exception as e:
         raise HTTPException(500, detail=str(e))
+
+
+# ============================================================
+# MATERIALS UPLOAD/DOWNLOAD/DELETE
+# ============================================================
+@app.post("/modules/{oid}/materials/upload")
+async def material_upload(
+    request: Request, oid: int,
+    title: str = Form(...),
+    description: str = Form(""),
+    topic_id: str = Form(""),
+    file: UploadFile = File(...)
+):
+    require_login(request)
+    if request.session.get("role") != "CR":
+        raise HTTPException(403)
+    
+    o = db.get_offering(oid)
+    if not o:
+        raise HTTPException(404)
+    
+    content = await file.read()
+    if len(content) > 10 * 1024 * 1024:
+        return RedirectResponse(f"/modules/{oid}?error=File+too+large+(max+10MB)#notes", 303)
+    
+    import base64 as _b64
+    b64_content = _b64.b64encode(content).decode()
+    tid = int(topic_id) if topic_id else None
+    
+    try:
+        db.add_material(oid, tid, title.strip(), description.strip(),
+                        file.filename or "file", file.content_type or "application/octet-stream",
+                        b64_content, request.session["user_id"])
+    except Exception as e:
+        return RedirectResponse(f"/modules/{oid}?error={str(e)}#notes", 303)
+    
+    return RedirectResponse(f"/modules/{oid}?success=Material+uploaded#notes", 303)
+
+
+@app.get("/materials/{mid}/download")
+def material_download(request: Request, mid: int):
+    require_login(request)
+    m = db.get_material(mid)
+    if not m:
+        raise HTTPException(404)
+    
+    import base64 as _b64
+    try:
+        content = _b64.b64decode(m["file_content"] or "")
+    except Exception:
+        raise HTTPException(500, "File corrupted")
+    
+    from fastapi.responses import Response
+    return Response(
+        content=content,
+        media_type=m["file_type"] or "application/octet-stream",
+        headers={"Content-Disposition": f'attachment; filename="{m["file_name"]}"'}
+    )
+
+
+@app.post("/materials/{mid}/delete")
+def material_delete(request: Request, mid: int):
+    require_login(request)
+    if request.session.get("role") != "CR":
+        raise HTTPException(403)
+    m = db.get_material(mid)
+    if m:
+        db.delete_material(mid)
+        return RedirectResponse(f"/modules/{m['offering_id']}?success=Material+deleted#notes", 303)
+    return RedirectResponse("/modules", 303)
+
+
+# ============================================================
+# AUTO-SUBSCRIBE: Called after login to auto-enable push
+# ============================================================
+@app.post("/api/push/auto-subscribe")
+async def push_auto_subscribe(request: Request):
+    """Auto-save subscription (browser already subscribed)."""
+    if "user_id" not in request.session:
+        return {"ok": False, "error": "Not logged in"}
+    try:
+        data = await request.json()
+    except Exception:
+        return {"ok": False, "error": "Invalid JSON"}
+    if not data or "endpoint" not in data or "keys" not in data:
+        return {"ok": False, "error": "Missing endpoint or keys"}
+    try:
+        import push_service
+        push_service.save_subscription(request.session["user_id"], data)
+        from database import get_connection
+        conn = get_connection()
+        row = conn.execute(
+            "SELECT COUNT(*) as n FROM push_subscriptions WHERE user_id = ?",
+            (request.session["user_id"],)).fetchone()
+        conn.close()
+        count = row["n"] if row else 0
+        return {"ok": True, "count": count, "auto": True}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
