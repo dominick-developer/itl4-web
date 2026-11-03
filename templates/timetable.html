@@ -23,16 +23,15 @@
     var status = document.getElementById('pushStatus');
     var actions = document.getElementById('pushActions');
 
+    if (!VAPID_PUBLIC_KEY) { card.style.display = 'none'; return; }
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+        setState('unsupported');
+        return;
+    }
+
     function setState(state, msg) {
         actions.innerHTML = '';
-        if (state === 'checking') {
-            card.style.background = '#f8fafc';
-            card.style.borderColor = '#E2E8F0';
-            icon.textContent = '⏳';
-            title.textContent = 'Push Notifications';
-            title.style.color = '#0B1F33';
-            status.textContent = msg || 'Inaangalia hali...';
-        } else if (state === 'enabled') {
+        if (state === 'enabled') {
             card.style.background = '#f0fdf4';
             card.style.borderColor = '#86efac';
             icon.textContent = '✅';
@@ -47,7 +46,7 @@
             icon.textContent = '🔔';
             title.textContent = 'Push Notifications: Disabled';
             title.style.color = '#0B1F33';
-            status.textContent = 'Bonyeza "Enable" ili upate taarifa za ratiba.';
+            status.textContent = 'Bonyeza "Enable" ili upate taarifa za ratiba kwenye simu yako.';
             actions.innerHTML = '<button onclick="enablePush()" class="btn btn-primary" style="padding:10px 22px;font-size:14px;">Enable Notifications</button>';
         } else if (state === 'blocked') {
             card.style.background = '#fef2f2';
@@ -56,22 +55,14 @@
             title.textContent = 'Push Notifications: Blocked';
             title.style.color = '#DC2626';
             status.textContent = 'Browser imezuia. Fungua 🔒 kwenye URL bar → Site settings → Notifications → Allow.';
-            actions.innerHTML = '<button onclick="checkStatus()" class="btn btn-outline" style="padding:8px 16px;font-size:13px;">Jaribu Tena</button>';
+            actions.innerHTML = '<button onclick="checkStatus()" class="btn btn-outline" style="padding:8px 16px;font-size:13px;">Retry</button>';
         } else if (state === 'unsupported') {
             card.style.background = '#f1f5f9';
             card.style.borderColor = '#cbd5e1';
             icon.textContent = '⚠️';
             title.textContent = 'Push Notifications: Not Supported';
             title.style.color = '#64748B';
-            status.textContent = msg || 'Browser hii haiungi mkono push. Tumia Chrome au Edge.';
-            actions.innerHTML = '';
-        } else if (state === 'loading') {
-            card.style.background = '#eff6ff';
-            card.style.borderColor = '#93c5fd';
-            icon.textContent = '⏳';
-            title.textContent = 'Inafanya kazi...';
-            title.style.color = '#2563EB';
-            status.textContent = msg || 'Tafadhali subiri...';
+            status.textContent = 'Tumia Chrome au Edge.';
             actions.innerHTML = '';
         } else if (state === 'error') {
             card.style.background = '#fef2f2';
@@ -79,184 +70,162 @@
             icon.textContent = '❌';
             title.textContent = 'Hitilafu';
             title.style.color = '#DC2626';
-            status.textContent = msg || 'Kuna hitilafu.';
-            actions.innerHTML = '<button onclick="checkStatus()" class="btn btn-outline" style="padding:8px 16px;font-size:13px;">Jaribu Tena</button>' +
-                               '<button onclick="enablePush()" class="btn btn-primary" style="padding:8px 16px;font-size:13px;">Enable</button>';
+            status.textContent = msg || 'Jaribu tena.';
+            actions.innerHTML = '<button onclick="enablePush()" class="btn btn-primary" style="padding:8px 16px;font-size:13px;">Jaribu Tena</button>';
         }
     }
 
-    function urlBase64ToUint8Array(base64String) {
-        var padding = '='.repeat((4 - base64String.length % 4) % 4);
-        var base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
-        var rawData = window.atob(base64);
-        var outputArray = new Uint8Array(rawData.length);
-        for (var i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
-        return outputArray;
+    function urlBase64ToUint8Array(b64) {
+        var pad = '='.repeat((4 - b64.length % 4) % 4);
+        var s = (b64 + pad).replace(/\-/g, '+').replace(/_/g, '/');
+        var raw = window.atob(s);
+        var arr = new Uint8Array(raw.length);
+        for (var i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+        return arr;
     }
 
-    // Register SW if not registered — this is the KEY fix
-    async function ensureSW() {
-        if (!('serviceWorker' in navigator)) {
-            throw new Error('Service worker haipatikani');
-        }
-        var regs = await navigator.serviceWorker.getRegistrations();
-        if (regs.length === 0) {
-            console.log('[Push] No SW registered — registering now');
-            await navigator.serviceWorker.register('/static/sw.js');
-        }
-        // Wait for it to be ready (15s, not 5s)
-        var reg = await Promise.race([
-            navigator.serviceWorker.ready,
-            new Promise(function(_, rej) {
-                setTimeout(function() { rej(new Error('Service worker haijajiandaa (15s)')); }, 15000);
-            })
-        ]);
-        return reg;
-    }
-
-    window.checkStatus = async function() {
-        if (!VAPID_PUBLIC_KEY) {
-            card.style.display = 'none';
-            return;
-        }
-        if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-            setState('unsupported');
-            return;
-        }
+    // INSTANT status — based on Notification.permission only (no waiting)
+    window.checkStatus = function() {
         if (Notification.permission === 'denied') {
-            setState('blocked');
+            setState('blocked'); return;
+        }
+        if (Notification.permission === 'granted') {
+            setState('enabled');  // ← INSTANT: show enabled
+            // Background verify (silent — no UI if it fails)
+            verifyBackground();
             return;
         }
-        
-        setState('checking', 'Inaangalia service worker...');
-        
-        try {
-            var reg = await ensureSW();
-            setState('checking', 'Inaangalia subscription...');
-            
-            var sub = await reg.pushManager.getSubscription();
-            
-            if (sub) {
-                console.log('[Push] Browser has subscription, syncing with server');
-                try {
-                    var res = await fetch('/api/push/subscribe', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(sub.toJSON())
-                    });
-                    var data = await res.json().catch(function() { return {}; });
-                    console.log('[Push] Sync result:', data);
-                } catch (e) {
-                    console.warn('[Push] Sync error:', e);
-                }
-                setState('enabled');
-            } else {
-                console.log('[Push] No browser subscription');
-                setState('disabled');
-            }
-        } catch (err) {
-            console.error('[Push] Check error:', err);
-            setState('error', err.message || 'Haijaweza kuangalia');
-        }
+        setState('disabled');
     };
 
-    window.enablePush = async function() {
-        if (!VAPID_PUBLIC_KEY) {
-            setState('error', 'VAPID key haipo');
-            return;
-        }
-        
-        setState('loading', 'Inaomba ruhusa...');
-        
+    async function verifyBackground() {
         try {
+            var reg = await Promise.race([
+                navigator.serviceWorker.ready,
+                new Promise(function(_, rej) { setTimeout(function() { rej(new Error('skip')); }, 3000); })
+            ]);
+            var sub = await reg.pushManager.getSubscription();
+            if (!sub) {
+                console.log('[Push] Permission granted but no subscription — showing disabled');
+                setState('disabled');
+            } else {
+                console.log('[Push] Verified: subscription exists');
+                // Silent re-sync with server (if server lost it)
+                fetch('/api/push/subscribe', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(sub.toJSON())
+                }).catch(function(){});
+            }
+        } catch (e) {
+            // Silent — keep optimistic "enabled"
+            console.log('[Push] Verify skipped:', e.message);
+        }
+    }
+
+    // INSTANT enable — show enabled, then do work in background
+    window.enablePush = function() {
+        setState('enabled');  // ← INSTANT: user clicks, sees enabled immediately
+        doEnableInBackground();
+    };
+
+    async function doEnableInBackground() {
+        try {
+            // 1. Permission
             var perm = await Notification.requestPermission();
-            console.log('[Push] Permission:', perm);
             if (perm !== 'granted') {
                 setState('blocked');
                 return;
             }
             
-            setState('loading', 'Inasajili service worker...');
-            var reg = await ensureSW();
+            // 2. Get SW (try ready first, fallback to register)
+            var reg;
+            try {
+                reg = await Promise.race([
+                    navigator.serviceWorker.ready,
+                    new Promise(function(_, rej) {
+                        setTimeout(function() { rej(new Error('timeout')); }, 8000);
+                    })
+                ]);
+            } catch (e) {
+                console.log('[Push] SW ready timeout — trying explicit register');
+                reg = await navigator.serviceWorker.register('/static/sw.js');
+                // Wait for activation
+                reg = await navigator.serviceWorker.ready;
+            }
             
-            setState('loading', 'Inasajili subscription...');
+            // 3. Subscribe
             var sub = await reg.pushManager.subscribe({
                 userVisibleOnly: true,
                 applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
             });
-            console.log('[Push] Browser subscription created');
             
-            setState('loading', 'Inahifadhi kwenye server...');
-            
+            // 4. Save to server
             var res = await fetch('/api/push/subscribe', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(sub.toJSON())
             });
             var data = await res.json().catch(function() { return {}; });
-            console.log('[Push] Subscribe result:', data);
             
             if (!res.ok || data.ok === false) {
-                try { await sub.unsubscribe(); } catch (e) {}
-                setState('error', (data.error || 'Imeshindwa kuhifadhi'));
+                try { await sub.unsubscribe(); } catch(e) {}
+                setState('error', data.error || 'Server imeshindwa');
                 return;
             }
             
-            setState('enabled');
+            console.log('[Push] Enabled successfully');
+            // Already showing "enabled" — no state change needed
             
             // Auto-test after 2s
             setTimeout(function() {
-                fetch('/api/push/test').then(function(r) { return r.json(); }).then(function(d) {
-                    console.log('[Push] Auto-test:', d);
-                }).catch(function(e) {
-                    console.warn('[Push] Auto-test error:', e);
-                });
+                fetch('/api/push/test').catch(function(){});
             }, 2000);
             
         } catch (err) {
-            console.error('[Push] Enable error:', err);
+            console.error('[Push] Enable failed:', err);
             setState('error', err.message || 'Imeshindwa');
         }
+    }
+
+    window.disablePush = function() {
+        if (!confirm('Zima push notifications?')) return;
+        setState('disabled');  // ← INSTANT
+        doDisableInBackground();
     };
 
-    window.disablePush = async function() {
-        if (!confirm('Zima push notifications?')) return;
-        setState('loading', 'Inazima...');
+    async function doDisableInBackground() {
         try {
             var reg = await navigator.serviceWorker.ready;
             var sub = await reg.pushManager.getSubscription();
             if (sub) {
-                await fetch('/api/push/unsubscribe', {
+                fetch('/api/push/unsubscribe', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ endpoint: sub.endpoint })
-                });
+                }).catch(function(){});
                 await sub.unsubscribe();
             }
-            setState('disabled');
-        } catch (err) {
-            setState('error', err.message);
+        } catch (e) {
+            console.warn('[Push] Disable error:', e);
         }
-    };
+    }
 
     window.sendTest = async function() {
-        setState('loading', 'Inatuma test...');
         try {
             var res = await fetch('/api/push/test');
             var data = await res.json();
-            console.log('[Push] Test:', data);
             if (data.ok) {
-                setState('enabled');
                 alert('✅ Test notification imetumwa! Angalia notification bar.');
             } else {
-                setState('error', data.error || 'Imeshindwa kutuma');
+                alert('❌ ' + (data.error || 'Imeshindwa'));
             }
-        } catch (err) {
-            setState('error', err.message);
+        } catch (e) {
+            alert('❌ ' + e.message);
         }
     };
 
-    // Run check on page load
+    // Run INSTANTLY on page load
     checkStatus();
 })();
 </script>
