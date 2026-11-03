@@ -644,6 +644,11 @@
 <a href="/timetable/manage" class="sb-item {% if request.url.path.startswith('/timetable/manage') %}active{% endif %}">
     <span class="sb-icon">⚙️</span> Manage Timetable
 </a>
+{% if role == 'CR' %}
+<a href="/lecturers/manage" class="sb-item {% if request.url.path.startswith('/lecturers') %}active{% endif %}">
+    <span class="sb-icon">👨‍🏫</span> Lecturers
+</a>
+{% endif %}
 {% endif %}
                 <a href="/assignments"
                     class="sb-item {% if request.url.path.startswith('/assignments') %}active{% endif %}">
@@ -680,7 +685,12 @@
                         <span class="sb-icon">📜</span> Legal & Privacy
                     </a>
                 </a>
-                <a href="/settings" class="sb-item {% if request.url.path == '/settings' %}active{% endif %}">
+                {% if role == 'CR' %}
+<a href="/cr-management" class="sb-item {% if request.url.path.startswith('/cr-management') %}active{% endif %}">
+    <span class="sb-icon">👑</span> Manage CRs
+</a>
+{% endif %}
+<a href="/settings" class="sb-item {% if request.url.path == '/settings' %}active{% endif %}">
                     <span class="sb-icon">⚙</span> Settings
                 </a>
             </nav>
@@ -705,7 +715,12 @@
                 <div class="topbar-title">{% block page_title %}Dashboard{% endblock %}</div>
                 <input type="text" class="topbar-search" placeholder="🔍 Search...">
                 <a href="/notifications" class="topbar-icon">🔔</a>
-                <a href="/settings" class="topbar-icon">⚙</a>
+                {% if role == 'CR' %}
+<a href="/cr-management" class="sb-item {% if request.url.path.startswith('/cr-management') %}active{% endif %}">
+    <span class="sb-icon">👑</span> Manage CRs
+</a>
+{% endif %}
+<a href="/settings" class="topbar-icon">⚙</a>
             </div>
 
             {% block body %}{% endblock %}

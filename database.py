@@ -3184,3 +3184,236 @@ def delete_timetable_entry(entry_id):
 if __name__ == "__main__":
     init_database()
     print(f"Database: {DB_PATH}")
+
+
+# ============================================================
+# LECTURER MANAGEMENT (CR)
+# ============================================================
+def get_teacher(teacher_id):
+    conn = get_connection()
+    row = conn.execute("SELECT * FROM teachers WHERE id = ?", (teacher_id,)).fetchone()
+    conn.close()
+    return row
+
+
+def update_teacher(teacher_id, full_name, phone="", email="", notes=""):
+    conn = get_connection()
+    conn.execute(
+        "UPDATE teachers SET full_name = ?, phone = ?, email = ?, notes = ? WHERE id = ?",
+        (full_name, phone, email, notes, teacher_id))
+    conn.commit()
+    conn.close()
+
+
+def delete_teacher(teacher_id):
+    conn = get_connection()
+    row = conn.execute(
+        "SELECT COUNT(*) as n FROM modules WHERE teacher_id = ?", (teacher_id,)).fetchone()
+    if row and row["n"] > 0:
+        conn.close()
+        return False, f"Teacher ana modules {row['n']}. Reassign kwanza."
+    conn.execute("DELETE FROM teachers WHERE id = ?", (teacher_id,))
+    conn.commit()
+    conn.close()
+    return True, "Deleted"
+
+
+# ============================================================
+# SESSION ATTENDANCE MIGRATION
+# ============================================================
+def migrate_attendance_system():
+    """Add timetable_id, status, conducted_at to class_sessions."""
+    conn = get_connection()
+    cur = conn.cursor()
+    cols = [r[1] for r in cur.execute("PRAGMA table_info(class_sessions)").fetchall()]
+    
+    if "timetable_id" not in cols:
+        try: cur.execute("ALTER TABLE class_sessions ADD COLUMN timetable_id INTEGER")
+        except: pass
+    if "status" not in cols:
+        try: cur.execute("ALTER TABLE class_sessions ADD COLUMN status TEXT DEFAULT 'scheduled'")
+        except: pass
+    if "conducted_at" not in cols:
+        try: cur.execute("ALTER TABLE class_sessions ADD COLUMN conducted_at TEXT")
+        except: pass
+    
+    conn.commit()
+    conn.close()
+
+
+def get_todays_timetable_with_status(user_id):
+    """Get today's timetable with linked session status (if CR already started)."""
+    from datetime import datetime
+    today = datetime.now().strftime("%Y-%m-%d")
+    weekday = datetime.now().strftime("%A")
+    
+    conn = get_connection()
+    rows = conn.execute(
+        "SELECT t.*, m.name AS module_name, m.code AS module_code, "
+        "te.full_name AS teacher_name, "
+        "cs.id AS session_id, cs.status AS session_status, cs.conducted_at "
+        "FROM timetable t "
+        "LEFT JOIN modules m ON t.module_id = m.id "
+        "LEFT JOIN teachers te ON t.teacher_id = te.id "
+        "LEFT JOIN class_sessions cs ON cs.timetable_id = t.id AND cs.session_date = ? "
+        "WHERE t.day = ? "
+        "ORDER BY t.start_time", (today, weekday)).fetchall()
+    conn.close()
+    return rows
+
+
+def get_or_create_session_from_timetable(timetable_id, session_date, created_by):
+    """Create or find class_session for a timetable entry on a specific date."""
+    conn = get_connection()
+    existing = conn.execute(
+        "SELECT id, status FROM class_sessions WHERE timetable_id = ? AND session_date = ?",
+        (timetable_id, session_date)).fetchone()
+    if existing:
+        conn.close()
+        return existing["id"], existing["status"], False
+    
+    t = conn.execute("SELECT * FROM timetable WHERE id = ?", (timetable_id,)).fetchone()
+    if not t:
+        conn.close()
+        return None, None, False
+    
+    cur = conn.cursor()
+    cur.execute(
+        "INSERT INTO class_sessions (session_date, module_id, session_type, "
+        "start_time, end_time, notes, created_by, timetable_id, status) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'scheduled')",
+        (session_date, t["module_id"], t["session_name"] or "Regular",
+         t["start_time"], t["end_time"], t["notes"], created_by, timetable_id))
+    conn.commit()
+    sid = cur.lastrowid
+    conn.close()
+    return sid, "scheduled", True
+
+
+def get_session_with_attendance(session_id):
+    """Get session + attendance records."""
+    conn = get_connection()
+    session = conn.execute(
+        "SELECT cs.*, m.name AS module_name, m.code AS module_code, "
+        "t.session_name AS timetable_name, te.full_name AS teacher_name "
+        "FROM class_sessions cs "
+        "LEFT JOIN modules m ON cs.module_id = m.id "
+        "LEFT JOIN timetable t ON cs.timetable_id = t.id "
+        "LEFT JOIN teachers te ON t.teacher_id = te.id "
+        "WHERE cs.id = ?", (session_id,)).fetchone()
+    if not session:
+        conn.close()
+        return None
+    attendance = conn.execute(
+        "SELECT ca.*, s.full_name, s.reg_number FROM class_attendance ca "
+        "JOIN students s ON ca.student_id = s.id "
+        "WHERE ca.session_id = ? ORDER BY s.full_name", (session_id,)).fetchall()
+    conn.close()
+    return {"session": dict(session), "attendance": [dict(a) for a in attendance]}
+
+
+def update_session_status(session_id, status):
+    conn = get_connection()
+    if status == "conducted":
+        conn.execute(
+            "UPDATE class_sessions SET status = ?, conducted_at = datetime('now','localtime') WHERE id = ?",
+            (status, session_id))
+    else:
+        conn.execute("UPDATE class_sessions SET status = ? WHERE id = ?", (status, session_id))
+    conn.commit()
+    conn.close()
+
+
+def get_student_session_attendance(student_id, limit=100):
+    """Student's attendance with session + timetable details."""
+    conn = get_connection()
+    rows = conn.execute(
+        "SELECT ca.status AS attendance_status, ca.notes AS attendance_notes, "
+        "cs.session_date, cs.session_type, cs.status AS session_status, cs.start_time, cs.end_time, "
+        "m.name AS module_name, m.code AS module_code, "
+        "t.session_name AS timetable_name, t.venue, te.full_name AS teacher_name "
+        "FROM class_attendance ca "
+        "JOIN class_sessions cs ON ca.session_id = cs.id "
+        "LEFT JOIN modules m ON cs.module_id = m.id "
+        "LEFT JOIN timetable t ON cs.timetable_id = t.id "
+        "LEFT JOIN teachers te ON t.teacher_id = te.id "
+        "WHERE ca.student_id = ? "
+        "ORDER BY cs.session_date DESC, cs.id DESC LIMIT ?",
+        (student_id, limit)).fetchall()
+    conn.close()
+    return rows
+
+
+# ============================================================
+# CR MANAGEMENT (create, list, delete)
+# ============================================================
+def create_cr_account(username, password, full_name, phone, email=""):
+    """Create a new CR user. Returns (ok, message)."""
+    import hashlib, os
+    username = (username or "").strip()
+    if not username:
+        return False, "Username is required."
+    if not password or len(password) < 6:
+        return False, "Password must be at least 6 characters."
+    if not full_name or not full_name.strip():
+        return False, "Full name is required."
+    if not phone or not phone.strip():
+        return False, "Phone is required."
+
+    conn = get_connection()
+    existing = conn.execute(
+        "SELECT id FROM users WHERE LOWER(username) = LOWER(?)",
+        (username,)).fetchone()
+    if existing:
+        conn.close()
+        return False, f"Username '{username}' already exists."
+
+    cur = conn.cursor()
+    cur.execute(
+        "INSERT INTO students (full_name, reg_number, phone, email, "
+        "is_active, membership_status, is_verified, date_joined) "
+        "VALUES (?, ?, ?, ?, 1, 'approved', 1, date('now'))",
+        (full_name.strip(), username.upper(), phone.strip(),
+         (email or "").strip() or None))
+    student_id = cur.lastrowid
+
+    salt = os.urandom(16).hex()
+    pwd_hash = hashlib.sha256((salt + password).encode()).hexdigest()
+    cur.execute(
+        "INSERT INTO users (role, student_id, username, password_hash, "
+        "salt, is_admin) VALUES (?, ?, ?, ?, ?, 1)",
+        ("CR", student_id, username, pwd_hash, salt))
+    conn.commit()
+    conn.close()
+    return True, f"CR '{username}' created successfully."
+
+
+def get_all_crs():
+    """Return all CR users."""
+    conn = get_connection()
+    rows = conn.execute(
+        "SELECT u.id, u.username, s.full_name, s.phone, s.email, s.date_joined "
+        "FROM users u LEFT JOIN students s ON u.student_id = s.id "
+        "WHERE u.role = 'CR' ORDER BY u.username").fetchall()
+    conn.close()
+    return rows
+
+
+def delete_cr_user(user_id):
+    """Delete a CR (not 'cr' primary). Returns (ok, message)."""
+    conn = get_connection()
+    row = conn.execute(
+        "SELECT username, student_id FROM users WHERE id = ? AND role = 'CR'",
+        (user_id,)).fetchone()
+    if not row:
+        conn.close()
+        return False, "User not found."
+    if row["username"] == "cr":
+        conn.close()
+        return False, "Cannot delete primary 'cr' account."
+    conn.execute("DELETE FROM users WHERE id = ?", (user_id,))
+    if row["student_id"]:
+        conn.execute("DELETE FROM students WHERE id = ?", (row["student_id"],))
+    conn.commit()
+    conn.close()
+    return True, "CR deleted."

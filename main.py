@@ -54,6 +54,11 @@ async def push_unsubscribe(request: Request):
 def startup():
     # 1. Init database (migrations za columns mpya zipo ndani ya init_database)
     db.init_database()
+    try:
+        db.migrate_attendance_system()
+        print("✅ Attendance migration ready")
+    except Exception as _e:
+        print(f"⚠️ Attendance migration: {_e}")
     print("âœ… Database ready")
     academy.init_academy()
     try:
@@ -1938,3 +1943,189 @@ def push_test(request: Request):
             "traceback": traceback.format_exc()[-500:],
             "user_id": user_id
         }
+
+
+# ============================================================
+# LECTURER MANAGEMENT ROUTES (CR only)
+# ============================================================
+@app.get("/lecturers/manage", response_class=HTMLResponse)
+def lecturers_manage(request: Request):
+    require_login(request)
+    if request.session.get("role") != "CR":
+        raise HTTPException(403)
+    return render("lecturers_manage.html", ctx(request, {
+        "teachers": db.get_all_teachers(),
+        "edit_teacher": None,
+        "error": request.query_params.get("error"),
+        "success": request.query_params.get("success"),
+    }))
+
+
+@app.post("/lecturers/add")
+def lecturer_add(request: Request,
+                 full_name: str = Form(...),
+                 phone: str = Form(""),
+                 email: str = Form(""),
+                 notes: str = Form("")):
+    require_login(request)
+    if request.session.get("role") != "CR":
+        raise HTTPException(403)
+    if not full_name.strip():
+        return RedirectResponse("/lecturers/manage?error=Jina+lazima", 303)
+    db.add_teacher(full_name.strip(), phone.strip(), email.strip(), notes.strip())
+    return RedirectResponse("/lecturers/manage?success=Lecturer+ameongezwa", 303)
+
+
+@app.get("/lecturers/{tid}/edit", response_class=HTMLResponse)
+def lecturer_edit(request: Request, tid: int):
+    require_login(request)
+    if request.session.get("role") != "CR":
+        raise HTTPException(403)
+    teacher = db.get_teacher(tid)
+    if not teacher:
+        raise HTTPException(404)
+    return render("lecturers_manage.html", ctx(request, {
+        "teachers": db.get_all_teachers(),
+        "edit_teacher": teacher,
+        "error": None,
+        "success": None,
+    }))
+
+
+@app.post("/lecturers/{tid}/update")
+def lecturer_update(request: Request, tid: int,
+                    full_name: str = Form(...),
+                    phone: str = Form(""),
+                    email: str = Form(""),
+                    notes: str = Form("")):
+    require_login(request)
+    if request.session.get("role") != "CR":
+        raise HTTPException(403)
+    db.update_teacher(tid, full_name.strip(), phone.strip(), email.strip(), notes.strip())
+    return RedirectResponse("/lecturers/manage?success=Imebadilishwa", 303)
+
+
+@app.post("/lecturers/{tid}/delete")
+def lecturer_delete(request: Request, tid: int):
+    require_login(request)
+    if request.session.get("role") != "CR":
+        raise HTTPException(403)
+    ok, msg = db.delete_teacher(tid)
+    if not ok:
+        from urllib.parse import quote
+        return RedirectResponse(f"/lecturers/manage?error={quote(msg)}", 303)
+    return RedirectResponse("/lecturers/manage?success=Imefutwa", 303)
+
+
+# ============================================================
+# SESSION-BASED ATTENDANCE ROUTES
+# ============================================================
+@app.get("/attendance", response_class=HTMLResponse)
+def attendance_page(request: Request):
+    require_login(request)
+    role = request.session["role"]
+    
+    if role not in ("CR", "LECTURER"):
+        return render("attendance_student.html", ctx(request, {
+            "my_attendance": db.get_student_session_attendance(request.session.get("student_id")),
+        }))
+    
+    todays = db.get_todays_timetable_with_status(request.session["user_id"])
+    recent = db.get_class_sessions(20)
+    return render("attendance.html", ctx(request, {
+        "todays_sessions": todays,
+        "recent_sessions": recent,
+        "today_label": datetime.now().strftime("%A, %d %B %Y"),
+    }))
+
+
+@app.post("/attendance/start/{timetable_id}")
+def attendance_start(request: Request, timetable_id: int):
+    require_login(request)
+    if request.session["role"] not in ("CR", "LECTURER"):
+        raise HTTPException(403)
+    today = datetime.now().strftime("%Y-%m-%d")
+    session_id, status, created = db.get_or_create_session_from_timetable(
+        timetable_id, today, request.session["user_id"])
+    if not session_id:
+        raise HTTPException(404)
+    return RedirectResponse(f"/attendance/session/{session_id}", 303)
+
+
+@app.get("/attendance/session/{session_id}", response_class=HTMLResponse)
+def attendance_session(request: Request, session_id: int):
+    require_login(request)
+    if request.session["role"] not in ("CR", "LECTURER"):
+        raise HTTPException(403)
+    data = db.get_session_with_attendance(session_id)
+    if not data:
+        raise HTTPException(404)
+    return render("attendance_mark.html", ctx(request, {
+        "session": data["session"],
+        "attendance_map": {a["student_id"]: a["status"] for a in data["attendance"]},
+        "students": db.get_approved_students(),
+    }))
+
+
+@app.post("/attendance/session/{session_id}/save")
+async def attendance_session_save(request: Request, session_id: int):
+    require_login(request)
+    if request.session["role"] not in ("CR", "LECTURER"):
+        raise HTTPException(403)
+    form = await request.form()
+    statuses = {}
+    for k, v in form.items():
+        if k.startswith("status_") and v in ("present", "absent", "late", "excused"):
+            try:
+                statuses[int(k.replace("status_", ""))] = v
+            except ValueError:
+                pass
+    db.save_class_attendance(session_id, statuses)
+    
+    new_status = form.get("session_status", "conducted")
+    if new_status in ("scheduled", "conducted", "cancelled"):
+        db.update_session_status(session_id, new_status)
+    
+    return RedirectResponse(f"/attendance/session/{session_id}?saved=1", 303)
+
+
+# ============================================================
+# CR MANAGEMENT ROUTES (CR only)
+# ============================================================
+@app.get("/cr-management", response_class=HTMLResponse)
+def cr_management_get(request: Request):
+    require_login(request)
+    if request.session.get("role") != "CR":
+        raise HTTPException(403)
+    return render("cr_management.html", ctx(request, {
+        "crs": db.get_all_crs(),
+        "error": request.query_params.get("error"),
+        "success": request.query_params.get("success"),
+    }))
+
+
+@app.post("/cr-management/create")
+def cr_management_create(request: Request,
+                          username: str = Form(...),
+                          password: str = Form(...),
+                          full_name: str = Form(...),
+                          phone: str = Form(...),
+                          email: str = Form("")):
+    require_login(request)
+    if request.session.get("role") != "CR":
+        raise HTTPException(403)
+    ok, msg = db.create_cr_account(username, password, full_name, phone, email)
+    from urllib.parse import quote
+    key = "success" if ok else "error"
+    return RedirectResponse(f"/cr-management?{key}={quote(msg)}", 303)
+
+
+@app.post("/cr-management/{uid}/delete")
+def cr_management_delete(request: Request, uid: int):
+    require_login(request)
+    if request.session.get("role") != "CR":
+        raise HTTPException(403)
+    ok, msg = db.delete_cr_user(uid)
+    from urllib.parse import quote
+    key = "success" if ok else "error"
+    return RedirectResponse(f"/cr-management?{key}={quote(msg)}", 303)
