@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{% block title %}Attendance Summary{% endblock %}
+{% block page_title %}✓ Attendance Summary{% endblock %}
+
+{% block body %}
+<div class="container">
+
+    <!-- Header -->
+    <div style="background:linear-gradient(135deg,#0B1F33 0%,#1e40af 100%);border-radius:16px;padding:28px;color:white;margin-bottom:22px;">
+        <div style="font-size:12px;color:#cbd5e1;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:6px;">
+            {{ session.session_date }} · {{ session.start_time }}{% if session.end_time %} – {{ session.end_time }}{% endif %}
+            {% if session.status %} · {{ session.status|upper }}{% endif %}
+        </div>
+        <h1 style="font-size:26px;font-weight:900;margin:0 0 8px;">
+            {{ session.timetable_name or session.module_name or session.session_type or 'Session' }}
+        </h1>
+        <p style="color:#cbd5e1;margin:0;font-size:14px;">
+            {% if session.teacher_name %}👨‍🏫 {{ session.teacher_name }}{% endif %}
+            {% if session.module_code %} · {{ session.module_code }}{% endif %}
+        </p>
+    </div>
+
+    <!-- Stats Grid -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:22px;">
+        <div style="background:#dcfce7;border-left:4px solid #16A34A;padding:18px;border-radius:12px;text-align:center;">
+            <div style="font-size:36px;font-weight:900;color:#16A34A;line-height:1;">{{ present_count }}</div>
+            <div style="font-size:12px;color:#166534;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-top:4px;">✓ Present</div>
+        </div>
+        <div style="background:#fef3c7;border-left:4px solid #F59E0B;padding:18px;border-radius:12px;text-align:center;">
+            <div style="font-size:36px;font-weight:900;color:#92400e;line-height:1;">{{ late_count }}</div>
+            <div style="font-size:12px;color:#78350f;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-top:4px;">⏰ Late</div>
+        </div>
+        <div style="background:#fee2e2;border-left:4px solid #DC2626;padding:18px;border-radius:12px;text-align:center;">
+            <div style="font-size:36px;font-weight:900;color:#DC2626;line-height:1;">{{ absent_count }}</div>
+            <div style="font-size:12px;color:#991b1b;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-top:4px;">✗ Absent</div>
+        </div>
+        <div style="background:#f1f5f9;border-left:4px solid #64748B;padding:18px;border-radius:12px;text-align:center;">
+            <div style="font-size:36px;font-weight:900;color:#475569;line-height:1;">{{ excused_count }}</div>
+            <div style="font-size:12px;color:#334155;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-top:4px;">📝 Excused</div>
+        </div>
+        <div style="background:#eff6ff;border-left:4px solid #2563EB;padding:18px;border-radius:12px;text-align:center;">
+            <div style="font-size:36px;font-weight:900;color:#2563EB;line-height:1;">{{ total }}</div>
+            <div style="font-size:12px;color:#1e40af;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-top:4px;">👥 Total</div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div style="display:flex;gap:10px;margin-bottom:22px;flex-wrap:wrap;">
+        <a href="/attendance/session/{{ session.id }}" class="btn btn-primary" style="padding:10px 20px;">✏️ Edit Attendance</a>
+        <a href="/attendance" class="btn btn-outline" style="padding:10px 20px;">← Back to Attendance</a>
+        <button onclick="window.print()" class="btn btn-outline" style="padding:10px 20px;">🖨 Print</button>
+    </div>
+
+    <!-- PRESENT -->
+    {% if present %}
+    <div class="card" style="padding:0;overflow:hidden;margin-bottom:14px;border-left:4px solid #16A34A;">
+        <div style="background:#dcfce7;padding:14px 20px;font-weight:800;font-size:16px;color:#166534;display:flex;align-items:center;gap:10px;">
+            <span>✓</span>
+            <span>WALIOHUDHURIA ({{ present|length }})</span>
+        </div>
+        <div style="padding:12px 20px;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;">
+            {% for a in present %}
+            <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0;">
+                <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#16A34A,#15803d);color:white;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0;">{{ a.full_name[:1].upper() }}</div>
+                <div style="flex:1;min-width:0;">
+                    <div style="font-weight:700;color:#166534;font-size:13px;line-height:1.2;">{{ a.full_name }}</div>
+                    <div style="font-size:11px;color:#65a30d;">{{ a.reg_number or '' }}</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- LATE -->
+    {% if late %}
+    <div class="card" style="padding:0;overflow:hidden;margin-bottom:14px;border-left:4px solid #F59E0B;">
+        <div style="background:#fef3c7;padding:14px 20px;font-weight:800;font-size:16px;color:#92400e;display:flex;align-items:center;gap:10px;">
+            <span>⏰</span>
+            <span>WALIOCHELEWA ({{ late|length }})</span>
+        </div>
+        <div style="padding:12px 20px;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;">
+            {% for a in late %}
+            <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#fffbeb;border-radius:8px;border:1px solid #fde68a;">
+                <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#F59E0B,#d97706);color:white;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0;">{{ a.full_name[:1].upper() }}</div>
+                <div style="flex:1;min-width:0;">
+                    <div style="font-weight:700;color:#92400e;font-size:13px;line-height:1.2;">{{ a.full_name }}</div>
+                    <div style="font-size:11px;color:#b45309;">{{ a.reg_number or '' }}</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- EXCUSED -->
+    {% if excused %}
+    <div class="card" style="padding:0;overflow:hidden;margin-bottom:14px;border-left:4px solid #64748B;">
+        <div style="background:#f1f5f9;padding:14px 20px;font-weight:800;font-size:16px;color:#334155;display:flex;align-items:center;gap:10px;">
+            <span>📝</span>
+            <span>WALIORUHUSIWA ({{ excused|length }})</span>
+        </div>
+        <div style="padding:12px 20px;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;">
+            {% for a in excused %}
+            <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#f8fafc;border-radius:8px;border:1px solid #cbd5e1;">
+                <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#64748B,#475569);color:white;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0;">{{ a.full_name[:1].upper() }}</div>
+                <div style="flex:1;min-width:0;">
+                    <div style="font-weight:700;color:#334155;font-size:13px;line-height:1.2;">{{ a.full_name }}</div>
+                    <div style="font-size:11px;color:#64748B;">{{ a.reg_number or '' }}</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- ABSENT -->
+    {% if absent %}
+    <div class="card" style="padding:0;overflow:hidden;margin-bottom:14px;border-left:4px solid #DC2626;">
+        <div style="background:#fee2e2;padding:14px 20px;font-weight:800;font-size:16px;color:#991b1b;display:flex;align-items:center;gap:10px;">
+            <span>✗</span>
+            <span>WASIOHUDHURIA ({{ absent|length }})</span>
+        </div>
+        <div style="padding:12px 20px;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;">
+            {% for a in absent %}
+            <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#fef2f2;border-radius:8px;border:1px solid #fecaca;">
+                <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#DC2626,#b91c1c);color:white;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0;">{{ a.full_name[:1].upper() }}</div>
+                <div style="flex:1;min-width:0;">
+                    <div style="font-weight:700;color:#991b1b;font-size:13px;line-height:1.2;">{{ a.full_name }}</div>
+                    <div style="font-size:11px;color:#b91c1c;">{{ a.reg_number or '' }}</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if total == 0 %}
+    <div class="card" style="text-align:center;padding:60px 20px;color:var(--muted);">
+        <div style="font-size:48px;margin-bottom:12px;">📋</div>
+        <h3 style="color:var(--navy);font-size:18px;font-weight:800;margin-bottom:8px;">Hakuna attendance bado</h3>
+        <p>Attendance haijachukuliwa kwa kipindi hiki.</p>
+    </div>
+    {% endif %}
+
+</div>
+
+<style>
+@media print {
+    .btn, .toolbar { display: none !important; }
+    .card { break-inside: avoid; }
+    body { background: white; }
+}
+</style>
+{% endblock %}

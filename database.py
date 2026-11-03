@@ -3634,3 +3634,88 @@ def cleanup_unused_seed_modules():
     finally:
         conn.close()
     return deleted, kept
+
+
+# ============================================================
+# LESSON MATERIALS (Base64 in DB — works on Render)
+# ============================================================
+def init_materials_table():
+    """Create lesson_materials table."""
+    conn = get_connection()
+    conn.execute("""
+    CREATE TABLE IF NOT EXISTS lesson_materials (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        offering_id INTEGER NOT NULL,
+        topic_id INTEGER,
+        title TEXT NOT NULL,
+        description TEXT,
+        file_name TEXT,
+        file_type TEXT,
+        file_size INTEGER DEFAULT 0,
+        file_content TEXT,
+        uploaded_by INTEGER,
+        created_at TEXT DEFAULT (datetime('now','localtime'))
+    )""")
+    conn.commit()
+    conn.close()
+
+
+def add_material(offering_id, topic_id, title, description, file_name,
+                 file_type, file_content_b64, uploaded_by):
+    """Add material with base64 file content."""
+    import base64 as _b64
+    size = 0
+    try:
+        size = len(_b64.b64decode(file_content_b64))
+    except Exception:
+        pass
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "INSERT INTO lesson_materials "
+        "(offering_id, topic_id, title, description, file_name, file_type, "
+        "file_size, file_content, uploaded_by) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (offering_id, topic_id, title, description, file_name, file_type,
+         size, file_content_b64, uploaded_by))
+    conn.commit()
+    mid = cur.lastrowid
+    conn.close()
+    return mid
+
+
+def get_materials_for_offering(offering_id):
+    """Get all materials for a module (with topic names if linked)."""
+    conn = get_connection()
+    rows = conn.execute(
+        "SELECT m.*, t.title AS topic_title "
+        "FROM lesson_materials m "
+        "LEFT JOIN topics t ON m.topic_id = t.id "
+        "WHERE m.offering_id = ? "
+        "ORDER BY m.created_at DESC", (offering_id,)).fetchall()
+    conn.close()
+    return rows
+
+
+def get_material(material_id):
+    conn = get_connection()
+    row = conn.execute(
+        "SELECT * FROM lesson_materials WHERE id = ?", (material_id,)).fetchone()
+    conn.close()
+    return row
+
+
+def delete_material(material_id):
+    conn = get_connection()
+    conn.execute("DELETE FROM lesson_materials WHERE id = ?", (material_id,))
+    conn.commit()
+    conn.close()
+
+
+def get_material_stats(offering_id):
+    conn = get_connection()
+    row = conn.execute(
+        "SELECT COUNT(*) as count, COALESCE(SUM(file_size), 0) as total_size "
+        "FROM lesson_materials WHERE offering_id = ?", (offering_id,)).fetchone()
+    conn.close()
+    return {"count": row["count"] if row else 0, "size": row["total_size"] if row else 0}

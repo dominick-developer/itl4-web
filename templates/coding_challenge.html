@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ challenge.title }} — Coding Lab</title>
+<link rel="icon" href="/static/icon-192.png">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/material-darker.min.css">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Inter','Segoe UI',sans-serif;background:#0B1F33;color:white;height:100vh;display:flex;flex-direction:column;overflow:hidden;}
+
+.lab-top{background:#0B1F33;border-bottom:1px solid #1e293b;padding:10px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0;flex-wrap:wrap;}
+.lab-top img{width:32px;height:32px;border-radius:8px;}
+.lab-title{font-weight:800;font-size:14px;color:white;flex:1;min-width:120px;}
+.lab-lang{font-size:11px;text-transform:uppercase;font-weight:700;background:#1e40af;padding:3px 10px;border-radius:10px;}
+.lab-btn{background:#F47721;color:white;border:none;padding:8px 16px;border-radius:7px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;transition:background .15s;}
+.lab-btn:hover{background:#e6670f;}
+.lab-btn:disabled{opacity:.5;cursor:not-allowed;}
+.lab-btn.secondary{background:transparent;border:1px solid rgba(255,255,255,.2);color:#cbd5e1;}
+.lab-btn.secondary:hover{background:rgba(255,255,255,.1);}
+.lab-btn.success{background:#16A34A;}
+.lab-btn.success:hover{background:#15803d;}
+.save-status{font-size:11px;color:#94a3b8;padding:0 8px;font-style:italic;}
+
+.lab-body{flex:1;display:flex;overflow:hidden;}
+
+.panel-instructions{width:340px;background:#0f172a;border-right:1px solid #1e293b;overflow-y:auto;padding:20px;flex-shrink:0;}
+.panel-instructions h2{font-size:16px;font-weight:800;color:#F47721;margin-bottom:12px;}
+.panel-instructions p{font-size:13px;line-height:1.7;color:#cbd5e1;margin-bottom:14px;}
+.panel-instructions .seq{display:inline-block;background:#F47721;color:white;padding:2px 10px;border-radius:10px;font-size:11px;font-weight:800;margin-bottom:8px;}
+.hints-box{background:#1e293b;border-radius:8px;padding:12px;margin-top:12px;}
+.hints-box h3{font-size:12px;font-weight:800;color:#F59E0B;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;}
+.hints-box ul{list-style:none;padding:0;margin:0;}
+.hints-box li{font-size:12px;color:#cbd5e1;padding:6px 0;border-bottom:1px solid #334155;font-family:monospace;line-height:1.5;}
+.hints-box li:last-child{border-bottom:none;}
+
+.panel-editor{flex:1;display:flex;flex-direction:column;min-width:0;border-right:1px solid #1e293b;}
+.CodeMirror{height:100% !important;font-size:14px;font-family:'Consolas','Monaco',monospace;}
+
+.panel-output{width:380px;display:flex;flex-direction:column;background:#0f172a;overflow:hidden;flex-shrink:0;}
+.output-header{background:#1e293b;color:#94a3b8;font-size:11px;font-weight:800;text-transform:uppercase;padding:8px 14px;flex-shrink:0;display:flex;justify-content:space-between;align-items:center;}
+.output-area{flex:1;overflow-y:auto;padding:16px;font-family:'Consolas','Monaco',monospace;font-size:13px;color:#e2e8f0;white-space:pre-wrap;line-height:1.5;}
+.output-area .ok{color:#86EFAC;}
+.output-area .err{color:#FCA5A5;}
+.output-area .info{color:#93C5FD;}
+.output-area .hint{color:#FCD34D;font-style:italic;}
+
+.test-results{background:#1e293b;border-top:1px solid #0B1F33;padding:12px 14px;max-height:200px;overflow-y:auto;flex-shrink:0;}
+.test-results h4{font-size:11px;font-weight:800;text-transform:uppercase;color:#94a3b8;margin-bottom:8px;}
+.test-item{padding:6px 10px;border-radius:6px;font-size:12px;margin-bottom:4px;font-family:monospace;}
+.test-item.pass{background:#14532D;color:#86EFAC;}
+.test-item.fail{background:#7F1D1D;color:#FCA5A5;}
+
+@media (max-width: 1024px) {
+    .lab-body{flex-direction:column;}
+    .panel-instructions{width:100%;height:200px;border-right:none;border-bottom:1px solid #1e293b;}
+    .panel-editor{width:100%;height:40vh;}
+    .panel-output{width:100%;height:40vh;border-right:none;}
+}
+</style>
+</head>
+<body>
+
+<div class="lab-top">
+    <a href="/academy/coding-lab/{{ path_slug }}" style="color:#F47721;font-weight:800;text-decoration:none;font-size:18px;">←</a>
+    <div class="lab-title">{{ challenge.title }}</div>
+    <span class="lab-lang">{{ challenge.language }}</span>
+    <span class="save-status" id="saveStatus">Ready</span>
+    <button class="lab-btn secondary" onclick="loadHints()">💡 Hints</button>
+    <button class="lab-btn" onclick="runCode()" id="runBtn">▶ Run</button>
+    <button class="lab-btn success" onclick="submitCode()" id="submitBtn">✓ Submit</button>
+</div>
+
+<div class="lab-body">
+
+    <div class="panel-instructions">
+        <div class="seq">Challenge {{ challenge.sequence }}</div>
+        <h2>{{ challenge.title }}</h2>
+        <p>{{ challenge.description }}</p>
+
+        {% if challenge.test_cases %}
+        <div style="background:#1e293b;border-radius:8px;padding:12px;margin-top:12px;">
+            <div style="font-size:11px;font-weight:800;color:#2563EB;text-transform:uppercase;margin-bottom:6px;">Expected Output</div>
+            <pre style="background:#0B1F33;padding:10px;border-radius:6px;color:#86EFAC;font-family:monospace;font-size:12px;overflow-x:auto;">{{ challenge.test_cases[0].expected_output }}</pre>
+        </div>
+        {% endif %}
+
+        <div class="hints-box" id="hintsBox" style="display:none;">
+            <h3>💡 Hints</h3>
+            <ul>
+                {% for h in challenge.hints %}
+                <li>{{ h }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+
+    <div class="panel-editor">
+        <textarea id="codeInput">{{ saved_code or challenge.starter_code }}</textarea>
+    </div>
+
+    <div class="panel-output">
+        <div class="output-header">
+            <span>Output</span>
+            <button onclick="clearOutput()" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:11px;font-family:inherit;">Clear</button>
+        </div>
+        <div class="output-area" id="outputArea">Bonyeza "Run" kuanza...</div>
+        <div class="test-results" id="testResults" style="display:none;">
+            <h4>Test Results</h4>
+            <div id="testList"></div>
+        </div>
+    </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+
+<script>
+const CHALLENGE_ID = {{ challenge.id }};
+const TEST_CASES = {{ challenge.test_cases|tojson }};
+const STARTER = {{ challenge.starter_code|tojson }};
+
+const editor = CodeMirror.fromTextArea(document.getElementById('codeInput'), {
+    lineNumbers: true,
+    mode: 'python',
+    theme: 'material-darker',
+    indentUnit: 4,
+    tabSize: 4,
+    lineWrapping: true,
+    autofocus: true,
+});
+
+let dirty = false;
+let saveTimer = null;
+
+editor.on('change', function() {
+    dirty = true;
+    document.getElementById('saveStatus').textContent = 'Unsaved...';
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(autoSave, 5000);  // Save 5s after typing stops
+});
+
+async function autoSave() {
+    if (!dirty) return;
+    try {
+        var res = await fetch('/api/coding/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ challenge_id: CHALLENGE_ID, code: editor.getValue() })
+        });
+        if (res.ok) {
+            document.getElementById('saveStatus').textContent = '✓ Saved ' + new Date().toLocaleTimeString();
+            dirty = false;
+        }
+    } catch (e) {
+        document.getElementById('saveStatus').textContent = '⚠ Save failed';
+    }
+}
+
+// Save every 30s regardless
+setInterval(function() { if (dirty) autoSave(); }, 30000);
+
+// Warn on leave
+window.addEventListener('beforeunload', function(e) {
+    if (dirty) { e.preventDefault(); e.returnValue = ''; }
+});
+
+// ============================================================
+// PYODIDE
+// ============================================================
+let pyodideReady = false;
+let pyodide = null;
+
+async function loadPyodideLib() {
+    if (pyodideReady) return;
+    if (typeof loadPyodide === 'undefined') {
+        await new Promise(function(resolve, reject) {
+            var s = document.createElement('script');
+            s.src = 'https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js';
+            s.onload = resolve;
+            s.onerror = reject;
+            document.head.appendChild(s);
+        });
+    }
+    pyodide = await loadPyodide();
+    pyodideReady = true;
+}
+
+function output(msg, cls) {
+    var area = document.getElementById('outputArea');
+    if (area.textContent === 'Bonyeza "Run" kuanza...') area.textContent = '';
+    var span = document.createElement('div');
+    span.className = cls || '';
+    span.textContent = msg;
+    area.appendChild(span);
+}
+
+function clearOutput() {
+    document.getElementById('outputArea').innerHTML = '';
+    document.getElementById('testResults').style.display = 'none';
+}
+
+// ============================================================
+// FRIENDLY ERROR TRANSLATIONS
+// ============================================================
+function friendlyError(err) {
+    var msg = String(err);
+    var translations = [
+        [/NameError: name '(\w+)' is not defined/, "Variable '$1' haijulikani. Je, umeiweka kabla ya kuitumia?"],
+        [/IndentationError: expected an indented block/, "Kosa la nafasi (indentation). Tumia spaces 4 baada ya 'if:', 'for:', 'def:' n.k."],
+        [/IndentationError: unexpected indent/, "Kuna nafasi isiyo sahihi mwanzoni mwa mstari. Hakikisha indentation ni consistent."],
+        [/SyntaxError: invalid syntax/, "Kosa la muundo. Angalia: mabano yaliyofungwa, alama za : mwishoni mwa if/for/def, quotes zilizofungwa."],
+        [/SyntaxError: unexpected EOF while parsing/, "Code haijakamilika. Labda umesahau kufunga mabano ')' au quotes."],
+        [/TypeError: can only concatenate str \(not "int"\) to str/, "Huwezi kuunganisha maandishi (str) na namba (int). Tumia str(namba) au f-string."],
+        [/TypeError: unsupported operand type/, "Aina za data hazilingani. Hakikisha unafanya operesheni kwenye aina sahihi."],
+        [/ZeroDivisionError/, "Huwezi kugawanya kwa sifuri. Hakikisha denominator si 0."],
+        [/IndexError: list index out of range/, "Umejaribu kufikia kipengele kisichopo kwenye list. Angalia index yako."],
+        [/KeyError: '(\w+)'/, "Key '$1' haipo kwenye dictionary."],
+        [/AttributeError: '(\w+)' object has no attribute '(\w+)'/, "'$1' haina kipengele '$2'. Angalia jina la method/property."],
+        [/ValueError: invalid literal for int\(\)/, "Huwezi kubadilisha maandishi haya kuwa namba. Hakikisha ni namba halisi."],
+        [/ImportError: No module named '(\w+)'/, "Module '$1' haipatikani. Labda haihitajiki au haijasakinishwa."],
+    ];
+    for (var i = 0; i < translations.length; i++) {
+        if (translations[i][0].test(msg)) {
+            return msg.replace(translations[i][0], translations[i][1]);
+        }
+    }
+    return msg;
+}
+
+// ============================================================
+// RUN
+// ============================================================
+async function runCode() {
+    clearOutput();
+    document.getElementById('runBtn').disabled = true;
+    try {
+        await loadPyodideLib();
+        var code = editor.getValue();
+        
+        output('▶ Inaendesha...', 'info');
+        
+        // Redirect stdout/stderr
+        pyodide.runPython(`
+import sys, io
+_out = io.StringIO()
+_err = io.StringIO()
+sys.stdout = _out
+sys.stderr = _err
+`);
+        
+        try {
+            await pyodide.runPythonAsync(code);
+        } catch (err) {
+            var errMsg = String(err);
+            output('❌ ' + friendlyError(errMsg), 'err');
+            document.getElementById('runBtn').disabled = false;
+            return;
+        }
+        
+        var out = pyodide.runPython('_out.getvalue()');
+        var errOut = pyodide.runPython('_err.getvalue()');
+        
+        // Restore
+        pyodide.runPython(`sys.stdout = sys.__stdout__; sys.stderr = sys.__stderr__`);
+        
+        if (out) output(out.trim(), 'ok');
+        if (errOut) output(errOut.trim(), 'err');
+        if (!out && !errOut) output('(hakuna output — tumia print())', 'hint');
+        
+    } catch (err) {
+        output('❌ ' + err.message, 'err');
+    } finally {
+        document.getElementById('runBtn').disabled = false;
+    }
+}
+
+// ============================================================
+// SUBMIT — Test Cases
+// ============================================================
+async function submitCode() {
+    if (!TEST_CASES || TEST_CASES.length === 0) {
+        alert('Hakuna test cases kwa changamoto hii. Tumia "Run" tu.');
+        return;
+    }
+    
+    clearOutput();
+    document.getElementById('submitBtn').disabled = true;
+    document.getElementById('testResults').style.display = 'block';
+    document.getElementById('testList').innerHTML = '<div style="color:#93C5FD;font-size:12px;">Inapima...</div>';
+    
+    try {
+        await loadPyodideLib();
+        var code = editor.getValue();
+        var allPassed = true;
+        var passCount = 0;
+        var results = [];
+        
+        for (var i = 0; i < TEST_CASES.length; i++) {
+            var tc = TEST_CASES[i];
+            // Reset Python environment
+            pyodide.runPython(`
+import sys, io
+_out = io.StringIO()
+_err = io.StringIO()
+sys.stdout = _out
+sys.stderr = _err
+`);
+            
+            var runErr = null;
+            try {
+                await pyodide.runPythonAsync(code);
+            } catch (err) {
+                runErr = String(err);
+            }
+            
+            var out = pyodide.runPython('_out.getvalue()');
+            var errOut = pyodide.runPython('_err.getvalue()');
+            
+            pyodide.runPython(`sys.stdout = sys.__stdout__; sys.stderr = sys.__stderr__`);
+            
+            var actual = (out || '').trim();
+            var expected = (tc.expected_output || '').trim();
+            
+            var passed;
+            if (tc.flexible) {
+                // Flexible: partial match (for challenges like "Jina langu ni X")
+                passed = actual.includes(expected.split(' ').slice(0, 3).join(' '));
+            } else {
+                passed = actual === expected;
+            }
+            
+            if (runErr) passed = false;
+            
+            if (passed) passCount++;
+            else allPassed = false;
+            
+            results.push({
+                num: i + 1,
+                passed: passed,
+                expected: expected,
+                actual: runErr ? friendlyError(runErr) : actual,
+                error: runErr
+            });
+        }
+        
+        // Render results
+        var html = '';
+        results.forEach(function(r) {
+            if (r.passed) {
+                html += '<div class="test-item pass">✓ Test ' + r.num + ' imepita</div>';
+            } else {
+                html += '<div class="test-item fail">✗ Test ' + r.num + ' imeshindwa<br>Expected: <code>' + escapeHtml(r.expected) + '</code><br>Got: <code>' + escapeHtml(r.actual) + '</code></div>';
+            }
+        });
+        document.getElementById('testList').innerHTML = html;
+        
+        // Record submission
+        await fetch('/api/coding/submit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ challenge_id: CHALLENGE_ID, passed: allPassed })
+        });
+        
+        if (allPassed) {
+            output('🎉 HONGERA! Test cases zote ' + passCount + '/' + results.length + ' zimepita!', 'ok');
+            // Show next challenge link
+            setTimeout(function() {
+                if (confirm('Umekamilisha changamoto! Bonyeza OK kurudi kwenye path.')) {
+                    window.location.href = '/academy/coding-lab/{{ path_slug }}';
+                }
+            }, 1500);
+        } else {
+            output('Majaribio: ' + passCount + '/' + results.length + ' yamepita. Angalia "Test Results" chini.', 'err');
+        }
+        
+    } catch (err) {
+        output('❌ ' + err.message, 'err');
+    } finally {
+        document.getElementById('submitBtn').disabled = false;
+    }
+}
+
+function escapeHtml(s) {
+    if (s === null || s === undefined) return '';
+    return String(s).replace(/[&<>"']/g, function(c) {
+        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+}
+
+function loadHints() {
+    var hintsBox = document.getElementById('hintsBox');
+    hintsBox.style.display = hintsBox.style.display === 'none' ? 'block' : 'none';
+}
+
+// Preload Pyodide
+loadPyodideLib().then(function() {
+    document.getElementById('saveStatus').textContent = '✓ Ready';
+}).catch(function() {
+    document.getElementById('saveStatus').textContent = '⚠ Pyodide failed';
+});
+</script>
+
+</body>
+</html>
