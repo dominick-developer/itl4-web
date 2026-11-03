@@ -2584,3 +2584,122 @@ async def push_auto_subscribe(request: Request):
         return {"ok": True, "count": count, "auto": True}
     except Exception as e:
         return {"ok": False, "error": str(e)}
+
+
+# ============================================================
+# DIAGNOSTIC: Check DB state (temporary - remove later)
+# ============================================================
+@app.get("/admin/db-check")
+def admin_db_check(secret: str = ""):
+    if secret != os.getenv("CRON_SECRET", ""):
+        raise HTTPException(403)
+    
+    from datetime import datetime, timezone, timedelta
+    EAT = timezone(timedelta(hours=3))
+    now = datetime.now(EAT)
+    
+    result = {
+        "eat_time": now.strftime("%Y-%m-%d %H:%M:%S"),
+        "checks": {},
+        "errors": [],
+    }
+    
+    try:
+        conn = db.get_connection()
+        
+        # 1. Push subscriptions
+        try:
+            row = conn.execute("SELECT COUNT(*) as n FROM push_subscriptions").fetchone()
+            result["checks"]["push_subscriptions_total"] = row["n"] if row else 0
+            rows = conn.execute(
+                "SELECT user_id, LEFT(endpoint, 50) as ep, created_at "
+                "FROM push_subscriptions ORDER BY id DESC LIMIT 5").fetchall()
+            result["checks"]["push_subscriptions_list"] = [
+                {"user_id": r["user_id"], "endpoint": r["ep"], "created_at": r["created_at"]}
+                for r in rows
+            ]
+        except Exception as e:
+            result["errors"].append(f"push_subscriptions: {e}")
+        
+        # 2. Daily messages
+        try:
+            row = conn.execute("SELECT COUNT(*) as n FROM daily_messages").fetchone()
+            result["checks"]["daily_messages_total"] = row["n"] if row else 0
+            rows = conn.execute(
+                "SELECT id, LEFT(message_text, 40) as msg, author_id, "
+                "publish_date, expires_date, is_active, created_at "
+                "FROM daily_messages ORDER BY id DESC LIMIT 5").fetchall()
+            result["checks"]["daily_messages_list"] = [
+                {"id": r["id"], "msg": r["msg"], "author_id": r["author_id"],
+                 "publish_date": r["publish_date"], "expires_date": r["expires_date"],
+                 "is_active": r["is_active"], "created_at": r["created_at"]}
+                for r in rows
+            ]
+        except Exception as e:
+            result["errors"].append(f"daily_messages: {e}")
+        
+        # 3. Notifications
+        try:
+            row = conn.execute("SELECT COUNT(*) as n FROM notifications").fetchone()
+            result["checks"]["notifications_total"] = row["n"] if row else 0
+        except Exception as e:
+            result["errors"].append(f"notifications: {e}")
+        
+        # 4. Timetable status
+        try:
+            rows = conn.execute(
+                "SELECT id, session_name, day, start_time, status FROM timetable "
+                "WHERE status IS NOT NULL ORDER BY id DESC LIMIT 5").fetchall()
+            result["checks"]["timetable_status"] = [
+                {"id": r["id"], "name": r["session_name"], "day": r["day"],
+                 "start": r["start_time"], "status": r["status"]}
+                for r in rows
+            ]
+        except Exception as e:
+            result["errors"].append(f"timetable: {e}")
+        
+        conn.close()
+    except Exception as e:
+        result["errors"].append(f"connection: {e}")
+    
+    return result
+
+
+@app.get("/admin/db-force-init")
+def admin_db_force_init(secret: str = ""):
+    """Force-create push tables."""
+    if secret != os.getenv("CRON_SECRET", ""):
+        raise HTTPException(403)
+    try:
+        import push_service
+        push_service.init_push_table()
+        return {"ok": True, "message": "Push tables force-created"}
+    except Exception as e:
+        import traceback
+        return {"ok": False, "error": str(e), "traceback": traceback.format_exc()[-500:]}
+
+
+@app.get("/admin/db-test-subscribe")
+def admin_db_test_subscribe(secret: str = "", user_id: int = 1):
+    """Insert fake subscription to test DB write."""
+    if secret != os.getenv("CRON_SECRET", ""):
+        raise HTTPException(403)
+    try:
+        conn = db.get_connection()
+        # Insert test
+        conn.execute(
+            "INSERT INTO push_subscriptions (user_id, endpoint, p256dh, auth) "
+            "VALUES (?, ?, ?, ?)",
+            (user_id, "test-endpoint-" + str(user_id) + "-" + str(__import__('time').time()),
+             "test-p256dh", "test-auth"))
+        conn.commit()
+        # Verify
+        row = conn.execute(
+            "SELECT COUNT(*) as n FROM push_subscriptions WHERE user_id = ?",
+            (user_id,)).fetchone()
+        count = row["n"] if row else 0
+        conn.close()
+        return {"ok": True, "user_id": user_id, "count_after_insert": count}
+    except Exception as e:
+        import traceback
+        return {"ok": False, "error": str(e), "traceback": traceback.format_exc()[-500:]}
