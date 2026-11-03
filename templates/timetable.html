@@ -1,112 +1,17 @@
 {% extends "base.html" %}
-{% block title %}Timetable
-
-<!-- DETAILS MODAL -->
-<div id="detailsModal" style="display:none;position:fixed;inset:0;background:rgba(11,31,51,.75);z-index:99999;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);" onclick="if(event.target===this)closeDetails();">
-    <div style="background:white;border-radius:18px;max-width:560px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.4);">
-        <div style="background:linear-gradient(135deg,#0B1F33,#1e40af);color:white;padding:22px 24px;border-radius:18px 18px 0 0;display:flex;justify-content:space-between;align-items:flex-start;gap:14px;">
-            <div style="flex:1;">
-                <div id="dTitle" style="font-size:20px;font-weight:900;margin-bottom:6px;line-height:1.2;"></div>
-                <div id="dTime" style="font-size:13px;color:#cbd5e1;"></div>
-            </div>
-            <button onclick="closeDetails()" style="background:rgba(255,255,255,.15);color:white;border:none;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:16px;flex-shrink:0;">✕</button>
-        </div>
-        <div style="padding:24px;" id="dContent"></div>
-        <div style="padding:16px 24px;background:#f8fafc;border-radius:0 0 18px 18px;border-top:1px solid #E2E8F0;text-align:right;">
-            <button onclick="closeDetails()" class="btn btn-outline" style="padding:10px 24px;">Close</button>
-        </div>
-    </div>
-</div>
-
-<script>
-function escapeHtml(s) {
-    if (!s) return '';
-    return String(s).replace(/[&<>"']/g, function(c) {
-        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
-    });
-}
-
-function showDetails(entryId) {
-    var el = document.getElementById('data-' + entryId);
-    if (!el) { alert('Data not found for entry ' + entryId); return; }
-    
-    var d = el.dataset;
-    var dayNames = {Monday:'Jumatatu', Tuesday:'Jumanne', Wednesday:'Jumatano', Thursday:'Alhamisi', Friday:'Ijumaa', Saturday:'Jumamosi', Sunday:'Jumapili'};
-    
-    document.getElementById('dTitle').textContent = d.sessionName || 'Session';
-    document.getElementById('dTime').textContent = (dayNames[d.day] || d.day) + ' · ' + d.start + (d.end ? ' – ' + d.end : '');
-    
-    var html = '';
-    
-    if (d.status === 'postponed') {
-        html += '<div style="background:#fffbeb;border-left:4px solid #F59E0B;padding:12px 16px;border-radius:8px;margin-bottom:14px;">';
-        html += '<div style="font-weight:800;color:#92400e;font-size:13px;margin-bottom:4px;">⏸ KIPINDI KIME AHIRISHWA</div>';
-        if (d.postponedTo) html += '<div style="color:#78350f;font-size:14px;"><strong>Mpya:</strong> ' + escapeHtml(d.postponedTo) + '</div>';
-        if (d.postponedReason) html += '<div style="color:#78350f;font-size:13px;margin-top:4px;font-style:italic;">Sababu: ' + escapeHtml(d.postponedReason) + '</div>';
-        html += '</div>';
-    } else if (d.status === 'cancelled') {
-        html += '<div style="background:#fef2f2;border-left:4px solid #DC2626;padding:12px 16px;border-radius:8px;margin-bottom:14px;">';
-        html += '<div style="font-weight:800;color:#DC2626;font-size:13px;">✗ KIPINDI KIMEFUTWA</div>';
-        if (d.postponedReason) html += '<div style="color:#7f1d1d;font-size:13px;margin-top:4px;">Sababu: ' + escapeHtml(d.postponedReason) + '</div>';
-        html += '</div>';
-    }
-    
-    function row(icon, label, value) {
-        if (!value) return '';
-        return '<div style="padding:10px 0;border-bottom:1px solid #E2E8F0;display:flex;gap:10px;align-items:flex-start;">' +
-               '<div style="font-size:18px;flex-shrink:0;">' + icon + '</div>' +
-               '<div style="flex:1;"><div style="font-size:11px;color:#64748B;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">' + label + '</div>' +
-               '<div style="font-size:14px;color:#0F172A;font-weight:600;line-height:1.5;">' + value + '</div></div></div>';
-    }
-    
-    if (d.moduleName && d.moduleName !== d.sessionName) {
-        html += row('📚', 'Module', escapeHtml(d.moduleName) + (d.moduleCode ? ' <span style="color:#64748B;">(' + escapeHtml(d.moduleCode) + ')</span>' : ''));
-    }
-    if (d.venue) html += row('📍', 'Mahali', escapeHtml(d.venue));
-    if (d.teacherName) {
-        var teacherInfo = escapeHtml(d.teacherName);
-        if (d.teacherPhone) teacherInfo += ' · 📞 ' + escapeHtml(d.teacherPhone);
-        if (d.teacherEmail) teacherInfo += ' · ✉️ ' + escapeHtml(d.teacherEmail);
-        html += row('👨‍🏫', 'Mwalimu', teacherInfo);
-    }
-    if (d.moduleDesc) {
-        html += '<div style="margin-top:14px;padding:14px 16px;background:#f8fafc;border-radius:8px;border-left:4px solid #2563EB;">' +
-                '<div style="font-size:11px;color:#2563EB;font-weight:800;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">📝 Maelezo ya Module</div>' +
-                '<div style="font-size:14px;color:#334155;line-height:1.6;white-space:pre-wrap;">' + escapeHtml(d.moduleDesc) + '</div></div>';
-    }
-    if (d.notes) {
-        html += '<div style="margin-top:14px;padding:14px 16px;background:#fffbeb;border-radius:8px;border-left:4px solid #F59E0B;">' +
-                '<div style="font-size:11px;color:#92400e;font-weight:800;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">📌 Maelekezo Maalumu</div>' +
-                '<div style="font-size:14px;color:#78350f;line-height:1.6;white-space:pre-wrap;">' + escapeHtml(d.notes) + '</div></div>';
-    }
-    if (!html) html = '<p style="text-align:center;color:#64748B;padding:20px;">Hakuna taarifa za ziada.</p>';
-    
-    document.getElementById('dContent').innerHTML = html;
-    document.getElementById('detailsModal').style.display = 'flex';
-}
-
-function closeDetails() {
-    document.getElementById('detailsModal').style.display = 'none';
-}
-
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') closeDetails();
-});
-</script>
-
-{% endblock %}
-{% block page_title %}📅 Timetable{% endblock %}
+{% block title %}Timetable{% endblock %}
+{% block page_title %}Timetable{% endblock %}
 
 {% block body %}
 <div class="container">
 
     <div style="background:linear-gradient(135deg,#0B1F33 0%,#1e40af 100%);border-radius:16px;padding:28px;color:white;margin-bottom:22px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;">
         <div>
-            <h1 style="font-size:24px;font-weight:900;margin:0 0 6px;">📅 Weekly Timetable</h1>
+            <h1 style="font-size:24px;font-weight:900;margin:0 0 6px;">&#128197; Weekly Timetable</h1>
             <p style="color:#cbd5e1;margin:0;font-size:14px;">Ratiba ya wiki kwa IT Level 4</p>
         </div>
         {% if role == 'CR' %}
-        <a href="/timetable/manage" class="btn btn-primary" style="padding:12px 24px;background:#F47721;color:white;">⚙️ Manage</a>
+        <a href="/timetable/manage" class="btn btn-primary" style="padding:12px 24px;background:#F47721;color:white;">&#9881; Manage</a>
         {% endif %}
     </div>
 
@@ -122,18 +27,12 @@ document.addEventListener('keydown', function(e) {
 
     {% if not ns.has_any %}
     <div class="card" style="text-align:center;padding:60px 20px;">
-        <div style="font-size:48px;margin-bottom:12px;">📅</div>
+        <div style="font-size:48px;margin-bottom:12px;">&#128197;</div>
         <h3 style="color:var(--navy);font-size:20px;font-weight:800;margin-bottom:8px;">Timetable bado haijawekwa</h3>
         <p style="color:var(--muted);margin-bottom:20px;">
-            {% if role == 'CR' %}
-            Bonyeza "Manage" kuweka ratiba.
-            {% else %}
-            CR bado hajaweka ratiba ya wiki.
-            {% endif %}
+            {% if role == 'CR' %}Bonyeza "Manage" kuweka ratiba.
+            {% else %}CR bado hajaweka ratiba ya wiki.{% endif %}
         </p>
-        {% if role == 'CR' %}
-        <a href="/timetable/manage" class="btn btn-primary">⚙️ Manage Timetable</a>
-        {% endif %}
     </div>
     {% else %}
 
@@ -142,8 +41,8 @@ document.addEventListener('keydown', function(e) {
             {% if grouped and grouped[d] and grouped[d]|length > 0 %}
             <div class="card" style="padding:0;overflow:hidden;">
                 <div style="background:var(--navy);color:white;padding:14px 20px;font-weight:800;font-size:16px;display:flex;align-items:center;gap:10px;">
-                    <span>📆</span>
-                    <span>{{ day_names[d] }} · {{ d }}</span>
+                    <span>&#128198;</span>
+                    <span>{{ day_names[d] }} &middot; {{ d }}</span>
                     <span style="margin-left:auto;font-size:13px;font-weight:600;opacity:.8;">{{ grouped[d]|length }} session{% if grouped[d]|length != 1 %}s{% endif %}</span>
                 </div>
                 <div style="padding:8px 0;">
@@ -151,35 +50,35 @@ document.addEventListener('keydown', function(e) {
                     {% set st = e.status if e.status else 'scheduled' %}
                     <div style="padding:14px 20px;border-bottom:1px solid var(--border);display:flex;gap:16px;align-items:center;flex-wrap:wrap;{% if st == 'cancelled' %}opacity:0.6;{% endif %}">
                         <div style="min-width:130px;font-weight:800;color:var(--orange);font-size:15px;">
-                            {{ e.start_time }}{% if e.end_time %} – {{ e.end_time }}{% endif %}
+                            {{ e.start_time }}{% if e.end_time %} &ndash; {{ e.end_time }}{% endif %}
                         </div>
                         <div style="flex:1;min-width:200px;">
                             <div style="font-weight:800;color:var(--navy);font-size:16px;">
                                 {{ e.session_name or e.module_name or 'Session' }}
                                 {% if e.module_code %}<span style="color:var(--muted);font-size:13px;font-weight:600;"> ({{ e.module_code }})</span>{% endif %}
                                 {% if st == 'postponed' %}
-                                <span style="background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:8px;font-size:10px;font-weight:700;margin-left:6px;">⏸ POSTPONED</span>
+                                <span style="background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:8px;font-size:10px;font-weight:700;margin-left:6px;">POSTPONED</span>
                                 {% elif st == 'cancelled' %}
-                                <span style="background:#fee2e2;color:#DC2626;padding:2px 8px;border-radius:8px;font-size:10px;font-weight:700;margin-left:6px;">✗ CANCELLED</span>
+                                <span style="background:#fee2e2;color:#DC2626;padding:2px 8px;border-radius:8px;font-size:10px;font-weight:700;margin-left:6px;">CANCELLED</span>
                                 {% endif %}
                             </div>
                             {% if e.teacher_name %}
-                            <div style="font-size:13px;color:var(--muted);margin-top:2px;">👨‍🏫 {{ e.teacher_name }}</div>
+                            <div style="font-size:13px;color:var(--muted);margin-top:2px;">Lecturer: {{ e.teacher_name }}</div>
                             {% endif %}
                             {% if st == 'postponed' and e.postponed_to %}
                             <div style="margin-top:8px;padding:8px 12px;background:#fffbeb;border-radius:6px;font-size:12px;">
-                                <strong style="color:#92400e;">⏸ Mpya:</strong> <span style="color:#78350f;">{{ e.postponed_to }}</span>
+                                <strong style="color:#92400e;">Mpya:</strong> <span style="color:#78350f;">{{ e.postponed_to }}</span>
                                 {% if e.postponed_reason %}<div style="color:#78350f;margin-top:2px;font-style:italic;">{{ e.postponed_reason }}</div>{% endif %}
                             </div>
                             {% endif %}
                         </div>
                         {% if e.venue %}
                         <div style="font-size:13px;color:var(--muted);font-weight:600;padding:4px 10px;background:#f1f5f9;border-radius:6px;">
-                            📍 {{ e.venue }}
+                            {{ e.venue }}
                         </div>
                         {% endif %}
                         <div>
-                            <button onclick='showDetails({{ e.id }})' style="background:#EFF6FF;color:#2563EB;border:1px solid #BFDBFE;padding:8px 16px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;">ℹ️ Details</button>
+                            <button type="button" class="js-details-btn" data-entry-id="{{ e.id }}" style="background:#EFF6FF;color:#2563EB;border:1px solid #BFDBFE;padding:8px 16px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;">Details</button>
                         </div>
                     </div>
                     <div id="data-{{ e.id }}" style="display:none;"
@@ -192,7 +91,7 @@ document.addEventListener('keydown', function(e) {
                          data-teacher-email="{{ (e.teacher_email or '')|e }}"
                          data-venue="{{ (e.venue or '')|e }}"
                          data-notes="{{ (e.notes or '')|e }}"
-                         data-status="{{ e.status or 'scheduled' }}"
+                         data-status="{{ st }}"
                          data-day="{{ d }}"
                          data-start="{{ e.start_time or '' }}"
                          data-end="{{ e.end_time or '' }}"
@@ -204,24 +103,366 @@ document.addEventListener('keydown', function(e) {
             {% endif %}
         {% endfor %}
     </div>
-
     {% endif %}
 
-    <!-- PUSH NOTIFICATIONS CARD (existing) -->
-    {% if true %}
-    <div id="pushCard" style="background:white;border:2px solid #E2E8F0;border-radius:12px;padding:18px 22px;margin-top:22px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
-        <div id="pushIcon" style="font-size:36px;flex-shrink:0;">🔔</div>
-        <div style="flex:1;min-width:200px;">
-            <div id="pushTitle" style="font-weight:800;color:#0B1F33;font-size:16px;margin-bottom:4px;">Push Notifications</div>
-            <div id="pushStatus" style="font-size:13px;color:#64748B;line-height:1.5;">Bonyeza "Enable" kuanza.</div>
+    <!-- PUSH NOTIFICATIONS CARD -->
+    <div id="pushCard" style="background:white;border:2px solid #E2E8F0;border-radius:12px;padding:18px 22px;margin-top:22px;">
+        <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+            <div id="pushIcon" style="font-size:36px;flex-shrink:0;">&#128276;</div>
+            <div style="flex:1;min-width:200px;">
+                <div id="pushTitle" style="font-weight:800;color:#0B1F33;font-size:16px;margin-bottom:4px;">Push Notifications</div>
+                <div id="pushStatus" style="font-size:13px;color:#64748B;line-height:1.5;">Bonyeza "Enable" kuanza.</div>
+            </div>
+            <div id="pushActions" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
         </div>
-        <div id="pushActions" style="display:flex;gap:8px;flex-wrap:wrap;">
-            <button onclick="enablePush()" class="btn btn-primary" style="padding:10px 22px;font-size:14px;background:#F47721;color:white;" id="enableBtn">Enable Notifications</button>
-        </div>
+        <div id="pushTestResult" style="display:none;margin-top:12px;padding:12px;border-radius:8px;font-size:13px;font-family:monospace;"></div>
     </div>
-    {% endif %}
 
 </div>
 
-{% include "timetable_push_script.html" ignore missing %}
+<!-- DETAILS MODAL -->
+<div id="detailsModal" style="display:none;position:fixed;inset:0;background:rgba(11,31,51,.75);z-index:99999;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);">
+    <div style="background:white;border-radius:18px;max-width:560px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.4);">
+        <div style="background:linear-gradient(135deg,#0B1F33,#1e40af);color:white;padding:22px 24px;border-radius:18px 18px 0 0;display:flex;justify-content:space-between;align-items:flex-start;gap:14px;">
+            <div style="flex:1;">
+                <div id="dTitle" style="font-size:20px;font-weight:900;margin-bottom:6px;line-height:1.2;"></div>
+                <div id="dTime" style="font-size:13px;color:#cbd5e1;"></div>
+            </div>
+            <button type="button" id="modalCloseBtn" style="background:rgba(255,255,255,.15);color:white;border:none;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:16px;flex-shrink:0;">X</button>
+        </div>
+        <div style="padding:24px;" id="dContent"></div>
+        <div style="padding:16px 24px;background:#f8fafc;border-radius:0 0 18px 18px;border-top:1px solid #E2E8F0;text-align:right;">
+            <button type="button" id="modalCloseBtn2" class="btn btn-outline" style="padding:10px 24px;">Close</button>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    'use strict';
+
+    // ============================================================
+    // DETAILS MODAL
+    // ============================================================
+    function escapeHtml(s) {
+        if (s === null || s === undefined) return '';
+        return String(s).replace(/[&<>"']/g, function(c) {
+            return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+        });
+    }
+
+    function showDetails(entryId) {
+        var el = document.getElementById('data-' + entryId);
+        if (!el) {
+            alert('Data haipatikani kwa entry ' + entryId);
+            return;
+        }
+
+        var d = el.dataset;
+        var dayNames = {Monday:'Jumatatu', Tuesday:'Jumanne', Wednesday:'Jumatano', Thursday:'Alhamisi', Friday:'Ijumaa', Saturday:'Jumamosi', Sunday:'Jumapili'};
+
+        document.getElementById('dTitle').textContent = d.sessionName || 'Session';
+        document.getElementById('dTime').textContent = (dayNames[d.day] || d.day) + ' - ' + d.start + (d.end ? ' - ' + d.end : '');
+
+        var html = '';
+
+        if (d.status === 'postponed') {
+            html += '<div style="background:#fffbeb;border-left:4px solid #F59E0B;padding:12px 16px;border-radius:8px;margin-bottom:14px;">';
+            html += '<div style="font-weight:800;color:#92400e;font-size:13px;margin-bottom:4px;">KIPINDI KIME AHIRISHWA</div>';
+            if (d.postponedTo) html += '<div style="color:#78350f;font-size:14px;"><strong>Mpya:</strong> ' + escapeHtml(d.postponedTo) + '</div>';
+            if (d.postponedReason) html += '<div style="color:#78350f;font-size:13px;margin-top:4px;font-style:italic;">Sababu: ' + escapeHtml(d.postponedReason) + '</div>';
+            html += '</div>';
+        } else if (d.status === 'cancelled') {
+            html += '<div style="background:#fef2f2;border-left:4px solid #DC2626;padding:12px 16px;border-radius:8px;margin-bottom:14px;">';
+            html += '<div style="font-weight:800;color:#DC2626;font-size:13px;">KIPINDI KIMEFUTWA</div>';
+            if (d.postponedReason) html += '<div style="color:#7f1d1d;font-size:13px;margin-top:4px;">Sababu: ' + escapeHtml(d.postponedReason) + '</div>';
+            html += '</div>';
+        }
+
+        function row(label, value) {
+            if (!value) return '';
+            return '<div style="padding:10px 0;border-bottom:1px solid #E2E8F0;">' +
+                   '<div style="font-size:11px;color:#64748B;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;">' + label + '</div>' +
+                   '<div style="font-size:14px;color:#0F172A;font-weight:600;line-height:1.5;">' + value + '</div></div>';
+        }
+
+        if (d.moduleName && d.moduleName !== d.sessionName) {
+            html += row('Module', escapeHtml(d.moduleName) + (d.moduleCode ? ' (' + escapeHtml(d.moduleCode) + ')' : ''));
+        }
+        if (d.venue) html += row('Mahali', escapeHtml(d.venue));
+        if (d.teacherName) {
+            var teacherInfo = escapeHtml(d.teacherName);
+            if (d.teacherPhone) teacherInfo += ' - ' + escapeHtml(d.teacherPhone);
+            if (d.teacherEmail) teacherInfo += ' - ' + escapeHtml(d.teacherEmail);
+            html += row('Mwalimu', teacherInfo);
+        }
+        if (d.moduleDesc) {
+            html += '<div style="margin-top:14px;padding:14px 16px;background:#f8fafc;border-radius:8px;border-left:4px solid #2563EB;">' +
+                    '<div style="font-size:11px;color:#2563EB;font-weight:800;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">Maelezo ya Module</div>' +
+                    '<div style="font-size:14px;color:#334155;line-height:1.6;white-space:pre-wrap;">' + escapeHtml(d.moduleDesc) + '</div></div>';
+        }
+        if (d.notes) {
+            html += '<div style="margin-top:14px;padding:14px 16px;background:#fffbeb;border-radius:8px;border-left:4px solid #F59E0B;">' +
+                    '<div style="font-size:11px;color:#92400e;font-weight:800;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">Maelekezo Maalumu</div>' +
+                    '<div style="font-size:14px;color:#78350f;line-height:1.6;white-space:pre-wrap;">' + escapeHtml(d.notes) + '</div></div>';
+        }
+        if (!html) html = '<p style="text-align:center;color:#64748B;padding:20px;">Hakuna taarifa za ziada.</p>';
+
+        document.getElementById('dContent').innerHTML = html;
+        document.getElementById('detailsModal').style.display = 'flex';
+    }
+
+    function closeDetails() {
+        document.getElementById('detailsModal').style.display = 'none';
+    }
+
+    // Attach all Details buttons
+    document.querySelectorAll('.js-details-btn').forEach(function(btn) {
+        btn.addEventListener('click', function(ev) {
+            ev.preventDefault();
+            var id = this.getAttribute('data-entry-id');
+            showDetails(id);
+        });
+    });
+
+    // Modal close
+    var close1 = document.getElementById('modalCloseBtn');
+    var close2 = document.getElementById('modalCloseBtn2');
+    if (close1) close1.addEventListener('click', closeDetails);
+    if (close2) close2.addEventListener('click', closeDetails);
+
+    var modal = document.getElementById('detailsModal');
+    if (modal) {
+        modal.addEventListener('click', function(ev) {
+            if (ev.target === modal) closeDetails();
+        });
+    }
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') closeDetails();
+    });
+
+    // ============================================================
+    // PUSH NOTIFICATIONS
+    // ============================================================
+    var VAPID_PUBLIC_KEY = '{{ vapid_public_key or "" }}';
+    var pushCard = document.getElementById('pushCard');
+    var pushIcon = document.getElementById('pushIcon');
+    var pushTitle = document.getElementById('pushTitle');
+    var pushStatus = document.getElementById('pushStatus');
+    var pushActions = document.getElementById('pushActions');
+    var pushTestResult = document.getElementById('pushTestResult');
+
+    function setPushState(state, msg) {
+        pushActions.innerHTML = '';
+        if (state === 'enabled') {
+            pushCard.style.background = '#f0fdf4';
+            pushCard.style.borderColor = '#86efac';
+            pushIcon.innerHTML = '&#9989;';
+            pushTitle.textContent = 'Push Notifications: Enabled';
+            pushTitle.style.color = '#16A34A';
+            pushStatus.textContent = 'Utapokea taarifa za ratiba kwenye kifaa chako.';
+            pushActions.innerHTML = '<button type="button" id="disableBtn" style="padding:8px 16px;font-size:13px;background:white;color:#0B1F33;border:1px solid #E2E8F0;border-radius:8px;font-weight:700;cursor:pointer;">Disable</button>' +
+                                   '<button type="button" id="testBtn" style="padding:8px 16px;font-size:13px;background:#F47721;color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;">Send Test</button>';
+            document.getElementById('disableBtn').addEventListener('click', disablePush);
+            document.getElementById('testBtn').addEventListener('click', sendTest);
+        } else if (state === 'disabled') {
+            pushCard.style.background = '#fff7ed';
+            pushCard.style.borderColor = '#F47721';
+            pushIcon.innerHTML = '&#128276;';
+            pushTitle.textContent = 'Push Notifications: Disabled';
+            pushTitle.style.color = '#0B1F33';
+            pushStatus.textContent = 'Bonyeza "Enable" ili upate taarifa za ratiba.';
+            pushActions.innerHTML = '<button type="button" id="enableBtn" style="padding:10px 22px;font-size:14px;background:#F47721;color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;">Enable Notifications</button>';
+            document.getElementById('enableBtn').addEventListener('click', enablePush);
+        } else if (state === 'blocked') {
+            pushCard.style.background = '#fef2f2';
+            pushCard.style.borderColor = '#fca5a5';
+            pushIcon.innerHTML = '&#128683;';
+            pushTitle.textContent = 'Push Notifications: Blocked';
+            pushTitle.style.color = '#DC2626';
+            pushStatus.textContent = 'Browser imezuia. Fungua lock icon kwenye URL bar, ruhusu notifications, kisha refresh.';
+            pushActions.innerHTML = '<button type="button" id="retryBtn" style="padding:8px 16px;font-size:13px;background:white;color:#0B1F33;border:1px solid #E2E8F0;border-radius:8px;font-weight:700;cursor:pointer;">Retry</button>';
+            document.getElementById('retryBtn').addEventListener('click', checkStatus);
+        } else if (state === 'unsupported') {
+            pushCard.style.background = '#f1f5f9';
+            pushCard.style.borderColor = '#cbd5e1';
+            pushIcon.innerHTML = '&#9888;';
+            pushTitle.textContent = 'Push Notifications: Not Supported';
+            pushTitle.style.color = '#64748B';
+            pushStatus.textContent = msg || 'Tumia Chrome au Edge.';
+            pushActions.innerHTML = '';
+        } else if (state === 'loading') {
+            pushCard.style.background = '#eff6ff';
+            pushCard.style.borderColor = '#93c5fd';
+            pushIcon.innerHTML = '&#9203;';
+            pushTitle.textContent = 'Inafanya kazi...';
+            pushTitle.style.color = '#2563EB';
+            pushStatus.textContent = msg || 'Tafadhali subiri...';
+            pushActions.innerHTML = '';
+        } else if (state === 'error') {
+            pushCard.style.background = '#fef2f2';
+            pushCard.style.borderColor = '#fca5a5';
+            pushIcon.innerHTML = '&#10060;';
+            pushTitle.textContent = 'Hitilafu';
+            pushTitle.style.color = '#DC2626';
+            pushStatus.textContent = msg || 'Kuna hitilafu.';
+            pushActions.innerHTML = '<button type="button" id="retryBtn" style="padding:8px 16px;font-size:13px;background:white;color:#0B1F33;border:1px solid #E2E8F0;border-radius:8px;font-weight:700;cursor:pointer;">Jaribu Tena</button>';
+            document.getElementById('retryBtn').addEventListener('click', checkStatus);
+        }
+    }
+
+    function urlBase64ToUint8Array(b64) {
+        var pad = '='.repeat((4 - b64.length % 4) % 4);
+        var s = (b64 + pad).replace(/-/g, '+').replace(/_/g, '/');
+        var raw = window.atob(s);
+        var arr = new Uint8Array(raw.length);
+        for (var i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+        return arr;
+    }
+
+    function checkStatus() {
+        if (!VAPID_PUBLIC_KEY) {
+            pushCard.style.display = 'none';
+            return;
+        }
+        if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+            setPushState('unsupported');
+            return;
+        }
+        if (Notification.permission === 'denied') {
+            setPushState('blocked');
+            return;
+        }
+        // Optimistic
+        if (Notification.permission === 'granted') {
+            setPushState('enabled');
+        } else {
+            setPushState('disabled');
+        }
+        // Verify in background
+        verifySubscription();
+    }
+
+    async function verifySubscription() {
+        try {
+            var reg = await Promise.race([
+                navigator.serviceWorker.ready,
+                new Promise(function(_, rej) { setTimeout(function() { rej(new Error('timeout')); }, 3000); })
+            ]);
+            var sub = await reg.pushManager.getSubscription();
+            if (sub) {
+                setPushState('enabled');
+            } else {
+                setPushState('disabled');
+            }
+        } catch (e) {
+            // Silent
+        }
+    }
+
+    async function enablePush() {
+        setPushState('loading', 'Inaomba ruhusa...');
+        try {
+            var perm = await Notification.requestPermission();
+            if (perm !== 'granted') {
+                setPushState('blocked');
+                return;
+            }
+            setPushState('loading', 'Inasajili service worker...');
+            var reg;
+            try {
+                reg = await Promise.race([
+                    navigator.serviceWorker.ready,
+                    new Promise(function(_, rej) { setTimeout(function() { rej(new Error('timeout')); }, 5000); })
+                ]);
+            } catch (e) {
+                await navigator.serviceWorker.register('/static/sw.js');
+                reg = await navigator.serviceWorker.ready;
+            }
+            setPushState('loading', 'Inasajili subscription...');
+            var sub = await reg.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+            });
+            setPushState('loading', 'Inahifadhi server...');
+            var res = await fetch('/api/push/subscribe', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(sub.toJSON())
+            });
+            var data = await res.json().catch(function() { return {}; });
+            if (!res.ok || data.ok === false) {
+                try { await sub.unsubscribe(); } catch(e) {}
+                setPushState('error', 'Server: ' + (data.error || 'Imeshindwa'));
+                return;
+            }
+            setPushState('enabled');
+        } catch (err) {
+            setPushState('error', err.message || 'Imeshindwa');
+        }
+    }
+
+    async function disablePush() {
+        if (!confirm('Zima push notifications?')) return;
+        setPushState('loading', 'Inazima...');
+        try {
+            var reg = await navigator.serviceWorker.ready;
+            var sub = await reg.pushManager.getSubscription();
+            if (sub) {
+                await fetch('/api/push/unsubscribe', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ endpoint: sub.endpoint })
+                });
+                await sub.unsubscribe();
+            }
+            setPushState('disabled');
+        } catch (err) {
+            setPushState('error', err.message);
+        }
+    }
+
+    async function sendTest() {
+        pushTestResult.style.display = 'block';
+        pushTestResult.style.background = '#f8fafc';
+        pushTestResult.style.color = '#334155';
+        pushTestResult.textContent = 'Inatuma test notification...';
+
+        try {
+            var res = await fetch('/api/push/test');
+            var text = await res.text();
+            var data;
+            try {
+                data = JSON.parse(text);
+            } catch (e) {
+                pushTestResult.style.background = '#fef2f2';
+                pushTestResult.style.color = '#DC2626';
+                pushTestResult.textContent = 'HTTP ' + res.status + ' - Response: ' + text.substring(0, 300);
+                return;
+            }
+            if (data.ok) {
+                pushTestResult.style.background = '#f0fdf4';
+                pushTestResult.style.color = '#16A34A';
+                pushTestResult.textContent = 'SUCCESS: Notification imetumwa (sent: ' + (data.sent || 0) + '). Angalia notification bar.';
+            } else {
+                pushTestResult.style.background = '#fef2f2';
+                pushTestResult.style.color = '#DC2626';
+                pushTestResult.textContent = 'FAILED: ' + (data.error || 'Unknown') + (data.traceback ? ' | ' + data.traceback.substring(0, 200) : '');
+            }
+        } catch (err) {
+            pushTestResult.style.background = '#fef2f2';
+            pushTestResult.style.color = '#DC2626';
+            pushTestResult.textContent = 'Network error: ' + err.message;
+        }
+    }
+
+    // Init
+    checkStatus();
+
+    // Expose for debugging
+    window.__showDetails = showDetails;
+    window.__enablePush = enablePush;
+    window.__sendTest = sendTest;
+})();
+</script>
 {% endblock %}
