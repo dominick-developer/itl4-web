@@ -52,22 +52,21 @@ async def push_unsubscribe(request: Request):
 
 @app.on_event("startup")
 def startup():
-    # 1. Init database (migrations za columns mpya zipo ndani ya init_database)
+    # 1. Init databases
     db.init_database()
+    print("✅ Database ready")
+    
     try:
         db.migrate_attendance_system()
         print("✅ Attendance migration ready")
     except Exception as _e:
         print(f"⚠️ Attendance migration: {_e}")
+    
+    try:
         db.migrate_timetable_status()
-        print("✅ Timetable status migration ready")
+        print("✅ Timetable migration ready")
     except Exception as _e:
         print(f"⚠️ Timetable migration: {_e}")
-        print("✅ Attendance migration ready")
-    except Exception as _e:
-        print(f"⚠️ Attendance migration: {_e}")
-    print("âœ… Database ready")
-    academy.init_academy()
     
     try:
         db.init_materials_table()
@@ -75,90 +74,92 @@ def startup():
     except Exception as _e:
         print(f"⚠️ Materials init: {_e}")
     
-    # Clean up unused sample modules
     try:
-        _del, _kept = db.cleanup_unused_seed_modules()
-        if _del > 0:
-            print(f"✅ Cleaned up {_del} unused sample module(s) ({_kept} kept)")
+        import coding_lab_db as _coding
+        _coding.init_coding_tables()
+        print("✅ Coding lab tables ready")
     except Exception as _e:
-        print(f"⚠️ Seed cleanup failed: {_e}")
-    try:
-        legal.init_legal_tables()
-        print("✅ Legal tables ready")
-    except Exception as _e:
-        print(f"⚠️ Legal init failed: {_e}")
-    academy.init_ai_tables()
-    academy.init_coding_tables()
-    try:
-        import push_service
-        push_service.init_push_table()
-        print("✅ Push tables ready")
-    except Exception as _e:
-        print(f"⚠️ Push init failed: {_e}")
+        print(f"⚠️ Coding init: {_e}")
+    
+    academy.init_academy()
     print("✅ Academy ready")
-
-    # PHASE 1: Career + Web Design modules seeds
+    
+    try:
+        academy.init_ai_tables()
+        print("✅ AI tables ready")
+    except Exception as _e:
+        print(f"⚠️ AI init: {_e}")
+    
+    try:
+        academy.init_coding_tables()
+        print("✅ Coding tables ready")
+    except Exception as _e:
+        print(f"⚠️ Coding init: {_e}")
+    
     try:
         academy.init_career_tables()
-        print("✅ Career + Web Design seeds complete")
+        print("✅ Career seeds complete")
     except Exception as _e:
-        print(f"⚠️  init_career_tables failed: {_e}")
-
-    # PHASE 2: Portfolio + Certificates + Achievements (if exists)
+        print(f"⚠️ Career init: {_e}")
+    
     try:
         if hasattr(academy, "init_phase6_tables"):
             academy.init_phase6_tables()
             print("✅ Phase 6 tables complete")
     except Exception as _e:
-        print(f"⚠️  init_phase6_tables failed: {_e}")
-
-
-    # FORCE-PUBLISH all courses with lessons (startup safety)
+        print(f"⚠️ Phase 6 init: {_e}")
+    
     try:
-        _c = db.get_connection()
-        _c.execute("UPDATE academy_courses SET status = 'published' WHERE slug = 'web-design-development'")
-        _c.commit()
-        _r = _c.execute("SELECT status FROM academy_courses WHERE slug = 'web-design-development'").fetchone()
-        _n = _c.execute("SELECT COUNT(*) FROM lessons WHERE status = 'published'").fetchone()[0]
-        print(f"FORCE-PUBLISH: status={_r[0] if _r else 'NOT FOUND'}, lessons={_n}")
-        _c.close()
+        import legal_db as legal
+        legal.init_legal_tables()
+        print("✅ Legal tables ready")
     except Exception as _e:
-        print(f"FORCE-PUBLISH FAILED: {_e}")
-
-    # 2. Hakikisha CR 'cr' yupo na ana password 123456
-    import hashlib, os
-    conn = db.get_connection()
-    row = conn.execute(
-        "SELECT u.id FROM users u WHERE u.username = 'cr'"
-    ).fetchone()
-
-    salt = os.urandom(16).hex()
-    pwd_hash = hashlib.sha256((salt + "123456").encode()).hexdigest()
-
-    if not row:
-        # Unda CR mpya
-        cur = conn.cursor()
-        cur.execute(
-            "INSERT INTO students (full_name, reg_number, phone, is_active, "
-            "membership_status, date_joined, is_verified) "
-            "VALUES (?, ?, ?, 1, 'approved', date('now'), 1)",
-            ("Class Representative", "ITL4/CR/001", "0700111111"))
-        sid = cur.lastrowid
-        cur.execute(
-            "INSERT INTO users (role, student_id, username, password_hash, salt, is_admin) "
-            "VALUES (?, ?, ?, ?, ?, 1)",
-            ("CR", sid, "cr", pwd_hash, salt))
-        conn.commit()
-        print("âœ… CR 'cr' created with password 123456")
-    else:
-        # Update password kuwa 123456 kila app inapowaka
-        conn.execute(
-            "UPDATE users SET password_hash = ?, salt = ? WHERE username = 'cr'",
-            (pwd_hash, salt))
-        conn.commit()
-        print("âœ… CR 'cr' password reset to 123456")
-
-    conn.close()
+        print(f"⚠️ Legal init: {_e}")
+    
+    try:
+        import push_service
+        push_service.init_push_table()
+        print("✅ Push tables ready")
+    except Exception as _e:
+        print(f"⚠️ Push init: {_e}")
+    
+    # 3. Ensure CR 'cr' exists (NEVER reset password)
+    import hashlib
+    import os as _os
+    try:
+        conn = db.get_connection()
+        row = conn.execute(
+            "SELECT u.id FROM users u WHERE u.username = 'cr'"
+        ).fetchone()
+        
+        if not row:
+            salt = _os.urandom(16).hex()
+            pwd_hash = hashlib.sha256((salt + "123456").encode()).hexdigest()
+            cur = conn.cursor()
+            cur.execute(
+                "INSERT INTO students (full_name, reg_number, phone, is_active, "
+                "membership_status, date_joined, is_verified) "
+                "VALUES (?, ?, ?, 1, 'approved', date('now'), 1)",
+                ("Class Representative", "ITL4/CR/001", "0700111111"))
+            sid = cur.lastrowid
+            cur.execute(
+                "INSERT INTO users (role, student_id, username, password_hash, salt, is_admin) "
+                "VALUES (?, ?, ?, ?, ?, 1)",
+                ("CR", sid, "cr", pwd_hash, salt))
+            conn.commit()
+            print("✅ CR created: cr / 123456")
+        else:
+            print("✅ CR exists")
+        conn.close()
+    except Exception as _e:
+        print(f"⚠️ CR ensure: {_e}")
+    
+    try:
+        deleted, kept = db.cleanup_unused_seed_modules()
+        if deleted > 0:
+            print(f"✅ Cleaned {deleted} unused sample modules")
+    except Exception as _e:
+        print(f"⚠️ Cleanup: {_e}")
 
 
 def require_login(request: Request):
@@ -2703,3 +2704,87 @@ def admin_db_test_subscribe(secret: str = "", user_id: int = 1):
     except Exception as e:
         import traceback
         return {"ok": False, "error": str(e), "traceback": traceback.format_exc()[-500:]}
+
+
+# ============================================================
+# CODING LAB (Academy — Challenges + Test Cases)
+# ============================================================
+import coding_lab_db as coding
+
+@app.get("/academy/coding-lab", response_class=HTMLResponse)
+def coding_lab_home(request: Request):
+    if "user_id" not in request.session:
+        return RedirectResponse("/login", 303)
+    user_id = request.session["user_id"]
+    return render("coding_lab.html", ctx(request, {
+        "paths": coding.get_paths_with_progress(user_id),
+        "stats": coding.get_coding_stats(user_id),
+    }))
+
+
+@app.get("/academy/coding-lab/{path_slug}", response_class=HTMLResponse)
+def coding_lab_path(request: Request, path_slug: str):
+    if "user_id" not in request.session:
+        return RedirectResponse("/login", 303)
+    user_id = request.session["user_id"]
+    data = coding.get_path_challenges(user_id, path_slug)
+    if not data:
+        raise HTTPException(404)
+    return render("coding_lab_path.html", ctx(request, {
+        "path": data["path"],
+        "path_slug": path_slug,
+        "challenges": data["challenges"],
+    }))
+
+
+@app.get("/academy/coding-lab/challenge/{challenge_id}", response_class=HTMLResponse)
+def coding_challenge_page(request: Request, challenge_id: int):
+    if "user_id" not in request.session:
+        return RedirectResponse("/login", 303)
+    user_id = request.session["user_id"]
+    ch = coding.get_challenge(challenge_id)
+    if not ch:
+        raise HTTPException(404)
+    
+    # Check unlock
+    path_data = coding.get_path_challenges(user_id, ch["path_slug"])
+    if not path_data:
+        raise HTTPException(404)
+    current = next((c for c in path_data["challenges"] if c["id"] == challenge_id), None)
+    if not current or not current["unlocked"]:
+        return RedirectResponse(f"/academy/coding-lab/{ch['path_slug']}?locked=1", 303)
+    
+    saved = coding.get_saved_code(user_id, challenge_id)
+    return render("coding_challenge.html", ctx(request, {
+        "challenge": ch,
+        "path_slug": ch["path_slug"],
+        "saved_code": saved,
+    }))
+
+
+@app.post("/api/coding/save")
+async def coding_save(request: Request):
+    if "user_id" not in request.session:
+        return {"ok": False, "error": "Not logged in"}
+    try:
+        data = await request.json()
+    except Exception:
+        return {"ok": False, "error": "Invalid JSON"}
+    coding.save_code(request.session["user_id"], data.get("challenge_id"), data.get("code", ""))
+    return {"ok": True}
+
+
+@app.post("/api/coding/submit")
+async def coding_submit(request: Request):
+    if "user_id" not in request.session:
+        return {"ok": False, "error": "Not logged in"}
+    try:
+        data = await request.json()
+    except Exception:
+        return {"ok": False, "error": "Invalid JSON"}
+    
+    challenge_id = data.get("challenge_id")
+    passed = bool(data.get("passed"))
+    coding.record_submission(request.session["user_id"], challenge_id, passed)
+    
+    return {"ok": True, "passed": passed}
