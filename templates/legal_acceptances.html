@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Legal & Privacy — My Acceptances{% endblock %}
+{% block page_title %}📜 Legal & Privacy{% endblock %}
+
+{% block body %}
+<div class="container" style="max-width:800px;">
+
+    <div
+        style="background:linear-gradient(135deg,#0B1F33 0%,#1e40af 100%);border-radius:16px;padding:28px;color:white;margin-bottom:22px;">
+        <h1 style="font-size:24px;font-weight:900;margin:0 0 6px;">📜 Legal & Privacy</h1>
+        <p style="color:#cbd5e1;margin:0;font-size:14px;">Your legal document acceptance records</p>
+    </div>
+
+    <!-- Current documents -->
+    <div class="card" style="margin-bottom:18px;">
+        <h2 style="font-size:18px;font-weight:800;color:var(--navy);margin-bottom:14px;">📄 Current Documents</h2>
+
+        {% if terms_current %}
+        <div
+            style="padding:14px;background:#f8fafc;border-radius:8px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+            <div>
+                <div style="font-weight:700;color:var(--navy);">{{ terms_current.title }}</div>
+                <div style="font-size:12px;color:var(--muted);">Version {{ terms_current.version }} · Effective {{
+                    terms_current.effective_at }}</div>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;">
+                {% if has_terms %}
+                <span
+                    style="background:#dcfce7;color:#16A34A;padding:4px 12px;border-radius:12px;font-size:11px;font-weight:700;">✓
+                    Accepted</span>
+                {% else %}
+                <span
+                    style="background:#fee2e2;color:#DC2626;padding:4px 12px;border-radius:12px;font-size:11px;font-weight:700;">Not
+                    accepted</span>
+                {% endif %}
+                <a href="/legal/terms" target="_blank" class="btn btn-outline"
+                    style="padding:6px 14px;font-size:13px;">Read →</a>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if privacy_current %}
+        <div
+            style="padding:14px;background:#f8fafc;border-radius:8px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+            <div>
+                <div style="font-weight:700;color:var(--navy);">{{ privacy_current.title }}</div>
+                <div style="font-size:12px;color:var(--muted);">Version {{ privacy_current.version }} · Effective {{
+                    privacy_current.effective_at }}</div>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;">
+                {% if has_privacy %}
+                <span
+                    style="background:#dcfce7;color:#16A34A;padding:4px 12px;border-radius:12px;font-size:11px;font-weight:700;">✓
+                    Acknowledged</span>
+                {% else %}
+                <span
+                    style="background:#fee2e2;color:#DC2626;padding:4px 12px;border-radius:12px;font-size:11px;font-weight:700;">Not
+                    acknowledged</span>
+                {% endif %}
+                <a href="/legal/privacy" target="_blank" class="btn btn-outline"
+                    style="padding:6px 14px;font-size:13px;">Read →</a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Acceptance history -->
+    <div class="card">
+        <h2 style="font-size:18px;font-weight:800;color:var(--navy);margin-bottom:14px;">📋 My Acceptance History</h2>
+
+        {% if acceptances %}
+        <div style="display:grid;gap:8px;">
+            {% for a in acceptances %}
+            <div
+                style="padding:12px 16px;background:#f8fafc;border-radius:8px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+                <div>
+                    <div style="font-weight:700;color:var(--navy);font-size:14px;">
+                        {{ 'Terms & Conditions' if a.document_type == 'terms' else 'Privacy Policy' }}
+                    </div>
+                    <div style="font-size:12px;color:var(--muted);">
+                        Version {{ a.document_version }} · {{ a.acceptance_type }} · {{ a.accepted_at }}
+                    </div>
+                </div>
+                <span
+                    style="background:#dbeafe;color:#2563EB;padding:3px 10px;border-radius:10px;font-size:11px;font-weight:700;">
+                    ✓ Recorded
+                </span>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p style="color:var(--muted);text-align:center;padding:20px;">Hakuna acceptance records bado.</p>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Legal Acceptance Required{% endblock %}
+{% block page_title %}📜 Legal Acceptance Required{% endblock %}
+
+{% block body %}
+<div class="container" style="max-width:720px;">
+
+    <div
+        style="background:linear-gradient(135deg,#F47721 0%,#DC2626 100%);border-radius:16px;padding:28px;color:white;margin-bottom:22px;text-align:center;">
+        <div style="font-size:52px;margin-bottom:12px;">📜</div>
+        <h1 style="font-size:22px;font-weight:900;margin:0 0 8px;">Updated Legal Documents</h1>
+        <p style="color:#fff;margin:0;font-size:14px;opacity:.95;">
+            Tafadhali soma na ukubali documents zilizosasishwa ili kuendelea kutumia mfumo.
+        </p>
+    </div>
+
+    <div class="card">
+        <form method="post" action="/legal/accept">
+
+            {% if terms_current %}
+            <div style="padding:16px;background:#f8fafc;border-radius:8px;margin-bottom:12px;">
+                <div style="font-weight:800;color:var(--navy);margin-bottom:6px;">{{ terms_current.title }} — v{{
+                    terms_current.version }}</div>
+                <a href="/legal/terms" target="_blank" class="btn btn-outline"
+                    style="padding:6px 14px;font-size:13px;margin-bottom:10px;">Read full document →</a>
+                <div style="display:flex;align-items:flex-start;gap:10px;margin-top:10px;">
+                    <input type="checkbox" name="accept_terms" required
+                        style="width:18px;height:18px;margin-top:3px;cursor:pointer;">
+                    <label style="margin:0;font-size:14px;cursor:pointer;line-height:1.5;">
+                        I have read and agree to the Terms & Conditions (v{{ terms_current.version }})
+                    </label>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if privacy_current %}
+            <div style="padding:16px;background:#f8fafc;border-radius:8px;margin-bottom:18px;">
+                <div style="font-weight:800;color:var(--navy);margin-bottom:6px;">{{ privacy_current.title }} — v{{
+                    privacy_current.version }}</div>
+                <a href="/legal/privacy" target="_blank" class="btn btn-outline"
+                    style="padding:6px 14px;font-size:13px;margin-bottom:10px;">Read full document →</a>
+                <div style="display:flex;align-items:flex-start;gap:10px;margin-top:10px;">
+                    <input type="checkbox" name="accept_privacy" required
+                        style="width:18px;height:18px;margin-top:3px;cursor:pointer;">
+                    <label style="margin:0;font-size:14px;cursor:pointer;line-height:1.5;">
+                        I have read and acknowledge the Privacy Policy (v{{ privacy_current.version }})
+                    </label>
+                </div>
+            </div>
+            {% endif %}
+
+            <button type="submit" class="btn btn-primary" style="width:100%;padding:14px;">
+                Accept & Continue →
+            </button>
+        </form>
+    </div>
+
+</div>
+{% endblock %}

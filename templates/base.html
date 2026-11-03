@@ -675,7 +675,10 @@
                     <span class="sb-icon">💭</span> Daily Message
                 </a>
                 <a href="/notifications" class="sb-item {% if request.url.path == '/notifications' %}active{% endif %}">
-                    <span class="sb-icon">🔔</span> Notifications
+                    <span class="sb-icon">🔔</span> Notification
+                    <a href="/legal/my-acceptances" class="sb-item {% if request.url.path.startswith('/legal') %}active{% endif %}">
+                        <span class="sb-icon">📜</span> Legal & Privacy
+                    </a>
                 </a>
                 <a href="/settings" class="sb-item {% if request.url.path == '/settings' %}active{% endif %}">
                     <span class="sb-icon">⚙</span> Settings

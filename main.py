@@ -14,6 +14,7 @@ import push_service
 import database as db
 import auth
 import academy_db as academy
+import legal_db as legal
 import ai_service
 from email_service import send_verification_email
 
@@ -76,6 +77,11 @@ def startup():
     db.init_database()
     print("âœ… Database ready")
     academy.init_academy()
+    try:
+        legal.init_legal_tables()
+        print("✅ Legal tables ready")
+    except Exception as _e:
+        print(f"⚠️ Legal init failed: {_e}")
     academy.init_ai_tables()
     academy.init_coding_tables()
     print("âœ… Academy ready")
@@ -224,7 +230,64 @@ def signup_post(request: Request, full_name: str = Form(...),
                 gender: str = Form(""),
                 password: str = Form(...),
                 confirm_password: str = Form(...),
-                role: str = Form("STUDENT")):
+                role: str = Form("STUDENT"),
+                accept_terms: str = Form(""),
+                accept_privacy: str = Form("")):
+    # Legal consent check
+    if accept_terms != "on":
+        return render("signup.html", {
+            "request": request,
+            "error": "Lazima ukubali Terms & Conditions ili kuendelea.",
+        })
+    if accept_privacy != "on":
+        return render("signup.html", {
+            "request": request,
+            "error": "Lazima ukubali Privacy Policy ili kuendelea.",
+        })
+
+    if password != confirm_password:
+        return render("signup.html", {
+            "request": request,
+            "error": "Password na Confirm Password hazifanani.",
+        })
+
+    ok, info, msg = db.signup_student(
+        admission_no=admission_no, password=password,
+        full_name=full_name, phone=phone, email=email,
+        gender=gender, role=role,
+    )
+
+    if not ok:
+        return render("signup.html", {"request": request, "error": msg})
+
+    # Record legal acceptances
+    try:
+        terms_doc = legal.get_current_document("terms")
+        privacy_doc = legal.get_current_document("privacy")
+        if terms_doc:
+            legal.record_acceptance(
+                info["user_id"], terms_doc["id"], "terms",
+                terms_doc["version"], "signup")
+        if privacy_doc:
+            legal.record_acceptance(
+                info["user_id"], privacy_doc["id"], "privacy",
+                privacy_doc["version"], "signup")
+    except Exception as _e:
+        print(f"⚠️ Legal acceptance recording failed: {_e}")
+
+    if role == "CR":
+        return RedirectResponse(
+            "/login?success=CR+account+created.+You+can+log+in+now.", 303)
+
+    email_ok, email_err = send_verification_email(
+        info["email"], info["full_name"], info["code"])
+
+    if not email_ok:
+        return RedirectResponse(
+            f"/verify?username={info['admission_no']}&warning=1", 303)
+
+    return RedirectResponse(
+        f"/verify?username={info['admission_no']}", 303)
     if password != confirm_password:
         return render("signup.html", {
             "request": request,
@@ -1715,3 +1778,77 @@ def trigger_notifications(secret: str = ""):
         return {"error": "notification_service not found", "daily": 0}
     except Exception as e:
         return {"error": str(e), "daily": 0}
+
+
+# ============================================================
+# LEGAL & PRIVACY
+# ============================================================
+@app.get("/legal/terms", response_class=HTMLResponse)
+def legal_terms(request: Request):
+    doc = legal.get_current_document("terms")
+    if not doc:
+        raise HTTPException(404, "Terms not found")
+    content = legal.get_document_content("terms", doc["version"])
+    if not content:
+        raise HTTPException(404, "Terms content not found")
+    return HTMLResponse(content)
+
+
+@app.get("/legal/privacy", response_class=HTMLResponse)
+def legal_privacy(request: Request):
+    doc = legal.get_current_document("privacy")
+    if not doc:
+        raise HTTPException(404, "Privacy Policy not found")
+    content = legal.get_document_content("privacy", doc["version"])
+    if not content:
+        raise HTTPException(404, "Privacy Policy content not found")
+    return HTMLResponse(content)
+
+
+@app.get("/legal/my-acceptances", response_class=HTMLResponse)
+def legal_my_acceptances(request: Request):
+    if "user_id" not in request.session:
+        return RedirectResponse("/login", 303)
+    user_id = request.session["user_id"]
+    acceptances = legal.get_user_acceptances(user_id)
+    terms_current = legal.get_current_document("terms")
+    privacy_current = legal.get_current_document("privacy")
+    return render("legal_acceptances.html", ctx(request, {
+        "acceptances": acceptances,
+        "terms_current": terms_current,
+        "privacy_current": privacy_current,
+        "has_terms": legal.has_accepted_current(user_id, "terms"),
+        "has_privacy": legal.has_accepted_current(user_id, "privacy"),
+    }))
+
+
+@app.get("/legal/accept-required", response_class=HTMLResponse)
+def legal_accept_required(request: Request):
+    if "user_id" not in request.session:
+        return RedirectResponse("/login", 303)
+    return render("legal_accept_required.html", ctx(request, {
+        "terms_current": legal.get_current_document("terms"),
+        "privacy_current": legal.get_current_document("privacy"),
+    }))
+
+
+@app.post("/legal/accept")
+async def legal_accept_post(request: Request):
+    if "user_id" not in request.session:
+        return RedirectResponse("/login", 303)
+    user_id = request.session["user_id"]
+    form = await request.form()
+
+    terms_ok = form.get("accept_terms") == "on"
+    privacy_ok = form.get("accept_privacy") == "on"
+    if not (terms_ok and privacy_ok):
+        raise HTTPException(400, detail="Both acceptances required")
+
+    terms = legal.get_current_document("terms")
+    privacy = legal.get_current_document("privacy")
+    if terms:
+        legal.record_acceptance(user_id, terms["id"], "terms", terms["version"], "reaccept")
+    if privacy:
+        legal.record_acceptance(user_id, privacy["id"], "privacy", privacy["version"], "reaccept")
+
+    return RedirectResponse("/dashboard", 303)
