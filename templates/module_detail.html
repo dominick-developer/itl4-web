@@ -1,49 +1,110 @@
 {% extends "base.html" %}
+{% block title %}{{ offering.module_name }}{% endblock %}
+{% block page_title %}📚 {{ offering.module_name }}{% endblock %}
+
 {% block body %}
 <div class="container">
-    <a href="/modules" style="display:inline-block;margin-bottom:16px;">← Back to Modules</a>
-    <div class="card">
-        <h1 style="color:var(--navy);">{{ offering.module_name }}</h1>
-        <p style="color:var(--muted);">{{ offering.module_code }} · 👨‍🏫 {{ offering.teacher_name or '—' }}</p>
-        {% if role in ('CR', 'LECTURER') and not offering.is_published %}
-        <form method="post" action="/modules/{{ offering.id }}/publish" style="margin-top:12px;">
-            <button class="btn btn-success">📤 Publish Module</button>
+
+    <div style="background:linear-gradient(135deg,#0B1F33 0%,#1e40af 100%);border-radius:16px;padding:28px;color:white;margin-bottom:22px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap;">
+            <div style="flex:1;min-width:200px;">
+                <div style="font-size:12px;color:#cbd5e1;letter-spacing:1px;text-transform:uppercase;font-weight:700;margin-bottom:6px;">
+                    {{ offering.module_code or '' }} · {{ offering.academic_year or '2024/2025' }} · {{ offering.semester or '' }}
+                </div>
+                <h1 style="font-size:26px;font-weight:900;margin:0 0 10px;">{{ offering.module_name }}</h1>
+                {% if offering.teacher_name %}
+                <p style="color:#cbd5e1;margin:0;font-size:14px;">👨‍🏫 {{ offering.teacher_name }}</p>
+                {% endif %}
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                {% if role == 'CR' %}
+                <a href="/modules/{{ offering.id }}/edit" class="btn" style="background:#F47721;color:white;padding:10px 20px;font-size:14px;">✏️ Edit</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- FULL DESCRIPTION -->
+    {% if offering.module_desc %}
+    <div class="card" style="margin-bottom:18px;">
+        <h2 style="font-size:16px;font-weight:800;color:var(--navy);margin-bottom:10px;">📝 Maelezo</h2>
+        <div style="color:#334155;line-height:1.7;white-space:pre-wrap;font-size:15px;">{{ offering.module_desc }}</div>
+    </div>
+    {% endif %}
+
+    <!-- STATUS -->
+    <div class="card" style="margin-bottom:18px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;">
+        <div style="flex:1;">
+            <span style="font-weight:800;color:var(--navy);">Status:</span>
+            {% if offering.is_published %}
+            <span style="background:#dcfce7;color:#16A34A;padding:4px 12px;border-radius:10px;font-size:12px;font-weight:700;">✓ Published</span>
+            {% else %}
+            <span style="background:#fef3c7;color:#92400e;padding:4px 12px;border-radius:10px;font-size:12px;font-weight:700;">⏳ Draft</span>
+            {% endif %}
+        </div>
+        {% if not offering.is_published and role == 'CR' %}
+        <form method="post" action="/modules/{{ offering.id }}/publish" style="display:inline;">
+            <button type="submit" class="btn btn-success" style="padding:10px 20px;background:#16A34A;color:white;">Publish</button>
         </form>
         {% endif %}
+        <form method="post" action="/modules/{{ offering.id }}/delete" onsubmit="return confirm('Delete module?');" style="display:inline;">
+            <button type="submit" class="btn btn-danger" style="padding:10px 20px;">Delete</button>
+        </form>
     </div>
-    <div class="card">
-        <h2 style="color:var(--navy);margin-bottom:12px;">Topics ({{ topics|length }})</h2>
+
+    <!-- TOPICS -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin:22px 0 12px;">
+        <h2 style="font-size:18px;font-weight:800;color:var(--navy);margin:0;">📖 Topics ({{ topics|length }})</h2>
+    </div>
+
+    {% if topics %}
+    <div style="display:grid;gap:10px;">
         {% for t in topics %}
-        <div style="background:#f8fafc;padding:12px;border-radius:8px;margin-bottom:8px;">
-            <strong style="color:var(--navy);">#{{ loop.index }} {{ t.title }}</strong>
-            <span class="badge badge-{{ t.status }}" style="margin-left:8px;">{{ t.status }}</span>
-            {% if t.description %}<p style="color:var(--muted);font-size:13px;margin-top:4px;">{{ t.description }}</p>{%
-            endif %}
+        <div class="card" style="padding:14px 18px;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
+                <div style="flex:1;min-width:200px;">
+                    <div style="font-weight:800;color:var(--navy);font-size:15px;">{{ loop.index }}. {{ t.title }}</div>
+                    {% if t.description %}<div style="color:var(--muted);font-size:13px;margin-top:4px;">{{ t.description }}</div>{% endif %}
+                </div>
+                <div style="display:flex;gap:6px;">
+                    {% if role == 'CR' %}
+                    <form method="post" action="/topics/{{ t.id }}/delete" onsubmit="return confirm('Delete topic?');" style="display:inline;">
+                        <button type="submit" class="btn btn-danger" style="padding:6px 12px;font-size:12px;">Delete</button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
         </div>
-        {% else %}
-        <p class="empty">No topics yet.</p>
         {% endfor %}
     </div>
-    {% if role in ('CR', 'LECTURER') %}
-    <div class="card">
-        <h3 style="color:var(--navy);margin-bottom:12px;">+ Add Topic</h3>
+    {% else %}
+    <div class="card" style="text-align:center;padding:40px;color:var(--muted);">
+        <p>Hakuna topics bado. Ongeza topic ya kwanza.</p>
+    </div>
+    {% endif %}
+
+    {% if role == 'CR' %}
+    <div class="card" style="margin-top:18px;">
+        <h3 style="font-size:15px;font-weight:800;color:var(--navy);margin-bottom:12px;">➕ Add Topic</h3>
         <form method="post" action="/modules/{{ offering.id }}/add_topic">
-            <div class="form-group"><label>Title</label><input name="title" required></div>
-            <div class="form-group"><label>Description</label><textarea name="description" rows="2"></textarea></div>
-            <div class="form-group"><label>Duration (hours)</label><input name="duration" type="number" value="4"></div>
-            <button class="btn btn-primary">Add Topic</button>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Topic Title *</label>
+                    <input type="text" name="title" required placeholder="e.g. Introduction to Java">
+                </div>
+                <div class="form-group">
+                    <label>Duration (hrs)</label>
+                    <input type="number" name="duration" step="0.5" value="0">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Description</label>
+                <textarea name="description" rows="2"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">Add Topic</button>
         </form>
     </div>
     {% endif %}
-</div>
 
-{% if role == 'CR' %}
-<!-- Floating Edit Module Button (CR only) -->
-<a href="/modules/{{ offering.id }}/edit" 
-   style="position:fixed;bottom:24px;right:24px;background:linear-gradient(135deg,#F47721,#e6670f);color:white;padding:14px 24px;border-radius:50px;font-weight:800;font-size:15px;box-shadow:0 8px 24px rgba(244,119,33,.4), 0 2px 8px rgba(0,0,0,.15);text-decoration:none;z-index:9999;display:flex;align-items:center;gap:8px;transition:transform .15s;"
-   onmouseover="this.style.transform='translateY(-2px)'"
-   onmouseout="this.style.transform=''">
-    ✏️ Edit Module
-</a>
-{% endif %}
+</div>
 {% endblock %}

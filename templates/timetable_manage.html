@@ -5,109 +5,212 @@
 {% block body %}
 <div class="container">
 
-    <div
-        style="background:linear-gradient(135deg,#0B1F33 0%,#1e40af 100%);border-radius:16px;padding:24px;color:white;margin-bottom:22px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+    <div style="background:linear-gradient(135deg,#0B1F33 0%,#1e40af 100%);border-radius:16px;padding:24px;color:white;margin-bottom:22px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
         <div>
             <h1 style="font-size:22px;font-weight:900;margin:0 0 4px;">⚙️ Manage Timetable</h1>
-            <p style="color:#cbd5e1;margin:0;font-size:14px;">Weka masomo, walimu, na venye kwa kila siku</p>
+            <p style="color:#cbd5e1;margin:0;font-size:14px;">Weka, ahirisha, au futa vipindi</p>
         </div>
-        <a href="/timetable" class="btn btn-outline" style="background:white;color:var(--navy);padding:10px 20px;">👁
-            View</a>
+        <a href="/timetable" class="btn btn-outline" style="background:white;color:var(--navy);padding:10px 20px;">👁 View</a>
     </div>
 
-    <!-- ADD / EDIT FORM -->
+    {% if success %}<div style="background:#dcfce7;color:#16A34A;padding:14px;border-radius:8px;margin-bottom:16px;">✓ {{ success }}</div>{% endif %}
+    {% if error %}<div style="background:#fee2e2;color:#DC2626;padding:14px;border-radius:8px;margin-bottom:16px;">⚠️ {{ error }}</div>{% endif %}
+
     <div class="card" style="margin-bottom:22px;">
-        <h2 style="color:var(--navy);font-size:18px;font-weight:800;margin-bottom:16px;">
+        <h2 style="font-size:18px;font-weight:800;color:var(--navy);margin-bottom:16px;">
             {% if edit_entry %}✏️ Edit Session{% else %}➕ Add Session{% endif %}
         </h2>
-        <form method="post"
-            action="{% if edit_entry %}/timetable/{{ edit_entry.id }}/update{% else %}/timetable/add{% endif %}">
+        <form method="post" action="{% if edit_entry %}/timetable/{{ edit_entry.id }}/update{% else %}/timetable/add{% endif %}">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Module *</label>
+                    <select name="module_id" id="moduleSelect" required onchange="fillFromModule()">
+                        <option value="">— Chagua Module —</option>
+                        {% for m in modules_for_dropdown %}
+                        <option value="{{ m.id }}"
+                                data-teacher-id="{{ m.teacher_id or '' }}"
+                                data-teacher-name="{{ m.teacher_name or '' }}"
+                                data-teacher-phone="{{ m.teacher_phone or '' }}"
+                                data-module-name="{{ m.name }}"
+                                {% if edit_entry and edit_entry.module_id == m.id %}selected{% endif %}>
+                            {{ m.name }}{% if m.code %} ({{ m.code }}){% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <div style="font-size:12px;color:var(--muted);margin-top:4px;">Chagua module — mwalimu atajitokeza</div>
+                </div>
+                <div class="form-group">
+                    <label>Session Name</label>
+                    <input type="text" name="session_name" id="sessionName" 
+                           value="{{ edit_entry.session_name if edit_entry and edit_entry.session_name else '' }}"
+                           placeholder="Inajaa kutoka module">
+                </div>
+            </div>
+            
+            <div id="teacherInfo" style="display:none;background:#eff6ff;border-left:4px solid #2563EB;padding:14px;border-radius:8px;margin-bottom:14px;">
+                <div style="font-weight:800;color:#1e40af;font-size:13px;margin-bottom:4px;">👨‍🏫 Lecturer (auto-filled)</div>
+                <div id="teacherDisplay" style="color:#1e3a8a;font-size:14px;"></div>
+            </div>
+
             <div class="form-row">
                 <div class="form-group">
                     <label>Day *</label>
                     <select name="day" required>
                         {% for d in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] %}
-                        <option value="{{ d }}" {% if edit_entry and edit_entry.day==d %}selected{% endif %}>{{ d }}
-                        </option>
+                        <option value="{{ d }}" {% if edit_entry and edit_entry.day == d %}selected{% endif %}>{{ d }}</option>
                         {% endfor %}
                     </select>
                 </div>
                 <div class="form-group">
                     <label>Start Time *</label>
-                    <input type="time" name="start_time" required
-                        value="{{ edit_entry.start_time if edit_entry else '' }}">
+                    <input type="time" name="start_time" required value="{{ edit_entry.start_time if edit_entry else '' }}">
                 </div>
                 <div class="form-group">
                     <label>End Time</label>
                     <input type="time" name="end_time" value="{{ edit_entry.end_time if edit_entry else '' }}">
                 </div>
             </div>
+            
             <div class="form-row">
                 <div class="form-group">
-                    <label>Session Name *</label>
-                    <input type="text" name="session_name" required placeholder="e.g. Programming in Java"
-                        value="{{ edit_entry.session_name if edit_entry and edit_entry.session_name else '' }}">
+                    <label>Venue</label>
+                    <input type="text" name="venue" value="{{ edit_entry.venue if edit_entry else '' }}" placeholder="e.g. Room 203">
                 </div>
                 <div class="form-group">
-                    <label>Venue</label>
-                    <input type="text" name="venue" value="{{ edit_entry.venue if edit_entry else '' }}"
-                        placeholder="e.g. Room 203">
+                    <label>Notes</label>
+                    <input type="text" name="notes" value="{{ edit_entry.notes if edit_entry else '' }}" placeholder="Optional">
                 </div>
             </div>
-            <div class="form-group">
-                <label>Notes (optional)</label>
-                <input type="text" name="notes" value="{{ edit_entry.notes if edit_entry else '' }}"
-                    placeholder="e.g. Bring laptop">
-            </div>
+            
+            <input type="hidden" name="teacher_id" id="teacherIdHidden" value="{{ edit_entry.teacher_id if edit_entry else '' }}">
+            
             <div style="display:flex;gap:10px;flex-wrap:wrap;">
-                <button type="submit" class="btn btn-primary">{% if edit_entry %}Save{% else %}Add Session{% endif
-                    %}</button>
-                {% if edit_entry %}
-                <a href="/timetable/manage" class="btn btn-outline">Cancel</a>
-                {% endif %}
+                <button type="submit" class="btn btn-primary">{% if edit_entry %}Save Changes{% else %}Add Session{% endif %}</button>
+                {% if edit_entry %}<a href="/timetable/manage" class="btn btn-outline">Cancel</a>{% endif %}
             </div>
         </form>
     </div>
 
-    <!-- EXISTING -->
-    <h2 style="font-size:18px;font-weight:800;color:var(--navy);margin:22px 0 12px;">📅 Current ({{ entries|length }})
-    </h2>
+    <h2 style="font-size:18px;font-weight:800;color:var(--navy);margin:22px 0 12px;">📅 Current Timetable ({{ entries|length }})</h2>
 
     {% if entries %}
     <div style="display:grid;gap:10px;">
         {% for e in entries %}
-        <div class="card" style="padding:14px 18px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;">
-            <div
-                style="background:var(--navy);color:white;padding:6px 12px;border-radius:8px;font-size:12px;font-weight:800;min-width:80px;text-align:center;">
-                {{ e.day[:3] }}
-            </div>
-            <div style="font-weight:800;color:var(--orange);min-width:110px;font-size:14px;">
-                {{ e.start_time }}{% if e.end_time %} – {{ e.end_time }}{% endif %}
-            </div>
-            <div style="flex:1;min-width:180px;">
-                <div style="font-weight:800;color:var(--navy);font-size:15px;">
-                    {% if e.session_name %}{{ e.session_name }}{% elif e.module_name %}{{ e.module_name }}{% else
-                    %}Session{% endif %}
+        {% set status = e.status if e.status else 'scheduled' %}
+        <div class="card" style="padding:14px 18px;border-left:4px solid {% if status == 'postponed' %}#F59E0B{% elif status == 'cancelled' %}#DC2626{% else %}#16A34A{% endif %};">
+            <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;">
+                <div style="background:var(--navy);color:white;padding:6px 12px;border-radius:8px;font-size:12px;font-weight:800;min-width:80px;text-align:center;">{{ e.day[:3] }}</div>
+                <div style="font-weight:800;color:var(--orange);min-width:100px;font-size:14px;">
+                    {{ e.start_time }}{% if e.end_time %} – {{ e.end_time }}{% endif %}
                 </div>
-                {% if e.venue %}<div style="font-size:12px;color:var(--muted);">📍 {{ e.venue }}</div>{% endif %}
+                <div style="flex:1;min-width:200px;">
+                    <div style="font-weight:800;color:var(--navy);font-size:15px;">{{ e.session_name or e.module_name or '—' }}</div>
+                    <div style="font-size:12px;color:var(--muted);">
+                        {% if e.teacher_name %}👨‍🏫 {{ e.teacher_name }}{% endif %}
+                        {% if e.venue %} · 📍 {{ e.venue }}{% endif %}
+                    </div>
+                </div>
+                <div>
+                    {% if status == 'postponed' %}
+                    <span style="background:#fef3c7;color:#92400e;padding:4px 10px;border-radius:10px;font-size:11px;font-weight:700;">⏸ POSTPONED</span>
+                    {% elif status == 'cancelled' %}
+                    <span style="background:#fee2e2;color:#DC2626;padding:4px 10px;border-radius:10px;font-size:11px;font-weight:700;">✗ CANCELLED</span>
+                    {% else %}
+                    <span style="background:#dcfce7;color:#16A34A;padding:4px 10px;border-radius:10px;font-size:11px;font-weight:700;">✓ SCHEDULED</span>
+                    {% endif %}
+                </div>
             </div>
-            <div style="display:flex;gap:6px;">
-                <a href="/timetable/manage/{{ e.id }}/edit" class="btn btn-outline"
-                    style="padding:6px 14px;font-size:13px;">Edit</a>
-                <form method="post" action="/timetable/{{ e.id }}/delete" onsubmit="return confirm('Delete?');"
-                    style="display:inline;">
-                    <button type="submit" class="btn btn-danger"
-                        style="padding:6px 14px;font-size:13px;">Delete</button>
+            
+            {% if status == 'postponed' and e.postponed_to %}
+            <div style="margin-top:10px;padding:10px 14px;background:#fffbeb;border-radius:8px;font-size:13px;">
+                <strong style="color:#92400e;">⏸ Imeahirishwa:</strong> 
+                <span style="color:#78350f;">{{ e.postponed_to }}</span>
+                {% if e.postponed_reason %}<div style="color:#78350f;margin-top:4px;font-style:italic;">Sababu: {{ e.postponed_reason }}</div>{% endif %}
+            </div>
+            {% endif %}
+            
+            <div style="margin-top:12px;display:flex;gap:6px;flex-wrap:wrap;">
+                <a href="/timetable/manage/{{ e.id }}/edit" class="btn btn-outline" style="padding:6px 14px;font-size:12px;">✏️ Edit</a>
+                
+                {% if status == 'scheduled' %}
+                <button onclick="showPostponeForm({{ e.id }})" class="btn" style="padding:6px 14px;font-size:12px;background:#F59E0B;color:white;">⏸ Postpone</button>
+                <button onclick="showCancelForm({{ e.id }})" class="btn btn-danger" style="padding:6px 14px;font-size:12px;">✗ Cancel</button>
+                {% else %}
+                <form method="post" action="/timetable/{{ e.id }}/restore" onsubmit="return confirm('Rudisha kipindi?');" style="display:inline;">
+                    <button type="submit" class="btn btn-success" style="padding:6px 14px;font-size:12px;background:#16A34A;color:white;">↺ Restore</button>
+                </form>
+                {% endif %}
+                
+                <form method="post" action="/timetable/{{ e.id }}/delete" onsubmit="return confirm('Delete?');" style="display:inline;">
+                    <button type="submit" class="btn btn-danger" style="padding:6px 14px;font-size:12px;">🗑 Delete</button>
                 </form>
             </div>
+            
+            <form method="post" action="/timetable/{{ e.id }}/postpone" id="postponeForm{{ e.id }}" style="display:none;margin-top:12px;padding:14px;background:#fffbeb;border-radius:8px;">
+                <div class="form-group" style="margin-bottom:10px;">
+                    <label style="color:#92400e;">Muda Mpya (Pendekezo)</label>
+                    <input type="datetime-local" name="postponed_to" required style="border-color:#F59E0B;">
+                </div>
+                <div class="form-group" style="margin-bottom:10px;">
+                    <label style="color:#92400e;">Sababu</label>
+                    <input type="text" name="reason" placeholder="e.g. Mwalimu hayupo" style="border-color:#F59E0B;">
+                </div>
+                <div style="display:flex;gap:8px;">
+                    <button type="submit" class="btn" style="padding:8px 16px;background:#F59E0B;color:white;">⏸ Ahirisha</button>
+                    <button type="button" onclick="hidePostponeForm({{ e.id }})" class="btn btn-outline" style="padding:8px 16px;">Cancel</button>
+                </div>
+            </form>
+            
+            <form method="post" action="/timetable/{{ e.id }}/cancel" id="cancelForm{{ e.id }}" style="display:none;margin-top:12px;padding:14px;background:#fef2f2;border-radius:8px;">
+                <div class="form-group" style="margin-bottom:10px;">
+                    <label style="color:#DC2626;">Sababu</label>
+                    <input type="text" name="reason" placeholder="e.g. Likizo" style="border-color:#DC2626;">
+                </div>
+                <div style="display:flex;gap:8px;">
+                    <button type="submit" class="btn btn-danger" style="padding:8px 16px;">✗ Futa</button>
+                    <button type="button" onclick="hideCancelForm({{ e.id }})" class="btn btn-outline" style="padding:8px 16px;">Cancel</button>
+                </div>
+            </form>
         </div>
         {% endfor %}
     </div>
     {% else %}
-    <div class="card" style="text-align:center;padding:40px 20px;color:var(--muted);">
+    <div class="card" style="text-align:center;padding:40px;color:var(--muted);">
         <p>Timetable haijawekwa. Ongeza session ya kwanza hapo juu.</p>
     </div>
     {% endif %}
-
 </div>
+
+<script>
+function fillFromModule() {
+    var select = document.getElementById('moduleSelect');
+    var option = select.options[select.selectedIndex];
+    var teacherName = option.dataset.teacherName || '';
+    var teacherId = option.dataset.teacherId || '';
+    var moduleName = option.dataset.moduleName || '';
+    
+    var hidden = document.getElementById('teacherIdHidden');
+    if (hidden) hidden.value = teacherId;
+    
+    var sessionName = document.getElementById('sessionName');
+    if (sessionName && !sessionName.value) sessionName.value = moduleName;
+    
+    var info = document.getElementById('teacherInfo');
+    var display = document.getElementById('teacherDisplay');
+    if (teacherName) {
+        display.textContent = teacherName;
+        info.style.display = 'block';
+    } else {
+        display.textContent = '(Hakuna mwalimu aliyechaguliwa kwenye module hii)';
+        info.style.display = 'block';
+    }
+}
+
+function showPostponeForm(id) { document.getElementById('postponeForm' + id).style.display = 'block'; }
+function hidePostponeForm(id) { document.getElementById('postponeForm' + id).style.display = 'none'; }
+function showCancelForm(id) { document.getElementById('cancelForm' + id).style.display = 'block'; }
+function hideCancelForm(id) { document.getElementById('cancelForm' + id).style.display = 'none'; }
+
+document.addEventListener('DOMContentLoaded', fillFromModule);
+</script>
 {% endblock %}
