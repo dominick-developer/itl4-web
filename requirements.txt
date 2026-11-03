@@ -9,3 +9,4 @@ anthropic
 pywebpush
 py-vapid
 turso-serverless
+tzdata
