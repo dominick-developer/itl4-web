@@ -1742,7 +1742,7 @@ def get_timetable_sessions(search="", date_filter=None,
         "t.id AS topic_id, t.title AS topic_title, "
         "o.id AS offering_id, o.is_published, "
         "m.id AS module_id, m.name AS module_name, m.code AS module_code, "
-        "te.full_name AS teacher_name "
+        "te.full_name AS teacher_name, te.phone AS teacher_phone, te.email AS teacher_email, m.description AS module_desc "
         "FROM sessions s JOIN topics t ON s.topic_id = t.id "
         "JOIN module_offerings o ON t.offering_id = o.id "
         "JOIN modules m ON o.module_id = m.id "
@@ -3134,7 +3134,7 @@ def get_all_timetable_entries():
     conn.execute("PRAGMA table_info(timetable)")
     rows = conn.execute(
         "SELECT t.*, m.name AS module_name, m.code AS module_code, "
-        "te.full_name AS teacher_name "
+        "te.full_name AS teacher_name, te.phone AS teacher_phone, te.email AS teacher_email, m.description AS module_desc "
         "FROM timetable t "
         "LEFT JOIN modules m ON t.module_id = m.id "
         "LEFT JOIN teachers te ON t.teacher_id = te.id "
