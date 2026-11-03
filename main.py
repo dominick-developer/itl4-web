@@ -50,16 +50,6 @@ async def push_unsubscribe(request: Request):
     return {"ok": True}
 
 
-@app.get("/api/push/test")
-def push_test(request: Request):
-    if "user_id" not in request.session:
-        raise HTTPException(401)
-    result = push_service.send_push(
-        request.session["user_id"],
-        "🔔 IT Level 4 Connect",
-        "Push notifications zinafanya kazi! Utapokea taarifa za ratiba.",
-        "/timetable")
-    return result
 @app.on_event("startup")
 def startup():
     # 1. Init database (migrations za columns mpya zipo ndani ya init_database)
@@ -1712,64 +1702,6 @@ async def push_unsubscribe(request: Request):
         return {"ok": False, "error": str(e)}
 
 
-@app.get("/api/push/test")
-def push_test(request: Request):
-    if "user_id" not in request.session:
-        raise HTTPException(401)
-
-    user_id = request.session["user_id"]
-    private_key = os.getenv("VAPID_PRIVATE_KEY", "")
-
-    diagnostics = {
-        "has_vapid_private": bool(private_key),
-        "vapid_private_length": len(private_key),
-        "vapid_private_has_real_newlines": "\n" in private_key,
-        "vapid_private_has_literal_backslash_n": "\\n" in private_key,
-        "vapid_private_starts_with": private_key[:30] if private_key else "",
-    }
-
-    try:
-        import push_service
-        diagnostics["push_service"] = "ok"
-    except ImportError as e:
-        return {"ok": False, "error": f"Import push_service: {e}", "diagnostics": diagnostics}
-
-    try:
-        from pywebpush import webpush
-        diagnostics["pywebpush"] = "ok"
-    except ImportError as e:
-        return {"ok": False, "error": f"Import pywebpush: {e}", "diagnostics": diagnostics}
-
-    try:
-        from database import get_connection
-        conn = get_connection()
-        subs = conn.execute(
-            "SELECT COUNT(*) as n FROM push_subscriptions WHERE user_id = ?",
-            (user_id,)).fetchone()
-        conn.close()
-        diagnostics["subscriptions_count"] = subs["n"] if subs else 0
-    except Exception as e:
-        return {"ok": False, "error": f"Query subscriptions: {e}", "diagnostics": diagnostics}
-
-    try:
-        result = push_service.send_push(
-            user_id,
-            "🔔 IT Level 4 Connect",
-            "Push notifications zinafanya kazi! Utapokea taarifa za ratiba.",
-            "/timetable")
-        result["diagnostics"] = diagnostics
-        return result
-    except Exception as e:
-        import traceback
-        return {
-            "ok": False,
-            "error": str(e),
-            "error_type": type(e).__name__,
-            "traceback": traceback.format_exc()[-1500:],
-            "diagnostics": diagnostics,
-        }
-
-
 # ============================================================
 # CRON ENDPOINT (Kwa cron-job.org)
 # ============================================================
@@ -1862,22 +1794,6 @@ async def push_unsubscribe(request: Request):
         push_service.remove_subscription(
             request.session["user_id"], data.get("endpoint", ""))
         return {"ok": True}
-    except Exception as e:
-        return {"ok": False, "error": str(e)}
-
-
-@app.get("/api/push/test")
-def push_test(request: Request):
-    if "user_id" not in request.session:
-        raise HTTPException(401)
-    try:
-        import push_service
-        result = push_service.send_push(
-            request.session["user_id"],
-            "🔔 IT Level 4 Connect",
-            "Push notifications zinafanya kazi! Utapokea taarifa za ratiba.",
-            "/timetable")
-        return result
     except Exception as e:
         return {"ok": False, "error": str(e)}
 
@@ -1976,3 +1892,49 @@ async def push_unsubscribe(request: Request):
         return {"ok": True}
     except Exception as e:
         return {"ok": False, "error": str(e)}
+
+
+# ============================================================
+# PUSH TEST (single clean version)
+# ============================================================
+@app.get("/api/push/test")
+def push_test(request: Request):
+    if "user_id" not in request.session:
+        return {"ok": False, "error": "Not logged in"}
+    
+    user_id = request.session["user_id"]
+    
+    try:
+        from database import get_connection
+        conn = get_connection()
+        row = conn.execute(
+            "SELECT COUNT(*) as n FROM push_subscriptions WHERE user_id = ?",
+            (user_id,)).fetchone()
+        conn.close()
+        count = row["n"] if row else 0
+        
+        if count == 0:
+            return {
+                "ok": False,
+                "error": "No subscriptions",
+                "user_id": user_id,
+                "debug": f"DB has 0 rows for user_id={user_id}"
+            }
+        
+        import push_service
+        result = push_service.send_push(
+            user_id,
+            "🔔 IT Level 4 Connect",
+            "Push notifications zinafanya kazi!",
+            "/timetable")
+        result["user_id"] = user_id
+        result["db_count"] = count
+        return result
+    except Exception as e:
+        import traceback
+        return {
+            "ok": False,
+            "error": str(e),
+            "traceback": traceback.format_exc()[-500:],
+            "user_id": user_id
+        }
