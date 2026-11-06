@@ -2940,3 +2940,30 @@ def admin_reset_student_passwords(secret: str = ""):
     conn.commit()
     conn.close()
     return {"ok": True, "reset_count": count, "password": "it2026"}
+
+# ============================================================
+# REPAIR ENDPOINTS (emergency - protected by CRON_SECRET)
+# ============================================================
+@app.get("/admin/list-students-users")
+def admin_list_students_users(secret: str = ""):
+    if secret != os.getenv("CRON_SECRET", ""):
+        raise HTTPException(403)
+    rows = db.list_all_students_with_users()
+    return {
+        "total": len(rows),
+        "no_user_count": len([r for r in rows if r["status"] == "NO_USER"]),
+        "students": [dict(r) for r in rows],
+    }
+
+
+@app.get("/admin/repair-missing-users")
+def admin_repair_missing_users(secret: str = "", password: str = "it2026"):
+    if secret != os.getenv("CRON_SECRET", ""):
+        raise HTTPException(403)
+    fixed_count, details = db.repair_missing_users(default_password=password)
+    return {
+        "ok": True,
+        "fixed_count": fixed_count,
+        "default_password": password,
+        "details": details,
+    }

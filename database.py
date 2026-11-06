@@ -3996,3 +3996,94 @@ def delete_student_full(student_id):
         return False, str(e)
     finally:
         conn.close()
+
+# ============================================================
+# REPAIR: Create missing user records for students
+# ============================================================
+def repair_missing_users(default_password="it2026"):
+    """Find students without user records, create them. Returns (fixed_count, list)."""
+    import hashlib
+    import os
+    conn = get_connection()
+    try:
+        orphans = conn.execute(
+            "SELECT s.id, s.full_name, s.reg_number, s.membership_status "
+            "FROM students s "
+            "LEFT JOIN users u ON u.student_id = s.id "
+            "WHERE s.is_active = 1 AND u.id IS NULL AND s.reg_number IS NOT NULL "
+            "ORDER BY s.id"
+        ).fetchall()
+
+        if not orphans:
+            conn.close()
+            return 0, []
+
+        fixed = []
+        for s in orphans:
+            username = (s["reg_number"] or "").strip().upper()
+            if not username:
+                continue
+            
+            # Check if username exists with different student
+            existing = conn.execute(
+                "SELECT id, student_id FROM users WHERE LOWER(username) = LOWER(?)",
+                (username,)).fetchone()
+            if existing:
+                fixed.append({
+                    "student_id": s["id"],
+                    "username": username,
+                    "status": "username_conflict",
+                    "existing_user_id": existing["id"],
+                })
+                continue
+            
+            salt = os.urandom(16).hex()
+            pwd_hash = hashlib.sha256(
+                (salt + default_password).encode("utf-8")).hexdigest()
+            
+            try:
+                conn.execute(
+                    "INSERT INTO users (role, student_id, username, password_hash, salt, is_admin) "
+                    "VALUES ('STUDENT', ?, ?, ?, ?, 0)",
+                    (s["id"], username, pwd_hash, salt))
+                fixed.append({
+                    "student_id": s["id"],
+                    "username": username,
+                    "full_name": s["full_name"],
+                    "status": "created",
+                    "password": default_password,
+                })
+            except Exception as e:
+                fixed.append({
+                    "student_id": s["id"],
+                    "username": username,
+                    "status": "error",
+                    "error": str(e),
+                })
+        
+        conn.commit()
+        return len([f for f in fixed if f["status"] == "created"]), fixed
+    except Exception as e:
+        try:
+            conn.rollback()
+        except Exception:
+            pass
+        return 0, [{"status": "fatal", "error": str(e)}]
+    finally:
+        conn.close()
+
+
+def list_all_students_with_users():
+    """Diagnostic: list students and whether they have users."""
+    conn = get_connection()
+    rows = conn.execute(
+        "SELECT s.id, s.full_name, s.reg_number, s.membership_status, "
+        "s.is_verified, "
+        "u.id AS user_id, u.username, u.role, "
+        "CASE WHEN u.id IS NULL THEN 'NO_USER' ELSE 'HAS_USER' END AS status "
+        "FROM students s LEFT JOIN users u ON u.student_id = s.id "
+        "WHERE s.is_active = 1 "
+        "ORDER BY (u.id IS NULL) DESC, s.id DESC"
+    ).fetchall()
+    conn.close()
+    return rows
