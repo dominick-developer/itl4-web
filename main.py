@@ -2825,15 +2825,24 @@ def groups_auto_group(request: Request):
         from urllib.parse import quote
         if result.get("created", 0) > 0:
             msg = "Groups " + str(result["created"]) + " zimeundwa, " + str(result["remaining"]) + " wanafunzi bado hawajawekwa"
-            return RedirectResponse(f"/groups?success={quote(msg)}", 303)
+            return RedirectResponse("/groups?success=" + quote(msg), 303)
         else:
-            msg = result.get("message") or "Hakuna wanafunzi wa ku-group (min 9)"
-            return RedirectResponse(f"/groups?error={quote(msg)}", 303)
+            try:
+                diag = db.get_grouping_diagnostics()
+                msg = (
+                    "Hakuna wanafunzi wa ku-group. "
+                    "Active: " + str(diag["total_active"]) + ", "
+                    "Approved: " + str(diag["approved"]) + ", "
+                    "Pending: " + str(diag["pending"]) + ", "
+                    "In groups: " + str(diag["in_groups"]) + ", "
+                    "Ungrouped approved: " + str(diag["ungrouped_approved"])
+                )
+            except Exception:
+                msg = "Hakuna wanafunzi wa ku-group (min 9)"
+            return RedirectResponse("/groups?error=" + quote(msg), 303)
     except Exception as e:
         from urllib.parse import quote
-        return RedirectResponse(f"/groups?error={quote(str(e))}", 303)
-
-
+        return RedirectResponse("/groups?error=" + quote(str(e)), 303)
 @app.post("/groups/{gid}/remove-member/{sid}")
 def group_remove_member(request: Request, gid: int, sid: int):
     require_login(request)
@@ -2844,3 +2853,57 @@ def group_remove_member(request: Request, gid: int, sid: int):
     conn.commit()
     conn.close()
     return RedirectResponse(f"/groups/{gid}?success=Member+removed", 303)
+
+# ============================================================
+# EXPORT GROUPS PDF
+# ============================================================
+@app.get("/groups/export-pdf")
+def groups_export_pdf(request: Request):
+    require_login(request)
+    if request.session.get("role") not in ("CR", "LECTURER"):
+        raise HTTPException(403)
+    
+    try:
+        import pdf_export
+    except ImportError:
+        raise HTTPException(500, detail="pdf_export module not found. Run: pip install reportlab")
+    
+    # Build groups data with members
+    conn = db.get_connection()
+    groups_rows = conn.execute(
+        "SELECT g.*, (SELECT COUNT(*) FROM group_members gm WHERE gm.group_id = g.id) AS cnt "
+        "FROM groups g ORDER BY g.id ASC"
+    ).fetchall()
+    
+    groups_data = []
+    for g in groups_rows:
+        members = conn.execute(
+            "SELECT s.full_name, s.gender, s.phone "
+            "FROM group_members gm "
+            "JOIN students s ON gm.student_id = s.id "
+            "WHERE gm.group_id = ? "
+            "ORDER BY s.full_name ASC",
+            (g["id"],)).fetchall()
+        groups_data.append({
+            "name": g["name"],
+            "description": g["description"] or "",
+            "members": [dict(m) for m in members],
+        })
+    conn.close()
+    
+    try:
+        pdf_bytes = pdf_export.generate_groups_pdf(groups_data)
+    except Exception as e:
+        import traceback
+        raise HTTPException(500, detail=f"PDF generation failed: {e}\n{traceback.format_exc()[-500:]}")
+    
+    from fastapi.responses import Response
+    from datetime import datetime as _dt
+    ts = _dt.now().strftime("%Y%m%d")
+    filename = f"Groups_Distribution_2026_{ts}.pdf"
+    
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )

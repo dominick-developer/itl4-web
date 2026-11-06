@@ -3887,3 +3887,44 @@ def auto_group_ungrouped_students():
         "groups": created_groups,
         "remaining": len(males) + len(females) + len(others),
     }
+
+# ============================================================
+# GROUPING DIAGNOSTICS + BULK APPROVE
+# ============================================================
+def get_grouping_diagnostics():
+    conn = get_connection()
+    total = conn.execute("SELECT COUNT(*) FROM students WHERE is_active = 1").fetchone()[0]
+    approved = conn.execute(
+        "SELECT COUNT(*) FROM students WHERE is_active = 1 AND membership_status = 'approved'"
+    ).fetchone()[0]
+    pending = conn.execute(
+        "SELECT COUNT(*) FROM students WHERE is_active = 1 AND membership_status = 'pending'"
+    ).fetchone()[0]
+    in_groups = conn.execute(
+        "SELECT COUNT(DISTINCT student_id) FROM group_members"
+    ).fetchone()[0]
+    ungrouped = conn.execute(
+        "SELECT COUNT(*) FROM students WHERE is_active = 1 AND membership_status = 'approved' "
+        "AND id NOT IN (SELECT student_id FROM group_members)"
+    ).fetchone()[0]
+    conn.close()
+    return {
+        "total_active": total,
+        "approved": approved,
+        "pending": pending,
+        "in_groups": in_groups,
+        "ungrouped_approved": ungrouped,
+    }
+
+
+def approve_all_pending():
+    conn = get_connection()
+    result = conn.execute(
+        "UPDATE students SET membership_status = 'approved', "
+        "date_joined = COALESCE(date_joined, date('now')) "
+        "WHERE is_active = 1 AND membership_status = 'pending'"
+    )
+    count = result.rowcount
+    conn.commit()
+    conn.close()
+    return count

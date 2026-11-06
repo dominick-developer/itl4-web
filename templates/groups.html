@@ -10,6 +10,15 @@
         <p style="color:#cbd5e1;margin:0;font-size:14px;">Vikundi vya wanafunzi - auto au manual</p>
     </div>
 
+    {% if role == 'CR' or role == 'LECTURER' %}
+    <div style="margin-bottom:16px;">
+        <a href="/groups/export-pdf" 
+           style="display:inline-flex;align-items:center;gap:8px;padding:12px 24px;background:linear-gradient(135deg,#0B1F33,#1e40af);color:white;border-radius:10px;font-weight:800;font-size:14px;text-decoration:none;box-shadow:0 4px 12px rgba(11,31,51,.2);">
+            📄 Export Groups to PDF
+        </a>
+    </div>
+    {% endif %}
+
     {% if request.query_params.get('success') %}
     <div style="background:#dcfce7;color:#16A34A;padding:14px;border-radius:8px;margin-bottom:16px;">{{ request.query_params.get('success') }}</div>
     {% endif %}
