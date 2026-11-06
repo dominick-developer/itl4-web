@@ -1,0 +1,93 @@
+# update_groups.py
+from pathlib import Path
+
+HTML = '''{% extends "base.html" %}
+{% block title %}Groups{% endblock %}
+{% block page_title %}Groups{% endblock %}
+
+{% block body %}
+<div class="container">
+
+    <div style="background:linear-gradient(135deg,#0B1F33 0%,#1e40af 100%);border-radius:16px;padding:24px;color:white;margin-bottom:22px;">
+        <h1 style="font-size:22px;font-weight:900;margin:0 0 6px;">Groups ({{ groups|length }})</h1>
+        <p style="color:#cbd5e1;margin:0;font-size:14px;">Vikundi vya wanafunzi - auto au manual</p>
+    </div>
+
+    {% if request.query_params.get('success') %}
+    <div style="background:#dcfce7;color:#16A34A;padding:14px;border-radius:8px;margin-bottom:16px;">{{ request.query_params.get('success') }}</div>
+    {% endif %}
+    {% if request.query_params.get('error') %}
+    <div style="background:#fee2e2;color:#DC2626;padding:14px;border-radius:8px;margin-bottom:16px;">{{ request.query_params.get('error') }}</div>
+    {% endif %}
+
+    {% if role == 'CR' %}
+    <!-- AUTO GROUP -->
+    <div class="card" style="margin-bottom:18px;border-left:4px solid #16A34A;background:#f0fdf4;">
+        <h2 style="font-size:18px;font-weight:800;color:var(--navy);margin-bottom:6px;">Auto-Group Wanafunzi</h2>
+        <p style="color:#166534;font-size:13px;margin:0 0 14px;">
+            Wanafunzi 10 kwa group · 5M + 5F (adjust ±1 kama haitoshi). Wanafunzi waliokwisha kwenye group hawaguswi.
+        </p>
+        <form method="post" action="/groups/auto-group" onsubmit="return confirm('Unda groups mpya kwa wanafunzi wasio kwenye group?');">
+            <button type="submit" class="btn btn-success" style="padding:12px 24px;background:#16A34A;color:white;font-weight:800;">
+                Auto-Group Sasa
+            </button>
+        </form>
+    </div>
+
+    <!-- CREATE MANUAL -->
+    <div class="card" style="margin-bottom:18px;">
+        <h3 style="font-size:16px;font-weight:800;color:var(--navy);margin-bottom:12px;">Create Group Manually</h3>
+        <form method="post" action="/groups/create">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Group Name *</label>
+                    <input type="text" name="name" required placeholder="e.g. Project Team A">
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <input type="text" name="description" placeholder="Optional">
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary" style="padding:10px 24px;">Create Group</button>
+        </form>
+    </div>
+    {% endif %}
+
+    <!-- GROUPS LIST -->
+    {% if groups %}
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;">
+        {% for g in groups %}
+        <a href="/groups/{{ g.id }}" style="text-decoration:none;">
+            <div class="card" style="padding:18px;transition:all .15s;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 12px 32px rgba(0,0,0,.08)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+                    <h3 style="font-size:16px;font-weight:800;color:var(--navy);margin:0;">{{ g.name }}</h3>
+                    <span style="background:#EFF6FF;color:#2563EB;padding:3px 10px;border-radius:8px;font-size:11px;font-weight:700;">
+                        {{ g.member_count }} members
+                    </span>
+                </div>
+                {% if g.description %}<p style="color:var(--muted);font-size:12px;margin:0 0 10px;">{{ g.description }}</p>{% endif %}
+                <div style="color:var(--orange);font-weight:700;font-size:13px;">View Group →</div>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="card" style="text-align:center;padding:60px 20px;">
+        <div style="font-size:48px;margin-bottom:12px;">Group</div>
+        <h3 style="color:var(--navy);font-size:18px;font-weight:800;margin-bottom:8px;">Hakuna groups bado</h3>
+        {% if role == 'CR' %}
+        <p style="color:var(--muted);margin-bottom:20px;">Tumia Auto-Group au Create Manual juu.</p>
+        {% endif %}
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}
+'''
+
+p = Path("templates/groups.html")
+p.parent.mkdir(exist_ok=True)
+p.write_text(HTML, encoding="utf-8")
+print(f"[OK] Wrote {p}")
+print(f"   Size: {len(HTML)} bytes")
+print(f"   Has auto-group: {'auto-group' in HTML}")

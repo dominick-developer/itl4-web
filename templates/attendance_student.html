@@ -1,32 +1,48 @@
 {% extends "base.html" %}
+{% block title %}My Attendance{% endblock %}
+{% block page_title %}✓ My Attendance{% endblock %}
+
 {% block body %}
 <div class="container">
-    <h1 style="color:var(--navy);margin-bottom:20px;">✓ My Attendance</h1>
+
+    <div
+        style="background:linear-gradient(135deg,#0B1F33 0%,#1e40af 100%);border-radius:16px;padding:24px;color:white;margin-bottom:22px;">
+        <h1 style="font-size:22px;font-weight:900;margin:0 0 6px;">✓ My Attendance</h1>
+        <p style="color:#cbd5e1;margin:0;font-size:14px;">Historia yako ya mahudhurio kwa vipindi</p>
+    </div>
+
     {% if my_attendance %}
-    <table>
-        <thead>
-            <tr>
-                <th>Date</th>
-                <th>Module</th>
-                <th>Type</th>
-                <th>Status</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for r in my_attendance %}
-            <tr>
-                <td>{{ r.session_date }}</td>
-                <td>{{ r.module_name or 'General' }}</td>
-                <td>{{ r.session_type }}</td>
-                <td><span class="badge badge-{{ r.status }}">{{ r.status }}</span></td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div style="display:grid;gap:8px;">
+        {% for a in my_attendance %}
+        <div class="card" style="padding:14px 18px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;">
+            <div style="min-width:100px;font-weight:700;color:var(--muted);font-size:13px;">{{ a.session_date }}</div>
+            <div style="flex:1;min-width:200px;">
+                <div style="font-weight:800;color:var(--navy);">{{ a.timetable_name or a.module_name or a.session_type
+                    }}</div>
+                <div style="font-size:12px;color:var(--muted);">
+                    {% if a.start_time %}{{ a.start_time }}{% endif %}
+                    {% if a.teacher_name %} · {{ a.teacher_name }}{% endif %}
+                    {% if a.venue %} · 📍 {{ a.venue }}{% endif %}
+                </div>
+            </div>
+            <div>
+                {% set colors = {'present':('#dcfce7','#16A34A','✓ Present'),'absent':('#fee2e2','#DC2626','✗
+                Absent'),'late':('#fef3c7','#92400e','⏰ Late'),'excused':('#f1f5f9','#64748B','📝 Excused')} %}
+                {% set bg, fg, label = colors.get(a.attendance_status, ('#f1f5f9','#64748B', a.attendance_status)) %}
+                <span
+                    style="background:{{ bg }};color:{{ fg }};padding:6px 14px;border-radius:10px;font-size:12px;font-weight:800;">{{
+                    label }}</span>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
     {% else %}
-    <div class="card empty">
-        <p>No attendance records yet.</p>
+    <div class="card" style="text-align:center;padding:60px 20px;">
+        <div style="font-size:44px;margin-bottom:12px;">📋</div>
+        <h3 style="color:var(--navy);font-size:18px;font-weight:800;margin-bottom:8px;">Hakuna attendance bado</h3>
+        <p style="color:var(--muted);">CR bado hajarekodi mahudhurio yako kwenye kipindi chochote.</p>
     </div>
     {% endif %}
+
 </div>
 {% endblock %}

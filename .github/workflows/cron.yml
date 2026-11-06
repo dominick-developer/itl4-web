@@ -1,0 +1,16 @@
+name: ITL4 Notifications Cron
+
+on:
+  schedule:
+    # Hii inaendesha kila dakika 5. GitHub haitoi chini ya dakika 5 kwa free tier.
+    - cron: '*/5 * * * *'
+  workflow_dispatch: # Hii inakuwezesha kuendesha kwa mkono
+
+jobs:
+  trigger-notifications:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger notification endpoint
+        run: |
+          curl -sS --fail --max-time 30 \
+            "https://itl4connect.onrender.com/internal/send-notifications?secret=timetable-2026-x7k9"

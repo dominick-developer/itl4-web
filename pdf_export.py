@@ -58,7 +58,7 @@ def generate_groups_pdf(groups_data):
         topMargin=20 * mm,
         bottomMargin=18 * mm,
         title="Group Distributions 2026",
-        author="Chuo Cha Fundi Arusha",
+        author="Chuo Cha Ufundi Arusha",
     )
 
     styles = getSampleStyleSheet()

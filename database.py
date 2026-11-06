@@ -3928,3 +3928,71 @@ def approve_all_pending():
     conn.commit()
     conn.close()
     return count
+
+
+# ============================================================
+# DELETE STUDENT (safe - removes user + related records)
+# ============================================================
+def delete_student_full(student_id):
+    """Delete a student and their user account + related records safely."""
+    conn = get_connection()
+    try:
+        # Find user_id first
+        user_row = conn.execute(
+            "SELECT id FROM users WHERE student_id = ?", (student_id,)
+        ).fetchone()
+        
+        # Delete related records (order matters for FK)
+        try:
+            conn.execute("DELETE FROM group_members WHERE student_id = ?", (student_id,))
+        except Exception:
+            pass
+        
+        try:
+            conn.execute("DELETE FROM class_attendance WHERE student_id = ?", (student_id,))
+        except Exception:
+            pass
+        
+        try:
+            conn.execute("DELETE FROM lesson_progress WHERE user_id IN "
+                         "(SELECT id FROM users WHERE student_id = ?)", (student_id,))
+        except Exception:
+            pass
+        
+        try:
+            conn.execute("DELETE FROM push_subscriptions WHERE user_id IN "
+                         "(SELECT id FROM users WHERE student_id = ?)", (student_id,))
+        except Exception:
+            pass
+        
+        try:
+            conn.execute("DELETE FROM notifications WHERE user_id IN "
+                         "(SELECT id FROM users WHERE student_id = ?)", (student_id,))
+        except Exception:
+            pass
+        
+        try:
+            conn.execute("DELETE FROM course_enrolments WHERE user_id IN "
+                         "(SELECT id FROM users WHERE student_id = ?)", (student_id,))
+        except Exception:
+            pass
+        
+        # Delete user (ON DELETE CASCADE handles most)
+        if user_row:
+            try:
+                conn.execute("DELETE FROM users WHERE id = ?", (user_row["id"],))
+            except Exception as e:
+                print(f"Delete user failed: {e}")
+        
+        # Delete student
+        conn.execute("DELETE FROM students WHERE id = ?", (student_id,))
+        conn.commit()
+        return True, "Mwanafunzi amefutwa kabisa"
+    except Exception as e:
+        try:
+            conn.rollback()
+        except Exception:
+            pass
+        return False, str(e)
+    finally:
+        conn.close()
