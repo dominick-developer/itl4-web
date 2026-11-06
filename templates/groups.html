@@ -11,36 +11,38 @@
     </div>
 
     {% if role == 'CR' or role == 'LECTURER' %}
-    <div style="margin-bottom:16px;">
-        <a href="/groups/export-pdf" 
-           style="display:inline-flex;align-items:center;gap:8px;padding:12px 24px;background:linear-gradient(135deg,#0B1F33,#1e40af);color:white;border-radius:10px;font-weight:800;font-size:14px;text-decoration:none;box-shadow:0 4px 12px rgba(11,31,51,.2);">
-            📄 Export Groups to PDF
+    <div style="margin-bottom:16px;display:flex;gap:8px;flex-wrap:wrap;">
+        <a href="/export/groups-pdf"
+           style="display:inline-flex;align-items:center;gap:8px;padding:12px 24px;background:linear-gradient(135deg,#0B1F33,#1e40af);color:white;border-radius:10px;font-weight:800;font-size:14px;text-decoration:none;">
+            Export Groups to PDF
         </a>
     </div>
     {% endif %}
 
     {% if request.query_params.get('success') %}
-    <div style="background:#dcfce7;color:#16A34A;padding:14px;border-radius:8px;margin-bottom:16px;">{{ request.query_params.get('success') }}</div>
+    <div style="background:#dcfce7;color:#16A34A;padding:14px;border-radius:8px;margin-bottom:16px;">
+        {{ request.query_params.get('success') }}
+    </div>
     {% endif %}
     {% if request.query_params.get('error') %}
-    <div style="background:#fee2e2;color:#DC2626;padding:14px;border-radius:8px;margin-bottom:16px;">{{ request.query_params.get('error') }}</div>
+    <div style="background:#fee2e2;color:#DC2626;padding:14px;border-radius:8px;margin-bottom:16px;">
+        {{ request.query_params.get('error') }}
+    </div>
     {% endif %}
 
     {% if role == 'CR' %}
-    <!-- AUTO GROUP -->
     <div class="card" style="margin-bottom:18px;border-left:4px solid #16A34A;background:#f0fdf4;">
         <h2 style="font-size:18px;font-weight:800;color:var(--navy);margin-bottom:6px;">Auto-Group Wanafunzi</h2>
         <p style="color:#166534;font-size:13px;margin:0 0 14px;">
-            Wanafunzi 10 kwa group · 5M + 5F (adjust ±1 kama haitoshi). Wanafunzi waliokwisha kwenye group hawaguswi.
+            Wanafunzi 10 kwa group. Wanafunzi waliokwisha kwenye group hawaguswi.
         </p>
         <form method="post" action="/groups/auto-group" onsubmit="return confirm('Unda groups mpya kwa wanafunzi wasio kwenye group?');">
-            <button type="submit" class="btn btn-success" style="padding:12px 24px;background:#16A34A;color:white;font-weight:800;">
+            <button type="submit" style="padding:12px 24px;background:#16A34A;color:white;border:none;border-radius:8px;font-weight:800;cursor:pointer;font-family:inherit;">
                 Auto-Group Sasa
             </button>
         </form>
     </div>
 
-    <!-- CREATE MANUAL -->
     <div class="card" style="margin-bottom:18px;">
         <h3 style="font-size:16px;font-weight:800;color:var(--navy);margin-bottom:12px;">Create Group Manually</h3>
         <form method="post" action="/groups/create">
@@ -59,27 +61,37 @@
     </div>
     {% endif %}
 
-    <!-- GROUPS LIST -->
     {% if groups %}
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;">
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;">
         {% for g in groups %}
-        <a href="/groups/{{ g.id }}" style="text-decoration:none;">
-            <div class="card" style="padding:18px;transition:all .15s;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 12px 32px rgba(0,0,0,.08)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
-                <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
-                    <h3 style="font-size:16px;font-weight:800;color:var(--navy);margin:0;">{{ g.name }}</h3>
-                    <span style="background:#EFF6FF;color:#2563EB;padding:3px 10px;border-radius:8px;font-size:11px;font-weight:700;">
-                        {{ g.member_count }} members
-                    </span>
-                </div>
-                {% if g.description %}<p style="color:var(--muted);font-size:12px;margin:0 0 10px;">{{ g.description }}</p>{% endif %}
-                <div style="color:var(--orange);font-weight:700;font-size:13px;">View Group →</div>
+        <div class="card" style="padding:18px;display:flex;flex-direction:column;gap:10px;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+                <a href="/groups/{{ g.id }}" style="text-decoration:none;flex:1;min-width:0;">
+                    <h3 style="font-size:16px;font-weight:800;color:var(--navy);margin:0;word-break:break-word;">{{ g.name }}</h3>
+                </a>
+                <span style="background:#EFF6FF;color:#2563EB;padding:3px 10px;border-radius:8px;font-size:11px;font-weight:700;white-space:nowrap;">
+                    {{ g.member_count }} members
+                </span>
             </div>
-        </a>
+            {% if g.description %}
+            <p style="color:var(--muted);font-size:12px;margin:0;">{{ g.description }}</p>
+            {% endif %}
+            <div style="display:flex;gap:6px;margin-top:auto;padding-top:8px;border-top:1px solid var(--border);">
+                <a href="/groups/{{ g.id }}" class="btn btn-outline" style="padding:6px 14px;font-size:12px;flex:1;text-align:center;text-decoration:none;border:1px solid var(--border);border-radius:6px;">View</a>
+                {% if role == 'CR' %}
+                <form method="post" action="/groups/{{ g.id }}/delete" onsubmit="return confirm('Delete {{ g.name }}? Members watarudi ungrouped.');" style="display:inline;">
+                    <button type="submit" style="padding:6px 14px;font-size:12px;background:#FEE2E2;color:#DC2626;border:1px solid #FCA5A5;border-radius:6px;font-weight:700;cursor:pointer;font-family:inherit;">
+                        Delete
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
         {% endfor %}
     </div>
     {% else %}
     <div class="card" style="text-align:center;padding:60px 20px;">
-        <div style="font-size:48px;margin-bottom:12px;">Group</div>
+        <div style="font-size:48px;margin-bottom:12px;">Groups</div>
         <h3 style="color:var(--navy);font-size:18px;font-weight:800;margin-bottom:8px;">Hakuna groups bado</h3>
         {% if role == 'CR' %}
         <p style="color:var(--muted);margin-bottom:20px;">Tumia Auto-Group au Create Manual juu.</p>

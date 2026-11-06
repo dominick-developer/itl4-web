@@ -140,7 +140,7 @@ def startup():
                 "INSERT INTO students (full_name, reg_number, phone, is_active, "
                 "membership_status, date_joined, is_verified) "
                 "VALUES (?, ?, ?, 1, 'approved', date('now'), 1)",
-                ("Class Representative", "ITL4/CR/001", "0700111111"))
+                ("DOMINICK ZABANUS MWENDA", "26051002004", "0661253815"))
             sid = cur.lastrowid
             cur.execute(
                 "INSERT INTO users (role, student_id, username, password_hash, salt, is_admin) "
@@ -2857,7 +2857,7 @@ def group_remove_member(request: Request, gid: int, sid: int):
 # ============================================================
 # EXPORT GROUPS PDF
 # ============================================================
-@app.get("/groups/export-pdf")
+@app.get("/export/groups-pdf")
 def groups_export_pdf(request: Request):
     require_login(request)
     if request.session.get("role") not in ("CR", "LECTURER"):
@@ -2907,3 +2907,16 @@ def groups_export_pdf(request: Request):
         media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+@app.post("/students/approve-all-pending")
+def students_approve_all_pending(request: Request):
+    require_login(request)
+    if request.session.get("role") != "CR":
+        raise HTTPException(403)
+    try:
+        count = db.approve_all_pending()
+        from urllib.parse import quote
+        return RedirectResponse("/students?success=" + quote("Wanafunzi " + str(count) + " wamekubaliwa"), 303)
+    except Exception as e:
+        from urllib.parse import quote
+        return RedirectResponse("/students?error=" + quote(str(e)), 303)
