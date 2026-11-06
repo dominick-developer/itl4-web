@@ -2920,3 +2920,23 @@ def students_approve_all_pending(request: Request):
     except Exception as e:
         from urllib.parse import quote
         return RedirectResponse("/students?error=" + quote(str(e)), 303)
+
+
+@app.get("/admin/reset-student-passwords")
+def admin_reset_student_passwords(secret: str = ""):
+    if secret != os.getenv("CRON_SECRET", ""):
+        raise HTTPException(403)
+    import hashlib as _hashlib
+    import os as _os
+    conn = db.get_connection()
+    rows = conn.execute("SELECT u.id, u.username FROM users u WHERE u.role = 'STUDENT'").fetchall()
+    count = 0
+    for r in rows:
+        salt = _os.urandom(16).hex()
+        pwd_hash = _hashlib.sha256((salt + "it2026").encode("utf-8")).hexdigest()
+        conn.execute("UPDATE users SET password_hash = ?, salt = ? WHERE id = ?",
+                     (pwd_hash, salt, r["id"]))
+        count += 1
+    conn.commit()
+    conn.close()
+    return {"ok": True, "reset_count": count, "password": "it2026"}
