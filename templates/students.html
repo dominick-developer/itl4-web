@@ -132,6 +132,9 @@
                                 <button class="btn btn-success" style="padding:5px 12px;font-size:12px;background:#16A34A;color:white;">Approve</button>
                             </form>
                             {% endif %}
+                            <form method="post" action="/students/{{ s.id }}/delete" onsubmit="return confirm('Delete {{ s.full_name }}? Haiwezi kurudishwa.');" style="display:inline;">
+                                <button type="submit" style="padding:5px 12px;font-size:12px;background:#FEE2E2;color:#DC2626;border:1px solid #FCA5A5;border-radius:6px;font-weight:700;cursor:pointer;font-family:inherit;">Delete</button>
+                            </form>
                         </div>
                     </td>
                     {% endif %}

@@ -39,65 +39,6 @@ def create_account(username, password, role,
         conn.close()
 
 
-def login(username: str, password: str):
-    """
-    Verify login (no role needed — system detects from username).
-    Returns (True, user_dict) on success.
-    Returns (False, message_string) on failure.
-    Returns (False, {"verify_needed": True, "username": ...}) if verify needed.
-    """
-    conn = get_connection()
-    row = conn.execute(
-        "SELECT u.*, "
-        "COALESCE(s.full_name, t.full_name) AS full_name, "
-        "COALESCE(s.phone, t.phone) AS phone, "
-        "s.membership_status AS membership_status, "
-        "s.is_verified AS is_verified "
-        "FROM users u "
-        "LEFT JOIN students s ON u.student_id = s.id "
-        "LEFT JOIN teachers t ON u.teacher_id = t.id "
-        "WHERE u.username = ?",
-        (username,)
-    ).fetchone()
-
-    if not row:
-        conn.close()
-        return False, "No user with this username."
-
-    if _hash_password(password, row["salt"]) != row["password_hash"]:
-        conn.close()
-        return False, "Incorrect password."
-
-    role = row["role"]
-
-    # Verification check for STUDENT and CR
-    # Verification check for STUDENT only (CR/LECTURER bypass)
-    if role == "STUDENT":
-        is_verified = row["is_verified"] if row["is_verified"] is not None else 1
-        if not is_verified:
-            conn.close()
-            return False, {
-                "verify_needed": True,
-                "username": username,
-                "message": "Please verify your email first.",
-            }
-    # Membership status for STUDENT only
-    if role == "STUDENT":
-        status = row["membership_status"]
-        if status == "pending":
-            conn.close()
-            return False, "Your account is pending approval. Please wait."
-        elif status == "rejected":
-            conn.close()
-            return False, "Your account was rejected."
-        elif status == "suspended":
-            conn.close()
-            return False, "Your account is suspended."
-
-    conn.close()
-    result = {key: row[key] for key in row.keys()}
-    return True, result
-
 
 def change_password(user_id, current_password, new_password):
     conn = get_connection()
@@ -131,3 +72,60 @@ def has_users() -> bool:
     n = conn.execute("SELECT COUNT(*) FROM users").fetchone()[0]
     conn.close()
     return n > 0
+
+
+def login(username: str, password: str, role: str = None):
+    """Verify login. Case-insensitive, no role filter (role from DB)."""
+    conn = get_connection()
+    row = conn.execute(
+        "SELECT u.*, "
+        "COALESCE(s.full_name, t.full_name) AS full_name, "
+        "COALESCE(s.phone, t.phone) AS phone, "
+        "s.membership_status AS membership_status, "
+        "s.is_verified AS is_verified "
+        "FROM users u "
+        "LEFT JOIN students s ON u.student_id = s.id "
+        "LEFT JOIN teachers t ON u.teacher_id = t.id "
+        "WHERE LOWER(TRIM(u.username)) = LOWER(TRIM(?))",
+        (username.strip(),)
+    ).fetchone()
+
+    if not row:
+        conn.close()
+        return False, "No user with this username."
+
+    if _hash_password(password, row["salt"]) != row["password_hash"]:
+        conn.close()
+        return False, "Incorrect password."
+
+    # If role passed, verify it matches (for backward compat)
+    if role and role != "AUTO" and role != row["role"]:
+        conn.close()
+        return False, "Role si sahihi kwa username hii. Chagua " + str(row["role"]) + "."
+
+    # Verification check for students
+    if row["role"] == "STUDENT":
+        is_verified = row["is_verified"] if row["is_verified"] is not None else 1
+        if not is_verified:
+            conn.close()
+            return False, {
+                "verify_needed": True,
+                "username": username,
+            }
+
+    # Membership status check
+    if row["role"] == "STUDENT":
+        status = row["membership_status"] or "approved"
+        if status == "pending":
+            conn.close()
+            return False, "Account yako bado haijathibitishwa. Wasiliana na CR."
+        elif status == "rejected":
+            conn.close()
+            return False, "Account yako imekataliwa."
+        elif status == "suspended":
+            conn.close()
+            return False, "Account yako imesimamishwa."
+
+    conn.close()
+    result = {key: row[key] for key in row.keys()}
+    return True, result
