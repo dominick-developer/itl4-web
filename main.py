@@ -399,6 +399,7 @@ def logout(request: Request):
 def dashboard(request: Request):
     require_login(request)
     role = request.session["role"]
+    student_group = None
     if role == "CR":
         stats = db.get_cr_dashboard_stats()
     elif role == "LECTURER":
@@ -406,6 +407,10 @@ def dashboard(request: Request):
         stats = db.get_teacher_stats(t["id"]) if t else {}
     else:
         stats = db.get_student_dashboard_stats(request.session.get("student_id"))
+        try:
+            student_group = db.get_student_group(request.session.get("student_id"))
+        except Exception as _e:
+            print(f"[DASHBOARD] get_student_group failed: {_e}")
     try:
         sessions = db.get_upcoming_sessions(3, True)
     except Exception:
@@ -425,6 +430,7 @@ def dashboard(request: Request):
     return render("dashboard.html", ctx(request, {
         "stats": stats, "sessions": sessions, "exams": exams,
         "announcements": ann, "daily_msg": dm,
+        "student_group": student_group,
     }))
 
 

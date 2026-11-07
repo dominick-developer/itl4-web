@@ -58,7 +58,7 @@ def generate_groups_pdf(groups_data):
         topMargin=20 * mm,
         bottomMargin=18 * mm,
         title="Group Distributions 2026",
-        author="Chuo Cha Ufundi Arusha",
+        author="Chuo Cha UUfundi Arusha",
     )
 
     styles = getSampleStyleSheet()
@@ -141,7 +141,7 @@ def generate_groups_pdf(groups_data):
 
     # ===== HEADER SECTION =====
     story.append(Spacer(1, 8 * mm))
-    story.append(Paragraph("CHUO CHA FUNDI ARUSHA", title_style))
+    story.append(Paragraph("CHUO CHA UUfundi Arusha", title_style))
     story.append(Spacer(1, 2 * mm))
     story.append(Paragraph("INFORMATION TECHNOLOGY NTA LEVEL 4", subtitle_style))
     story.append(Spacer(1, 2 * mm))
