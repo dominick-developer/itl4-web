@@ -3817,76 +3817,6 @@ def get_next_group_number():
     return max_num + 1
 
 
-def auto_group_ungrouped_students():
-    """Auto-group ungrouped students. Target 10/group, 5M+5F, adjust +/-1 if needed."""
-    ungrouped = get_ungrouped_students()
-    if not ungrouped:
-        return {"ok": True, "created": 0, "groups": [], "remaining": 0,
-                "message": "Hakuna wanafunzi wasio kwenye group"}
-    
-    males = [s for s in ungrouped if _is_male(s)]
-    females = [s for s in ungrouped if _is_female(s)]
-    others = [s for s in ungrouped if not _is_male(s) and not _is_female(s)]
-    
-    created_groups = []
-    next_num = get_next_group_number()
-    
-    while True:
-        total = len(males) + len(females) + len(others)
-        if total < 9:
-            break
-        
-        group_size = 10 if total > 11 else total
-        
-        # Gender split logic
-        if len(males) >= 5 and len(females) >= 5 and group_size >= 10:
-            m_take, f_take = 5, 5
-        elif len(males) >= 6 and len(females) >= 4 and group_size >= 10:
-            m_take, f_take = 6, 4
-        elif len(males) >= 4 and len(females) >= 6 and group_size >= 10:
-            m_take, f_take = 4, 6
-        else:
-            half = group_size // 2
-            m_take = min(len(males), half)
-            f_take = min(len(females), half)
-            while m_take + f_take < group_size and m_take < len(males):
-                m_take += 1
-            while m_take + f_take < group_size and f_take < len(females):
-                f_take += 1
-        
-        u_take = 0
-        while m_take + f_take + u_take < group_size and u_take < len(others):
-            u_take += 1
-        
-        batch = males[:m_take] + females[:f_take] + others[:u_take]
-        if len(batch) < 9:
-            break
-        
-        gname = "Auto Group " + str(next_num)
-        m_count = sum(1 for s in batch if _is_male(s))
-        f_count = sum(1 for s in batch if _is_female(s))
-        desc = "Auto-generated: " + str(m_count) + "M + " + str(f_count) + "F = " + str(len(batch)) + " members"
-        
-        group_id = create_group(gname, desc, None)
-        for s in batch:
-            add_group_member(group_id, s["id"])
-        
-        created_groups.append({
-            "id": group_id, "name": gname,
-            "total": len(batch), "male": m_count, "female": f_count,
-        })
-        
-        males = males[m_take:]
-        females = females[f_take:]
-        others = others[u_take:]
-        next_num += 1
-    
-    return {
-        "ok": True,
-        "created": len(created_groups),
-        "groups": created_groups,
-        "remaining": len(males) + len(females) + len(others),
-    }
 
 # ============================================================
 # GROUPING DIAGNOSTICS + BULK APPROVE
@@ -4085,5 +4015,168 @@ def list_all_students_with_users():
         "WHERE s.is_active = 1 "
         "ORDER BY (u.id IS NULL) DESC, s.id DESC"
     ).fetchall()
+    conn.close()
+    return rows
+
+# ============================================================
+# SMART AUTO-GROUPING (girls distributed equally first)
+# ============================================================
+def auto_group_ungrouped_students():
+    """Smart grouping: girls equally distributed, then boys fill gaps, mixed by initial."""
+    ungrouped = get_ungrouped_students()
+    if not ungrouped:
+        return {"ok": True, "created": 0, "groups": [], "remaining": 0,
+                "message": "Hakuna wanafunzi wasio kwenye group"}
+
+    males = [s for s in ungrouped if _is_male(s)]
+    females = [s for s in ungrouped if _is_female(s)]
+    others = [s for s in ungrouped if not _is_male(s) and not _is_female(s)]
+
+    total = len(males) + len(females) + len(others)
+    if total < 4:
+        return {"ok": True, "created": 0, "groups": [], "remaining": total,
+                "message": "Wanafunzi wachache sana (min 4)"}
+
+    # Number of groups: aim for ~10 per group
+    num_groups = max(1, (total + 9) // 10)
+
+    # Init empty groups
+    groups_list = [[] for _ in range(num_groups)]
+
+    # Sort pools by initial letter (for variety)
+    def _first_letter(name):
+        n = (name or "Z").strip()
+        return n[0].upper() if n else "Z"
+
+    females_sorted = sorted(females, key=lambda s: _first_letter(s["full_name"]))
+    males_sorted = sorted(males, key=lambda s: _first_letter(s["full_name"]))
+    others_sorted = sorted(others, key=lambda s: _first_letter(s["full_name"]))
+
+    # STEP 1: Distribute girls equally (round-robin)
+    for i, g in enumerate(females_sorted):
+        groups_list[i % num_groups].append(g)
+
+    # STEP 2: Distribute boys to fill remaining slots
+    target_size = 10
+    boy_idx = 0
+    group_idx = 0
+    safety = 0
+    while boy_idx < len(males_sorted) and safety < 10000:
+        safety += 1
+        if len(groups_list[group_idx]) < target_size:
+            groups_list[group_idx].append(males_sorted[boy_idx])
+            boy_idx += 1
+        else:
+            # All groups full? Add to smallest
+            if all(len(g) >= target_size for g in groups_list):
+                smallest = min(groups_list, key=len)
+                smallest.append(males_sorted[boy_idx])
+                boy_idx += 1
+        group_idx = (group_idx + 1) % num_groups
+
+    # STEP 3: Others
+    for o in others_sorted:
+        smallest = min(groups_list, key=len)
+        smallest.append(o)
+
+    # STEP 4: Within each group - sort by initial, then interleave (A-Z-A-Z)
+    for group in groups_list:
+        if len(group) < 3:
+            continue
+        group.sort(key=lambda s: _first_letter(s["full_name"]))
+        mixed = []
+        i, j = 0, len(group) - 1
+        turn = 0
+        while i <= j:
+            if turn % 2 == 0:
+                mixed.append(group[i])
+                i += 1
+            else:
+                mixed.append(group[j])
+                j -= 1
+            turn += 1
+        group[:] = mixed
+
+    # STEP 5: Create groups in DB
+    next_num = get_next_group_number()
+    created = []
+    for members in groups_list:
+        if len(members) < 3:
+            continue
+        gname = "Auto Group " + str(next_num)
+        m_count = sum(1 for s in members if _is_male(s))
+        f_count = sum(1 for s in members if _is_female(s))
+        desc = str(m_count) + "M + " + str(f_count) + "F = " + str(len(members)) + " members"
+
+        group_id = create_group(gname, desc, None)
+        for s in members:
+            add_group_member(group_id, s["id"])
+
+        created.append({
+            "id": group_id, "name": gname,
+            "total": len(members), "male": m_count, "female": f_count,
+        })
+        next_num += 1
+
+    return {
+        "ok": True,
+        "created": len(created),
+        "groups": created,
+        "remaining": 0,
+        "message": "Groups " + str(len(created)) + " zimeundwa",
+    }
+
+
+def get_student_group(student_id):
+    """Get the group a student belongs to (with member count)."""
+    if not student_id:
+        return None
+    conn = get_connection()
+    row = conn.execute(
+        "SELECT g.*, "
+        "(SELECT COUNT(*) FROM group_members WHERE group_id = g.id) AS member_count "
+        "FROM groups g "
+        "JOIN group_members gm ON gm.group_id = g.id "
+        "WHERE gm.student_id = ? LIMIT 1", (student_id,)).fetchone()
+    conn.close()
+    return row
+
+
+def set_group_whatsapp_link(group_id, link, student_id):
+    """Set WhatsApp link (first member only)."""
+    conn = get_connection()
+    try:
+        existing = conn.execute(
+            "SELECT whatsapp_link FROM groups WHERE id = ?", (group_id,)).fetchone()
+        if not existing:
+            return False, "Group haipo"
+        if existing["whatsapp_link"]:
+            return False, "WhatsApp link imeshawekwa tayari"
+
+        member = conn.execute(
+            "SELECT 1 FROM group_members WHERE group_id = ? AND student_id = ?",
+            (group_id, student_id)).fetchone()
+        if not member:
+            return False, "Wewe si mwanachama wa group hii"
+
+        conn.execute(
+            "UPDATE groups SET whatsapp_link = ?, whatsapp_creator_id = ? WHERE id = ?",
+            (link.strip(), student_id, group_id))
+        conn.commit()
+        return True, "WhatsApp link imehifadhiwa"
+    except Exception as e:
+        return False, str(e)
+    finally:
+        conn.close()
+
+
+def get_group_members_with_phones(group_id):
+    """Group members (name + phone only)."""
+    conn = get_connection()
+    rows = conn.execute(
+        "SELECT s.id, s.full_name, s.gender, s.phone FROM group_members gm "
+        "JOIN students s ON gm.student_id = s.id "
+        "WHERE gm.group_id = ? "
+        "ORDER BY s.full_name", (group_id,)).fetchall()
     conn.close()
     return rows

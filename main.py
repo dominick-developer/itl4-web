@@ -2967,3 +2967,44 @@ def admin_repair_missing_users(secret: str = "", password: str = "it2026"):
         "default_password": password,
         "details": details,
     }
+
+# ============================================================
+# STUDENT GROUP VIEW + WHATSAPP
+# ============================================================
+@app.get("/groups/{gid}/view", response_class=HTMLResponse)
+def group_view_student(request: Request, gid: int):
+    require_login(request)
+    user_id = request.session["user_id"]
+    student_id = request.session.get("student_id")
+    role = request.session.get("role")
+
+    group = db.get_group(gid)
+    if not group:
+        raise HTTPException(404)
+
+    # Students can only see their own group
+    if role == "STUDENT":
+        my_group = db.get_student_group(student_id)
+        if not my_group or my_group["id"] != gid:
+            raise HTTPException(403)
+
+    members = db.get_group_members_with_phones(gid)
+    return render("student_group_view.html", ctx(request, {
+        "group": group,
+        "members": members,
+        "is_member": True if role in ("STUDENT", "CR") else False,
+        "success": request.query_params.get("success"),
+        "error": request.query_params.get("error"),
+    }))
+
+
+@app.post("/groups/{gid}/whatsapp")
+def group_set_whatsapp(request: Request, gid: int, whatsapp_link: str = Form(...)):
+    require_login(request)
+    student_id = request.session.get("student_id")
+    if not student_id:
+        raise HTTPException(403)
+    ok, msg = db.set_group_whatsapp_link(gid, whatsapp_link, student_id)
+    from urllib.parse import quote
+    key = "success" if ok else "error"
+    return RedirectResponse(f"/groups/{gid}/view?{key}={quote(msg)}", 303)
